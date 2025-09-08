@@ -16,7 +16,6 @@ import { switchOrAddNetwork } from '../switchOrAddNetwork';
 import { SwapParams } from './garden.types';
 import { Quote } from '../quote/quote';
 import { EvmRelay } from '../evm/relay/evmRelay';
-import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 describe('checking garden initialisation', async () => {
   const config = loadTestConfig();
@@ -206,27 +205,9 @@ describe.only('switch network with http transport', () => {
   const evmAccount = privateKeyToAccount(
     '0xa6aef474481a516e9f24edf5e55c7a7e11ee23f785de73da2e3f1ba64faffa28',
   );
-  const executeStrategy = async (garden: Garden) => {
-    const strategies = await garden.quote.getStrategies();
-    if (!strategies.ok) {
-      console.log('Error getting strategy', strategies.error);
-      return;
-    }
-    const strategyKeys = Object.keys(strategies.val);
-    const randomKey =
-      strategyKeys[Math.floor(Math.random() * strategyKeys.length)];
-    const strategy = strategies.val[randomKey];
-
-    return { strategy, randomKey };
-  };
 
   const trade = async (garden: Garden) => {
     for (let i = 0; i < 10; i++) {
-      const response = await executeStrategy(garden);
-      if (!response) {
-        console.log('failed to execute strategy');
-        continue;
-      }
       const quote = await garden.quote.getQuote(
         ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC),
         ChainAsset.from(SupportedAssets.testnet.base_sepolia.WBTC),
