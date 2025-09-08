@@ -125,7 +125,6 @@ export const evmToViemChainMap: Record<EvmChain, viemChain> = {
   botanix: botanixMainnet,
   bnbchain: bsc,
   bnbchain_testnet: bscTestnet,
-  core: coreDao,
 };
 
 export const getChainNameFromChainId = (chainId: number): EvmChain | null => {

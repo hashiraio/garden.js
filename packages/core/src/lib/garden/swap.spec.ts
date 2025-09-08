@@ -85,7 +85,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
       network: Network.TESTNET,
     },
     digestKey: DIGEST_KEY!,
-    apiKey: 'f242ea49332293424c96c562a6ef575a819908c878134dcb4fce424dc84ec796',
+    apiKey: config.API_KEY,
     wallets: {
       evm: evmWallet,
       starknet: starknetWallet,
