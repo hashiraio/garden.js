@@ -655,3 +655,5 @@ export const SupportedAssets = {
     },
   },
 } as const;
+
+export const Assets = SupportedAssets.mainnet;

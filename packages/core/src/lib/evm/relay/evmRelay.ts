@@ -19,6 +19,8 @@ import {
   Order,
   isEvmOrderResponse,
   EvmChain,
+  ChainAssetString,
+  ChainAsset,
 } from '@gardenfi/orderbook';
 import { AtomicSwapABI } from '../abi/atomicSwap';
 import { IEVMHTLC } from '../htlc.types';
@@ -87,12 +89,11 @@ export class EvmRelay implements IEVMHTLC {
     if (!assetInfo.ok) return Err(assetInfo.error);
     const { htlcAddress, tokenAddress } = assetInfo.val;
 
-    if (
-      isEvmNativeToken(
-        order.source_swap.chain,
-        order.source_swap.asset.split(':')[1],
-      )
-    ) {
+    const asset = ChainAsset.fromString(
+      order.source_swap.asset as ChainAssetString,
+    );
+
+    if (isEvmNativeToken(asset.getChain(), asset.getSymbol())) {
       return this._initiateOnNativeHTLC(
         secretHash,
         timelock,

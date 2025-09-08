@@ -21,6 +21,8 @@ import {
   Orderbook,
   IOrderbook,
   isSolanaOrderResponse,
+  ChainAsset,
+  ChainAssetString,
 } from '@gardenfi/orderbook';
 import {
   getAssetInfoFromOrder,
@@ -333,10 +335,10 @@ export class SolanaRelay implements ISolanaHTLC {
     }
 
     try {
-      const isNative = isSolanaNativeToken(
-        order.source_swap.chain,
-        order.source_swap.asset.split(':')[1],
+      const asset = ChainAsset.fromString(
+        order.source_swap.asset as ChainAssetString,
       );
+      const isNative = isSolanaNativeToken(asset.getChain(), asset.getSymbol());
 
       if (isNative) {
         if (!this.nativeProgram)
@@ -419,12 +421,10 @@ export class SolanaRelay implements ISolanaHTLC {
         return Err(`Failed to fetch order by id: ${orderResult.error}`);
       }
 
-      if (
-        isSolanaNativeToken(
-          orderResult.val.source_swap.chain,
-          orderResult.val.source_swap.asset.split(':')[1],
-        )
-      ) {
+      const asset = ChainAsset.fromString(
+        orderResult.val.source_swap.asset as ChainAssetString,
+      );
+      if (isSolanaNativeToken(asset.getChain(), asset.getSymbol())) {
         return await this.initiateNativeSwap(orderResult.val);
       }
 

@@ -5,7 +5,7 @@ export type Api = {
   baseurl: string;
   auth: string;
   info: string;
-  evmRelay: string;
+  relayer: string;
 };
 
 export const API: Record<Environment, Api> = {
@@ -13,19 +13,19 @@ export const API: Record<Environment, Api> = {
     baseurl: 'https://api.garden.finance',
     auth: 'https://api.garden.finance/auth',
     info: 'https://api.garden.finance/info',
-    evmRelay: 'https://relayer.garden.finance',
+    relayer: 'https://relayer.garden.finance',
   },
   testnet: {
     baseurl: 'https://testnet.api.garden.finance',
     auth: 'https://testnet.api.garden.finance/auth',
     info: 'https://testnet.api.garden.finance/info',
-    evmRelay: 'https://testnet.api.garden.finance/relayer',
+    relayer: 'https://testnet.api.garden.finance/relayer',
   },
   localnet: {
     baseurl: '',
     auth: '',
     info: '',
-    evmRelay: '',
+    relayer: '',
   },
 } as const;
 

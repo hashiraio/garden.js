@@ -1,7 +1,30 @@
 export { Orderbook } from './lib/orderbook/orderbook';
 export type * from './lib/orderbook/orderbook.types';
 export type * from './lib/asset';
-export * from './lib/constants';
+export {
+  ArbitrumLocalnet,
+  Assets,
+  ETHStarknetLocalnetAsset,
+  EthereumLocalnet,
+  SOLSolanaLocalnetAsset,
+  STRKStarknetLocalnetAsset,
+  StarknetLocalnet,
+  SupportedAssets,
+  WBTCArbitrumLocalnetAsset,
+  WBTCEthereumLocalnetAsset,
+  bitcoinRegtestAsset,
+} from './lib/constants';
 export * from './lib/asset';
-export * from './lib/utils';
-export * from './lib/chainAsset/chainAsset';
+export {
+  isSuiOrderResponse,
+  ConstructUrl,
+  discriminateOrderResponse,
+  getOrderResponseType,
+  isBitcoinOrderResponse,
+  isEvmOrderResponse,
+  isOrder,
+  isSolanaOrderResponse,
+  isStarknetOrderResponse,
+} from './lib/utils';
+export { ChainAsset } from './lib/chainAsset/chainAsset';
+export type { ChainAssetString } from './lib/chainAsset/chainAsset';

@@ -16,18 +16,12 @@ import { switchOrAddNetwork } from '../switchOrAddNetwork';
 import { SwapParams } from './garden.types';
 import { Quote } from '../quote/quote';
 import { EvmRelay } from '../evm/relay/evmRelay';
+import { c } from 'vite/dist/node/types.d-aGj9QkWt';
 
 describe('checking garden initialisation', async () => {
   const config = loadTestConfig();
   const pk = config.EVM_PRIVATE_KEY.replace('0x', '');
-  // const address = '0x52FE8afbbB800a33edcbDB1ea87be2547EB30000';
   const account = privateKeyToAccount(with0x(pk));
-  // const digestKey = new DigestKey(
-  //   '7fb6d160fccb337904f2c630649950cc974a24a2931c3fdd652d3cd43810a857',
-  // );
-  // const authurl = 'https://testnet.api.hashira.io/auth';
-  // const url = 'https://testnet.api.hashira.io/relayer';
-  // const api = 'https://orderbook-stage.hashira.io';
 
   const arbitrumWalletClient = createWalletClient({
     account,
@@ -142,8 +136,11 @@ describe('swap and execute using garden', () => {
       console.log('error while creating order ❌ :', result.error);
       throw new Error(result.error);
     }
+    const orderId = result.val;
 
-    order = result.val;
+    const res = (await garden.orderbook.getOrder(orderId)).val;
+    if (!res) throw new Error('error getting order');
+    order = res;
     console.log('orderCreated and matched ✅ ', order.order_id);
     if (!order) {
       throw new Error('Order id not found');
@@ -222,29 +219,7 @@ describe.only('switch network with http transport', () => {
 
     return { strategy, randomKey };
   };
-  const getAssetByAtomicSwapAddress = (
-    chain: string,
-    atomicSwapAddress: string,
-  ) => {
-    const testnetAssets = SupportedAssets.testnet;
-    const assetEntries = Object.entries(testnetAssets);
 
-    const matchingAssetEntry = assetEntries.find(
-      ([, asset]) =>
-        asset.atomicSwapAddress.toLowerCase() ===
-          atomicSwapAddress.toLowerCase() &&
-        asset.chain === chain.toLowerCase(),
-    );
-
-    if (!matchingAssetEntry) {
-      console.log(
-        `No asset found with china: ${chain} and atomic swap address: ${atomicSwapAddress}`,
-      );
-      return;
-    }
-
-    return matchingAssetEntry[1];
-  };
   const trade = async (garden: Garden) => {
     for (let i = 0; i < 10; i++) {
       const response = await executeStrategy(garden);
@@ -252,36 +227,22 @@ describe.only('switch network with http transport', () => {
         console.log('failed to execute strategy');
         continue;
       }
-      const { randomKey, strategy } = response;
       const quote = await garden.quote.getQuote(
-        randomKey as ChainAsset,
-        randomKey as ChainAsset,
-        Number(strategy.minAmount),
+        ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC),
+        ChainAsset.from(SupportedAssets.testnet.base_sepolia.WBTC),
+        Number('50000'),
         false,
       );
       if (!quote.ok) {
         console.log('Error getting quote', quote.error);
         continue;
       }
-      const [sourceChainAndAsset, destChainAndAsset] = randomKey.split('::');
-      const [sourceChain, sourceAsset] = sourceChainAndAsset.split(':');
-      const [destChain, destAsset] = destChainAndAsset.split(':');
-      if (
-        sourceChain.includes('bitcoin') ||
-        sourceChain.includes('starknet') ||
-        destChain.includes('bitcoin') ||
-        destChain.includes('starknet')
-      ) {
-        console.log('Stopping non-evm trade');
-        continue;
-      }
-      const fromAsset = getAssetByAtomicSwapAddress(sourceChain, sourceAsset)!;
-      const toAsset = getAssetByAtomicSwapAddress(destChain, destAsset)!;
+
       const receiveAmount = quote.val[0].destination.amount;
       const swapData: SwapParams = {
-        fromAsset,
-        toAsset,
-        sendAmount: strategy.minAmount,
+        fromAsset: 'arbitrum_sepolia:wbtc',
+        toAsset: 'base_sepolia:wbtc',
+        sendAmount: '50000',
         receiveAmount,
         additionalData: {},
       };
@@ -292,13 +253,17 @@ describe.only('switch network with http transport', () => {
         continue;
       }
       const matchedOrder = order.val;
-      const initRes = await garden.evmHTLC?.initiate(matchedOrder);
+      const res = await garden.orderbook.getOrder(matchedOrder);
+      if (!res.val) {
+        throw new Error('order not found');
+      }
+      const initRes = await garden.evmHTLC?.initiate(res.val);
       if (initRes?.error) {
         const errorMsg = `Error while initing order: ${initRes.error}`;
         console.log('❌', errorMsg);
         continue;
       }
-      await garden.execute();
+      // await garden.execute();
       console.log('✅ Trade execution completed successfully');
     }
   };

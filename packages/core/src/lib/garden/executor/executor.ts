@@ -39,7 +39,6 @@ export class Executor extends EventBroker<GardenEvents> {
   #cacheManager: GardenCache;
   #auth: IAuth;
   #api: Api;
-  #listenersInitialized: boolean = false;
 
   constructor(
     digestKey: DigestKey,
@@ -59,7 +58,6 @@ export class Executor extends EventBroker<GardenEvents> {
   }
 
   async execute(interval: number = 5000): Promise<() => void> {
-    this.setupEventListeners();
     return await this.#orderbook.subscribeOrders(
       {
         address: this.#digestKey.userId,
@@ -140,30 +138,6 @@ export class Executor extends EventBroker<GardenEvents> {
       },
       interval,
     );
-  }
-
-  private setupEventListeners(): void {
-    if (this.#listenersInitialized) return;
-    this.#listenersInitialized = true;
-
-    this.on('error', (order, error) => {
-      console.error('❌', order.order_id, error);
-    });
-
-    this.on('success', (order, action, result) => {
-      console.log('✅', order.order_id, action, result);
-    });
-
-    this.on('onPendingOrdersChanged', (orders) => {
-      console.log('⏳Pending orders:', orders.length);
-      orders.forEach((order) => {
-        console.log('Order id :', order.order_id, 'status :', order.status);
-      });
-    });
-
-    this.on('rbf', (order, result) => {
-      console.log('RBF:', order.order_id, result);
-    });
   }
 
   private async evmRedeem(order: Order, secret: string): Promise<void> {
@@ -500,7 +474,7 @@ export class Executor extends EventBroker<GardenEvents> {
   private async broadcastRedeemTx(redeemTx: string, orderId: string) {
     try {
       if (!this.#api) return Err('API not found');
-      const url = new Url(this.#api.evmRelay).endpoint('/bitcoin/redeem ');
+      const url = new Url(this.#api.relayer).endpoint('/bitcoin/redeem ');
       const authHeaders = await this.#auth.getAuthHeaders();
       const res = await fetch(url, {
         method: 'POST',
