@@ -36,7 +36,7 @@ export class EvmRelay implements IEVMHTLC {
   private wallet: WalletClient;
 
   constructor(url: string | Url, wallet: WalletClient, auth: IAuth) {
-    this.url = new Url('', url);
+    this.url = new Url(url.toString());
     this.auth = auth;
     this.wallet = wallet;
   }

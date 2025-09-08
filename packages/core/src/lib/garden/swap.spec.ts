@@ -81,9 +81,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   );
 
   const garden = Garden.fromWallets({
-    environment: {
-      network: Network.TESTNET,
-    },
+    environment: Network.TESTNET,
     digestKey: DIGEST_KEY!,
     apiKey: config.API_KEY,
     wallets: {

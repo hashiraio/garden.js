@@ -142,12 +142,6 @@ export interface IGardenJS extends EventBroker<GardenEvents> {
   get orderbook(): IOrderbook;
 
   /**
-   * The block number fetcher.
-   * @readonly
-   */
-  get blockNumberFetcher(): IBlockNumberFetcher;
-
-  /**
    * The secret manager.
    * @readonly
    */

@@ -27,10 +27,6 @@ import {
 } from '@gardenfi/utils';
 import { IQuote } from '../quote/quote.types';
 import { BitcoinHTLC } from '../bitcoin/bitcoinHtlc';
-import {
-  BlockNumberFetcher,
-  IBlockNumberFetcher,
-} from '../blockNumberFetcher/blockNumber';
 import { Api, solanaProgramAddress, SolanaRelayerAddress } from '../constants';
 import { Quote } from '../quote/quote';
 import { SecretManager } from '../secretManager/secretManager';
@@ -62,7 +58,6 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
   private _orderbook: IOrderbook;
   private _quote: IQuote;
   private _auth: IAuth;
-  private _blockNumberFetcher: IBlockNumberFetcher;
   private _evmHTLC: IEVMHTLC | undefined;
   private _starknetHTLC: IStarknetHTLC | undefined;
   private _solanaHTLC: ISolanaHTLC | undefined;
@@ -99,9 +94,6 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
     this._solanaHTLC = config.htlc.solana;
     this._suiHTLC = config.htlc.sui;
     this._btcHTLC = config.htlc.bitcoin;
-    this._blockNumberFetcher =
-      config.blockNumberFetcher ??
-      new BlockNumberFetcher(new Url(this._api.info), this.network);
     this._executor = this._digestKey
       ? new Executor(
           this._digestKey,
@@ -277,10 +269,6 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
     return this._orderbook;
   }
 
-  get blockNumberFetcher() {
-    return this._blockNumberFetcher;
-  }
-
   get secretManager() {
     if (this.redeemServiceEnabled || !this._secretManager)
       throw new Error('Secret manager is not available');
@@ -357,7 +345,6 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
       affiliate_fees: withDefaultAffiliateFees(params.affiliateFee),
       slippage: 50,
     };
-    // console.log('req', JSON.stringify(orderRequest, null, 2));
     const createOrderRes = await this._orderbook.createOrder(
       orderRequest,
       this._auth,
