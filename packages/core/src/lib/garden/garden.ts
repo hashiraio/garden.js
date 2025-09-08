@@ -102,19 +102,21 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
     this._blockNumberFetcher =
       config.blockNumberFetcher ??
       new BlockNumberFetcher(new Url(this._api.info), this.network);
-    this._executor = new Executor(
-      this._digestKey!,
-      {
-        evm: this._evmHTLC,
-        starknet: this._starknetHTLC,
-        solana: this._solanaHTLC,
-        sui: this._suiHTLC,
-        bitcoin: this._btcHTLC,
-      },
-      this._orderbook,
-      this._auth,
-      this._api,
-    );
+    this._executor = this._digestKey
+      ? new Executor(
+          this._digestKey,
+          {
+            evm: this._evmHTLC,
+            starknet: this._starknetHTLC,
+            solana: this._solanaHTLC,
+            sui: this._suiHTLC,
+            bitcoin: this._btcHTLC,
+          },
+          this._orderbook,
+          this._auth,
+          this._api,
+        )
+      : undefined;
   }
 
   /**

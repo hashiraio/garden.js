@@ -6,6 +6,10 @@ import {
   Fetcher,
   trim0x,
   waitForTransactionReceipt,
+  APIResponse,
+  IAuth,
+  Url,
+  with0x,
 } from '@gardenfi/utils';
 import { WalletClient, createPublicClient, getContract, http } from 'viem';
 import {
@@ -16,7 +20,6 @@ import {
   isEvmOrderResponse,
   EvmChain,
 } from '@gardenfi/orderbook';
-import { APIResponse, IAuth, Url, with0x } from '@gardenfi/utils';
 import { AtomicSwapABI } from '../abi/atomicSwap';
 import { IEVMHTLC } from '../htlc.types';
 import {
