@@ -4,7 +4,7 @@ import SwapWidget from './SwapWidget';
 
 type Props = React.ComponentProps<typeof GardenProvider>;
 
-export const Garden: React.FC<Props> = ({ ...providerProps }) => {
+const GardenComponent: React.FC<Props> = ({ ...providerProps }) => {
   return (
     <GardenProvider {...providerProps}>
       <SwapWidget />
@@ -12,4 +12,4 @@ export const Garden: React.FC<Props> = ({ ...providerProps }) => {
   );
 };
 
-export { useGarden };
+export { useGarden, GardenComponent };

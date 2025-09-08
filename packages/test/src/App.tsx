@@ -2,7 +2,7 @@ import { GardenProvider } from '@gardenfi/react-hooks';
 import { Environment } from '@gardenfi/utils';
 import { useWalletClient } from 'wagmi';
 import { Swap } from './components/Swap';
-import { useGarden, Garden } from '@gardenfi/swap';
+import { GardenComponent } from '@gardenfi/swap';
 
 function App() {
   const { data: walletClient } = useWalletClient();
@@ -19,14 +19,12 @@ function App() {
         },
       }}
     >
-      <Garden
+      <GardenComponent
         config={{
           environment: Environment.TESTNET,
           wallets: {},
         }}
-      >
-        <Swap />
-      </Garden>
+      />
     </GardenProvider>
   );
 }
