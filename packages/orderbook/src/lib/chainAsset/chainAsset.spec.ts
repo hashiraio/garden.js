@@ -20,6 +20,6 @@ describe('ChainAsset', () => {
       SupportedAssets.testnet.base_sepolia.WBTC,
     );
     console.log('chainAsset :', chainAsset);
-    expect(chainAsset).toBe('base_sepolia:wbtc');
+    expect(chainAsset.toString()).toBe('base_sepolia:wbtc');
   });
 });

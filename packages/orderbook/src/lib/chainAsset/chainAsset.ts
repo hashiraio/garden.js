@@ -16,15 +16,19 @@ export class ChainAsset extends String {
     const formatted =
       `${chain.toLowerCase()}:${symbol.toLowerCase()}` as ChainAssetString;
     super(formatted);
+
+    // guard for broken transpilers/bundlers that don't preserve subclassing of builtins
+    if (Object.setPrototypeOf) {
+      Object.setPrototypeOf(this, new.target.prototype);
+    }
   }
 
-  static from(asset: Asset | ChainAssetString | ChainAsset): ChainAsset {
-    if (asset instanceof ChainAsset) {
-      return asset;
-    }
-    if (typeof asset === 'string') {
-      return ChainAsset.fromString(asset);
-    }
+  /* ---------------- factories ---------------- */
+  static from(
+    asset: Asset | ChainAssetString | ChainAsset | string,
+  ): ChainAsset {
+    if (asset instanceof ChainAsset) return asset;
+    if (typeof asset === 'string') return ChainAsset.fromString(asset);
     return ChainAsset.fromAsset(asset);
   }
 
@@ -32,12 +36,11 @@ export class ChainAsset extends String {
     return new ChainAsset(chain, symbol);
   }
 
-  static fromString(formatted: ChainAssetString): ChainAsset {
+  static fromString(formatted: ChainAssetString | string): ChainAsset {
     const [chain, symbol] = formatted.split(':');
     if (!(chain in Chains)) {
       throw new Error(`Invalid chain in asset string: ${chain}`);
     }
-
     return new ChainAsset(chain as Chain, symbol);
   }
 
@@ -45,6 +48,7 @@ export class ChainAsset extends String {
     return new ChainAsset(asset.chain, asset.symbol);
   }
 
+  /* ---------------- getters (use inherited string content) ---------------- */
   getChain(): Chain {
     return this.toString().split(':')[0] as Chain;
   }
@@ -67,17 +71,29 @@ export class ChainAsset extends String {
     ][this.getSymbol()];
   }
 
-  override toString() {
-    return super.toString();
+  /* ---------------- ensure primitive-like behavior ---------------- */
+
+  // Return primitive string for toString()
+  override toString(): string {
+    // call String.prototype.toString so it works with boxed internals reliably
+    return String.prototype.toString.call(this);
   }
 
-  // For clean console.log output
-  [Symbol.for('nodejs.util.inspect.custom')]() {
+  override valueOf(): string {
+    return String.prototype.valueOf.call(this);
+  }
+
+  toJSON(): string {
     return this.toString();
   }
 
-  // For JSON serialization (API calls, etc.)
-  toJSON() {
+  // ensure template literals / String(...) / + coercion behave like string
+  [Symbol.toPrimitive](_hint: 'string' | 'number' | 'default') {
+    if (_hint === 'number') return NaN;
+    return this.toString();
+  }
+
+  [Symbol.for('nodejs.util.inspect.custom')]() {
     return this.toString();
   }
 }
