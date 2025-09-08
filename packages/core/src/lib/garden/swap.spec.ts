@@ -91,12 +91,46 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
       bitcoin: bitcoinWallet,
       sui: suiSigner,
     },
-  });
+  }).setRedeemServiceEnabled(false);
+
+  const setupEventListeners = (garden: Garden) => {
+    garden.executor?.on('error', (order, error) => {
+      console.log(
+        'error while executing ❌, orderId :',
+        order.order_id,
+        'error :',
+        error,
+      );
+    });
+    garden.executor?.on('success', (order, action, result) => {
+      console.log(
+        'executed ✅, orderId :',
+        order.order_id,
+        'action :',
+        action,
+        'result :',
+        result,
+      );
+    });
+    garden.executor?.on('log', (id, message) => {
+      console.log('log :', id, message);
+    });
+    garden.executor?.on('onPendingOrdersChanged', (orders) => {
+      console.log('pending orders :', orders.length);
+      orders.forEach((order) => {
+        console.log('pending order :', order.order_id);
+      });
+    });
+    garden.executor?.on('rbf', (order, result) => {
+      console.log('rbf :', order.order_id, result);
+    });
+  };
 
   // let matchedOrder: Order;
 
   describe.only('Should perform a swap', async () => {
     it('should create and execute a swap', async () => {
+      setupEventListeners(garden);
       const from = ChainAsset.from(
         SupportedAssets.testnet.ethereum_sepolia.WBTC,
       );

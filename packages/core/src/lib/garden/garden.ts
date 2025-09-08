@@ -284,6 +284,10 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
     return this._digestKey;
   }
 
+  get executor() {
+    return this._executor;
+  }
+
   /**
    * Executes a swap operation by creating and polling an order, and optionally initiating the HTLC
    * on the appropriate chain. Handles all error cases robustly and ensures proper flow.

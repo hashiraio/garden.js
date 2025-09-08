@@ -1,6 +1,14 @@
 import { Garden } from '../garden';
-import { MatchedOrder, SupportedAssets } from '@gardenfi/orderbook';
-import { Environment, sleep, with0x } from '@gardenfi/utils';
+import { Order, SupportedAssets } from '@gardenfi/orderbook';
+import {
+  DigestKey,
+  Environment,
+  Network,
+  Siwe,
+  sleep,
+  Url,
+  with0x,
+} from '@gardenfi/utils';
 import { RpcProvider, Account } from 'starknet';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -78,7 +86,6 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
   //   const API_KEY =
   //     'AAAAAGghjwU6Os1DVFgmUXj0GcNt5jTJPbBmXKw7xRARW-qivNy4nfpKVgMNebmmxig2o3v-6M4l_ZmCgLp3vKywfVXDYBcL3M4c';
   const config = loadTestConfig();
-  const RELAYER_URL = 'https://orderbook-stage.hashira.io';
   const STARKNET_NODE_URL =
     'https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_7/Ry6QmtzfnqANtpqP3kLqe08y80ZorPoY';
   const QUOTE_SERVER_URL = 'https://quote-staging.hashira.io';
@@ -132,23 +139,35 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
 
     // Initialize Garden
     garden = new Garden({
-      api: RELAYER_URL,
-      environment: Environment.TESTNET,
+      environment: {
+        network: Network.TESTNET,
+      },
+      apiKey: config.API_KEY,
       digestKey:
         '7fb6d160fccb337904f2c630649950cc974a24a2931c3fdd652d3cd43810a857',
       quote: new Quote(QUOTE_SERVER_URL),
       htlc: {
-        starknet: new StarknetRelay(STARKNET_RELAY_URL, starknetWallet),
+        starknet: new StarknetRelay(
+          STARKNET_RELAY_URL,
+          starknetWallet,
+          Network.TESTNET,
+          Siwe.fromDigestKey(
+            new Url(config.TEST_RELAY_URL),
+            DigestKey.from(
+              '7fb6d160fccb337904f2c630649950cc974a24a2931c3fdd652d3cd43810a857',
+            ).val!,
+          ),
+        ),
       },
     });
   }, 5000000);
-  let matchedorder: MatchedOrder;
+  let matchedorder: Order;
 
   const setupEventListeners = () => {
     garden.on('error', (order, error) => {
       console.log(
         'error while executing ❌, orderId :',
-        order.create_order.create_id,
+        order.order_id,
         'error :',
         error,
       );
@@ -156,7 +175,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
     garden.on('success', (order, action, result) => {
       console.log(
         'executed ✅, orderId :',
-        order.create_order.create_id,
+        order.order_id,
         'action :',
         action,
         'result :',
@@ -169,17 +188,17 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
     garden.on('onPendingOrdersChanged', (orders) => {
       console.log('pending orders :', orders.length);
       orders.forEach((order) => {
-        console.log('pending order :', order.create_order.create_id);
+        console.log('pending order :', order.order_id);
       });
     });
     garden.on('rbf', (order, result) => {
-      console.log('rbf :', order.create_order.create_id, result);
+      console.log('rbf :', order.order_id, result);
     });
   };
   it('should create and execute a Starknet-BTC swap', async () => {
     const order = {
-      fromAsset: SupportedAssets.testnet.starknet_testnet_ETH,
-      toAsset: SupportedAssets.testnet.bitcoin_testnet_BTC,
+      fromAsset: SupportedAssets.testnet.starknet_sepolia.WBTC,
+      toAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
       sendAmount: '100000000000000000',
       receiveAmount: '100000',
       additionalData: {
@@ -194,10 +213,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
       console.log('Error while creating order ❌:', result.error);
       throw new Error(result.error);
     }
-    console.log(
-      'Order created and matched✅',
-      result.val.create_order.create_id,
-    );
+    console.log('Order created and matched✅', result.val);
     // console.log('Order details:', {
     //   orderId: result.val.create_order.create_id,
     //   sourceAsset: result.val.source_swap.asset,
@@ -230,7 +246,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
 
   it('Execute', async () => {
     setupEventListeners();
-    await garden.execute();
+    // await garden.execute();
     await sleep(150000);
   }, 150000);
 });

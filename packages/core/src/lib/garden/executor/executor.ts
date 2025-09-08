@@ -39,7 +39,6 @@ export class Executor extends EventBroker<GardenEvents> {
   #cacheManager: GardenCache;
   #auth: IAuth;
   #api: Api;
-
   constructor(
     digestKey: DigestKey,
     htlcs: GardenHTLCModules,
