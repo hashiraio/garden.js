@@ -793,4 +793,8 @@ export class BitcoinHTLC implements IBitcoinHTLC {
   getPublicKey(): Promise<string> {
     return this.signer.getPublicKey();
   }
+
+  htlcActorAddress(): Promise<string> {
+    return this.signer.getAddress();
+  }
 }

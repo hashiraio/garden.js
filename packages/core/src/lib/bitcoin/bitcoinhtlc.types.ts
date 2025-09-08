@@ -57,4 +57,9 @@ export interface IBitcoinHTLC {
    * @returns A promise resolving to the public key.
    */
   getPublicKey(): Promise<string>;
+  /**
+   * Returns the HTLC actor address.
+   * This is the user's wallet address in the case of EVM.
+   */
+  htlcActorAddress(): Promise<string>;
 }
