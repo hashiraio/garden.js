@@ -135,7 +135,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         SupportedAssets.testnet.arbitrum_sepolia.WBTC,
       );
 
-      const to = ChainAsset.from(SupportedAssets.testnet.ethereum_sepolia.USDC);
+      const to = ChainAsset.from(SupportedAssets.testnet.starknet_sepolia.WBTC);
       const sendAmount = 50000;
       const quote = await garden.quote.getQuote(
         from,

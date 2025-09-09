@@ -90,17 +90,49 @@ export class Executor extends EventBroker<GardenEvents> {
       addresses.push(this.#digestKey.userId.toLowerCase());
     }
 
-    const addressToOrders = new Map<string, Order[]>();
     let isProcessing = false;
+    let intervalId: NodeJS.Timeout | null = null;
 
-    const processOrders = async () => {
+    const fetchAndProcessOrders = async () => {
       if (isProcessing) return; // Prevent concurrent processing
       isProcessing = true;
 
       try {
+        // Fetch orders from all addresses in parallel
+        const orderPromises = addresses.map(async (address) => {
+          try {
+            const result = await this.#orderbook.getOrders({
+              address,
+              status: OrderLifecycle.pending,
+              per_page: 500,
+            });
+
+            if (result.ok) {
+              return result.val.data;
+            } else {
+              this.emit(
+                'error',
+                {} as Order,
+                `Failed to fetch orders for address ${address}: ${result.error}`,
+              );
+              return [];
+            }
+          } catch (error) {
+            this.emit(
+              'error',
+              {} as Order,
+              `Failed to fetch orders for address ${address}: ${error}`,
+            );
+            return [];
+          }
+        });
+
+        // Wait for all order fetches to complete
+        const allOrdersArrays = await Promise.all(orderPromises);
+
         // Merge and deduplicate orders from all addresses
         const mergedOrdersById = new Map<string, Order>();
-        for (const orders of addressToOrders.values()) {
+        for (const orders of allOrdersArrays) {
           for (const order of orders) {
             mergedOrdersById.set(order.order_id, order);
           }
@@ -120,44 +152,16 @@ export class Executor extends EventBroker<GardenEvents> {
       }
     };
 
-    const unsubscribeFns: Array<() => void> = [];
+    // Initial fetch
+    await fetchAndProcessOrders();
 
-    // Set up subscriptions sequentially to avoid race conditions
-    for (const address of addresses) {
-      try {
-        const unsubscribe = await this.#orderbook.subscribeOrders(
-          {
-            address,
-            status: OrderLifecycle.pending,
-            per_page: 500,
-          },
-          async (pendingOrders) => {
-            addressToOrders.set(address, pendingOrders.data);
-            await processOrders();
-          },
-          interval,
-        );
-
-        if (typeof unsubscribe === 'function') {
-          unsubscribeFns.push(unsubscribe);
-        }
-      } catch (error) {
-        this.emit(
-          'error',
-          {} as Order,
-          `Failed to subscribe to orders for address ${address}: ${error}`,
-        );
-      }
-    }
+    // Set up interval for periodic fetching
+    intervalId = setInterval(fetchAndProcessOrders, interval);
 
     return () => {
-      unsubscribeFns.forEach((unsub) => {
-        try {
-          unsub();
-        } catch {
-          // ignore cleanup errors
-        }
-      });
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }
 
@@ -173,7 +177,8 @@ export class Executor extends EventBroker<GardenEvents> {
       OrderStatus.Expired,
     ]);
 
-    for (const order of orders) {
+    // Process orders in parallel
+    const orderPromises = orders.map(async (order) => {
       try {
         // Handle Bitcoin refund SACP
         if (
@@ -181,8 +186,8 @@ export class Executor extends EventBroker<GardenEvents> {
           bitcoinRefundStatuses.has(order.status) &&
           !isCompleted(order)
         ) {
-          // await this.postRefundSACP(order);
-          this.emit('log', order.order_id, 'skipping postRefundSACP');
+          await this.postRefundSACP(order);
+          // this.emit('log', order.order_id, 'skipping postRefundSACP');
         }
 
         const orderAction = parseAction(order);
@@ -198,7 +203,10 @@ export class Executor extends EventBroker<GardenEvents> {
           `Error processing order ${order.order_id}: ${error}`,
         );
       }
-    }
+    });
+
+    // Wait for all order processing to complete
+    await Promise.all(orderPromises);
   }
 
   private async handleRedeemAction(order: Order): Promise<void> {
