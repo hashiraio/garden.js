@@ -7,13 +7,7 @@ import {
   Order,
 } from '@gardenfi/orderbook';
 import { OrderAction, OrderStatus } from '../orderStatus/orderStatus';
-import {
-  ApiKey,
-  AsyncResult,
-  EventBroker,
-  IAuth,
-  Network,
-} from '@gardenfi/utils';
+import { ApiKey, AsyncResult, IAuth, Network } from '@gardenfi/utils';
 import { ISecretManager } from '../secretManager/secretManager.types';
 import { IQuote } from '../quote/quote.types';
 import { IBlockNumberFetcher } from '../blockNumberFetcher/blockNumber';
@@ -93,36 +87,6 @@ export interface IGardenJS extends IOrderbook {
    */
   createSwap(params: SwapParams): AsyncResult<string, string>;
 
-  // /**
-  //  * Execute an action.
-  //  * @returns {Promise<() => void>} A promise that resolves to a function to cancel the execution.
-  //  */
-  // execute(): Promise<() => void>;
-
-  /**
-   * The EVM relay.
-   * @readonly
-   */
-  get evmHTLC(): IEVMHTLC | undefined;
-
-  /**
-   * The Starknet relay.
-   * @readonly
-   */
-  get starknetHTLC(): IStarknetHTLC | undefined;
-
-  /**
-   * The Solana relay.
-   * @readonly
-   */
-  get solanaHTLC(): ISolanaHTLC | undefined;
-
-  /**
-   * The Sui relay.
-   * @readonly
-   */
-  get suiHTLC(): ISuiHTLC | undefined;
-
   /**
    * The current quote.
    * @readonly
@@ -130,10 +94,10 @@ export interface IGardenJS extends IOrderbook {
   get quote(): IQuote;
 
   /**
-   * The BTC wallet.
+   * All HTLC modules at once.
    * @readonly
    */
-  get btcHTLC(): IBitcoinHTLC | undefined;
+  get htlcs(): GardenHTLCModules;
 
   /**
    * The orderbook.

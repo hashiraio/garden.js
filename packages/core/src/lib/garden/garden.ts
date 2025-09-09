@@ -91,19 +91,7 @@ export class Garden extends Orderbook implements IGardenJS {
     this._suiHTLC = config.htlc.sui;
     this._btcHTLC = config.htlc.bitcoin;
     this._executor = this._digestKey
-      ? new Executor(
-          this._digestKey,
-          {
-            evm: this._evmHTLC,
-            starknet: this._starknetHTLC,
-            solana: this._solanaHTLC,
-            sui: this._suiHTLC,
-            bitcoin: this._btcHTLC,
-          },
-          this,
-          this._auth,
-          this._api,
-        )
+      ? new Executor(this._digestKey, this.htlcs, this, this._auth, this._api)
       : undefined;
   }
 
@@ -237,24 +225,14 @@ export class Garden extends Orderbook implements IGardenJS {
     });
   }
 
-  get evmHTLC() {
-    return this._evmHTLC;
-  }
-
-  get starknetHTLC() {
-    return this._starknetHTLC;
-  }
-
-  get solanaHTLC() {
-    return this._solanaHTLC;
-  }
-
-  get suiHTLC() {
-    return this._suiHTLC;
-  }
-
-  get btcHTLC() {
-    return this._btcHTLC;
+  get htlcs() {
+    return {
+      evm: this._evmHTLC,
+      starknet: this._starknetHTLC,
+      solana: this._solanaHTLC,
+      sui: this._suiHTLC,
+      bitcoin: this._btcHTLC,
+    } as const;
   }
 
   get quote() {
