@@ -88,6 +88,42 @@ export class Executor {
     return Array.from(addressSet);
   }
 
+  startBackgroundService(
+    interval: number = 5000,
+    redeemServiceEnabled: boolean,
+  ): void {
+    if (this.isBackgroundServiceRunning || this.executorStop) {
+      return;
+    }
+
+    this.isBackgroundServiceRunning = true;
+    (async () => {
+      try {
+        if (redeemServiceEnabled) {
+          this.stopBackgroundService();
+          return;
+        }
+        const stop = await this.execute(interval);
+        if (stop) this.executorStop = stop;
+      } catch (error) {
+        console.error('Error starting background executor:', error);
+        this.isBackgroundServiceRunning = false;
+      }
+    })();
+  }
+
+  stopBackgroundService(): void {
+    if (this.executorStop) {
+      try {
+        this.executorStop();
+      } catch {
+        console.error('Error stopping background executor');
+      }
+      this.executorStop = null;
+    }
+    this.isBackgroundServiceRunning = false;
+  }
+
   async execute(interval: number = 5000): Promise<() => void> {
     const addresses = await this.getAddressesFromHTLCs();
     if (addresses.length === 0) {

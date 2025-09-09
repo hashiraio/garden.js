@@ -81,8 +81,6 @@ export class Garden extends Orderbook implements IGardenJS {
   private _digestKey: DigestKey | undefined;
 
   private executeInterval: number = 5000;
-  private isBackgroundServiceRunning: boolean = false;
-  private executorStop: (() => void) | null = null;
 
   constructor(config: GardenConfigWithHTLCs) {
     const { api, network } = resolveApiConfig(config.environment);
@@ -118,7 +116,7 @@ export class Garden extends Orderbook implements IGardenJS {
     this.redeemServiceEnabled = enabled;
 
     if (enabled) {
-      this.stopBackgroundService();
+      this._executor?.stopBackgroundService();
     } else {
       if (!this._digestKey) {
         throw new Error('Digest key is required for manual secret management');
@@ -135,42 +133,12 @@ export class Garden extends Orderbook implements IGardenJS {
           getBitcoinNetwork(getBitcoinNetworkFromEnvironment(this.network)),
         );
       }
-      this.startBackgroundService();
+      this._executor?.startBackgroundService(
+        this.executeInterval,
+        this.redeemServiceEnabled,
+      );
     }
     return this;
-  }
-
-  private startBackgroundService(): void {
-    if (this.isBackgroundServiceRunning || this.executorStop) {
-      return;
-    }
-
-    this.isBackgroundServiceRunning = true;
-    (async () => {
-      try {
-        if (this.redeemServiceEnabled) {
-          this.stopBackgroundService();
-          return;
-        }
-        const stop = await this._executor?.execute(this.executeInterval);
-        if (stop) this.executorStop = stop;
-      } catch (error) {
-        console.error('Error starting background executor:', error);
-        this.isBackgroundServiceRunning = false;
-      }
-    })();
-  }
-
-  private stopBackgroundService(): void {
-    if (this.executorStop) {
-      try {
-        this.executorStop();
-      } catch {
-        console.error('Error stopping background executor');
-      }
-      this.executorStop = null;
-    }
-    this.isBackgroundServiceRunning = false;
   }
 
   static fromWallets(config: GardenConfigWithWallets) {
