@@ -85,7 +85,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     digestKey: DIGEST_KEY!,
     apiKey: config.API_KEY,
     wallets: {
-      evm: evmWallet,
+      // evm: evmWallet,
       starknet: starknetWallet,
       solana: userProvider,
       bitcoin: bitcoinWallet,
@@ -94,7 +94,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   }).setRedeemServiceEnabled(false);
 
   const setupEventListeners = (garden: Garden) => {
-    garden.executor?.on('error', (order, error) => {
+    garden?.on('error', (order, error) => {
       console.log(
         'error while executing ❌, orderId :',
         order.order_id,
@@ -102,7 +102,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         error,
       );
     });
-    garden.executor?.on('success', (order, action, result) => {
+    garden?.on('success', (order, action, result) => {
       console.log(
         'executed ✅, orderId :',
         order.order_id,
@@ -112,16 +112,16 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         result,
       );
     });
-    garden.executor?.on('log', (id, message) => {
+    garden?.on('log', (id, message) => {
       console.log('log :', id, message);
     });
-    garden.executor?.on('onPendingOrdersChanged', (orders) => {
+    garden?.on('onPendingOrdersChanged', (orders) => {
       console.log('pending orders :', orders.length);
       orders.forEach((order) => {
         console.log('pending order :', order.order_id);
       });
     });
-    garden.executor?.on('rbf', (order, result) => {
+    garden?.on('rbf', (order, result) => {
       console.log('rbf :', order.order_id, result);
     });
   };
@@ -135,7 +135,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         SupportedAssets.testnet.starknet_sepolia.WBTC,
       );
 
-      const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
+      const to = ChainAsset.from(SupportedAssets.testnet.sui_testnet.SUI);
       const sendAmount = 50000;
       const quote = await garden.quote.getQuote(
         from,

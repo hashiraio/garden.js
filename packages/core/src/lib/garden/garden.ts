@@ -5,6 +5,8 @@ import {
   GardenConfigWithHTLCs,
   GardenConfigWithWallets,
   GardenHTLCModules,
+  GardenEventSink,
+  GardenEvents,
 } from './garden.types';
 import {
   BlockchainType,
@@ -24,6 +26,7 @@ import {
   AsyncResult,
   Ok,
   hasKeys,
+  EventBroker,
 } from '@gardenfi/utils';
 import { IQuote } from '../quote/quote.types';
 import { BitcoinHTLC } from '../bitcoin/bitcoinHtlc';
@@ -49,6 +52,18 @@ import { getBitcoinNetwork } from '../bitcoin/utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
 
+class GardenEventBus
+  extends EventBroker<GardenEvents>
+  implements GardenEventSink
+{
+  public override emit<K extends keyof GardenEvents>(
+    event: K,
+    ...args: Parameters<GardenEvents[K]>
+  ) {
+    super.emit(event, ...args);
+  }
+}
+
 export class Garden extends Orderbook implements IGardenJS {
   private network: Network;
   private _quote: IQuote;
@@ -56,6 +71,7 @@ export class Garden extends Orderbook implements IGardenJS {
   private _htlcs: GardenHTLCModules;
   private _api: Api | undefined;
   private _executor: Executor | undefined;
+  private _events: GardenEventBus;
 
   /**
    * If true, the redeem service will be enabled.
@@ -77,8 +93,16 @@ export class Garden extends Orderbook implements IGardenJS {
     this._auth = resolveApiKey(config.apiKey);
     this._quote = config.quote ?? new Quote(this._api.baseurl);
     this._htlcs = config.htlc;
+    this._events = new GardenEventBus();
     this._executor = this._digestKey
-      ? new Executor(this._digestKey, this.htlcs, this, this._auth, this._api)
+      ? new Executor(
+          this._digestKey,
+          this.htlcs,
+          this,
+          this._auth,
+          this._api,
+          this._events,
+        )
       : undefined;
   }
 
@@ -467,5 +491,15 @@ export class Garden extends Orderbook implements IGardenJS {
       default:
         return Err('Unsupported chain');
     }
+  }
+
+  on<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]) {
+    this._events.on(event, listener);
+    return this;
+  }
+
+  off<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]) {
+    this._events.off(event, listener);
+    return this;
   }
 }
