@@ -360,7 +360,7 @@ export class Garden extends Orderbook implements IGardenJS {
       secretHash = secrets.val.secretHash;
     }
 
-    const { btcAddress } = params.additionalData || {};
+    const btcAddress = params.addresses?.Bitcoin;
 
     const isSourceBitcoin = isBitcoin(
       ChainAsset.from(params.fromAsset).getChain(),
@@ -432,7 +432,7 @@ export class Garden extends Orderbook implements IGardenJS {
       isBitcoin(ChainAsset.from(params.fromAsset).getChain()) ||
       isBitcoin(ChainAsset.from(params.toAsset).getChain())
     ) {
-      if (!params.additionalData.btcAddress)
+      if (!params.addresses?.Bitcoin)
         return Err(
           'btcAddress in additionalData is required if source or destination chain is bitcoin, it is used as refund or redeem address.',
         );

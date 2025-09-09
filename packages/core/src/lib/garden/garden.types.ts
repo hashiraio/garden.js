@@ -1,6 +1,7 @@
 import {
   AffiliateFee,
   Asset,
+  BlockchainType,
   ChainAsset,
   ChainAssetString,
   IOrderbook,
@@ -48,14 +49,9 @@ export type SwapParams = {
    */
   slippage?: number;
   /**
-   * Additional data for the order.
+   * Addresses for the order.
    */
-  additionalData: {
-    /**
-     * Provide btcAddress if the destination or source chain is bitcoin. This address is used as refund address if source chain is bitcoin, and as redeem address if destination chain is bitcoin.
-     */
-    btcAddress?: string;
-  };
+  addresses?: Partial<Record<BlockchainType, string>>;
   /**
    * Integrator fee for the order.
    */
