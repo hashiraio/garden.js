@@ -4,7 +4,6 @@ import {
   SwapParams,
   GardenConfigWithHTLCs,
   GardenConfigWithWallets,
-  GardenEvents,
 } from './garden.types';
 import {
   BlockchainType,
@@ -24,7 +23,7 @@ import {
   Err,
   AsyncResult,
   Ok,
-  EventBroker,
+  hasKeys,
 } from '@gardenfi/utils';
 import { IQuote } from '../quote/quote.types';
 import { BitcoinHTLC } from '../bitcoin/bitcoinHtlc';
@@ -54,9 +53,8 @@ import { getBitcoinNetwork } from '../bitcoin/utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
 
-export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
+export class Garden extends Orderbook implements IGardenJS {
   private network: Network;
-  private _orderbook: IOrderbook;
   private _quote: IQuote;
   private _auth: IAuth;
   private _evmHTLC: IEVMHTLC | undefined;
@@ -79,16 +77,13 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
   private executorStop: (() => void) | null = null;
 
   constructor(config: GardenConfigWithHTLCs) {
-    super();
     const { api, network } = resolveApiConfig(config.environment);
+    super(new Url(api.baseurl));
     this.network = network;
     this._api = api;
     this._digestKey = resolveDigestKey(config.digestKey);
     this._auth = resolveApiKey(config.apiKey);
     this._quote = config.quote ?? new Quote(this._api.baseurl);
-
-    this._orderbook =
-      config.orderbook ?? new Orderbook(new Url(this._api.baseurl));
 
     this._evmHTLC = config.htlc.evm;
     this._starknetHTLC = config.htlc.starknet;
@@ -105,7 +100,7 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
             sui: this._suiHTLC,
             bitcoin: this._btcHTLC,
           },
-          this._orderbook,
+          this,
           this._auth,
           this._api,
         )
@@ -258,16 +253,16 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
     return this._suiHTLC;
   }
 
-  get quote() {
-    return this._quote;
-  }
-
   get btcHTLC() {
     return this._btcHTLC;
   }
 
+  get quote() {
+    return this._quote;
+  }
+
   get orderbook() {
-    return this._orderbook;
+    return this as unknown as IOrderbook;
   }
 
   get secretManager() {
@@ -290,23 +285,11 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
   }
 
   /**
-   * Creates an order for a swap operation and returns the order response.
-   * Does not initiate the HTLC on the source chain.
-   * @param params SwapParams
-   * @returns AsyncResult<Order, string>
-   */
-  async swap(params: SwapParams): AsyncResult<string, string> {
-    const createOrderRes = await this.createOrder(params);
-    if (!createOrderRes.ok) return Err(createOrderRes.error);
-    return Ok(createOrderRes.val);
-  }
-
-  /**
    * Creates an order for a swap operation and initiates the HTLC on the source chain.
    * @param params SwapParams
    * @returns AsyncResult<Order, string>
    */
-  async swapAndInitiate(params: SwapParams): AsyncResult<string, string> {
+  async createSwap(params: SwapParams): AsyncResult<string, string> {
     const createOrderRes = await this.createOrder(params);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
@@ -374,11 +357,17 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
   }
 
   /**
-   * Private helper to create an order for a swap operation.
-   * @param params SwapParams
-   * @returns AsyncResult<Order, string>
+   * Create an order
    */
-  private async createOrder(params: SwapParams): AsyncResult<any, string> {
+  override async createOrder(
+    arg: CreateOrderRequest | SwapParams,
+    auth?: IAuth,
+  ): AsyncResult<any, string> {
+    if (hasKeys(arg, ['source', 'destination', 'nonce'])) {
+      return super.createOrder(arg as CreateOrderRequest, auth ?? this._auth);
+    }
+
+    const params = arg as SwapParams;
     const validation = await this.validateAndFillParams(params);
     if (!validation.ok) return Err(validation.error);
 
@@ -434,10 +423,7 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
       slippage: 50,
     };
 
-    const createOrderRes = await this._orderbook.createOrder(
-      orderRequest,
-      this._auth,
-    );
+    const createOrderRes = await super.createOrder(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
     return Ok(createOrderRes.val);

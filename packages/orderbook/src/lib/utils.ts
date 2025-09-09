@@ -1,4 +1,4 @@
-import { Url } from '@gardenfi/utils';
+import { hasKeys, Url } from '@gardenfi/utils';
 import {
   BaseCreateOrderResponse,
   CreateOrderResponse,
@@ -35,9 +35,6 @@ export const ConstructUrl = (
   }
   return url;
 };
-
-const hasKeys = (obj: any, keys: string[]) =>
-  obj && typeof obj === 'object' && keys.every((k) => k in obj);
 
 type OrderResponseTypeGuard<T> = (response: any) => response is T;
 

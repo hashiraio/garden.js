@@ -85,20 +85,13 @@ export type EventCallback = (...args: any[]) => void;
 /**
  * Interface representing the GardenJS library.
  */
-export interface IGardenJS extends EventBroker<GardenEvents> {
+export interface IGardenJS extends IOrderbook {
   /**
    * Create Order
    * @param {SwapParams} params - The parameters for creating the order.
    * @returns {AsyncResult<string, string>} The result of the swap operation.
    */
-  swap(params: SwapParams): AsyncResult<string, string>;
-
-  /**
-   * Create Order and Initiate HTLC
-   * @param {SwapParams} params - The parameters for creating the order.
-   * @returns {AsyncResult<string, string>} The result of the swap operation.
-   */
-  swapAndInitiate(params: SwapParams): AsyncResult<string, string>;
+  createSwap(params: SwapParams): AsyncResult<string, string>;
 
   // /**
   //  * Execute an action.
