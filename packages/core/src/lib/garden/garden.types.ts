@@ -1,7 +1,6 @@
 import {
   AffiliateFee,
   Asset,
-  BlockchainType,
   ChainAsset,
   ChainAssetString,
   IOrderbook,
