@@ -5,7 +5,7 @@ import {
   GardenConfigWithHTLCs,
   GardenConfigWithWallets,
   GardenHTLCModules,
-  GardenEventSink,
+  GardenEventEmitter,
   GardenEvents,
 } from './garden.types';
 import {
@@ -54,7 +54,7 @@ import { BitcoinProvider } from '../bitcoin/provider/provider';
 
 class GardenEventBus
   extends EventBroker<GardenEvents>
-  implements GardenEventSink
+  implements GardenEventEmitter
 {
   public override emit<K extends keyof GardenEvents>(
     event: K,

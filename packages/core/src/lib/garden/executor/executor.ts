@@ -9,7 +9,7 @@ import {
   trim0x,
   Url,
 } from '@gardenfi/utils';
-import { GardenEventSink, GardenHTLCModules } from './../garden.types';
+import { GardenEventEmitter, GardenHTLCModules } from './../garden.types';
 
 import {
   BlockchainType,
@@ -33,20 +33,22 @@ import { Api } from '../../constants';
 
 export class Executor {
   private htlcs: GardenHTLCModules;
-  private events: GardenEventSink;
+  private events: GardenEventEmitter;
   #digestKey: DigestKey;
   #orderbook: IOrderbook;
   #secretManager: ISecretManager;
   #cacheManager: GardenCache;
   #auth: IAuth;
   #api: Api;
+  private isBackgroundServiceRunning: boolean = false;
+  private executorStop: (() => void) | null = null;
   constructor(
     digestKey: DigestKey,
     htlcs: GardenHTLCModules,
     orderbook: IOrderbook,
     auth: IAuth,
     api: Api,
-    events: GardenEventSink,
+    events: GardenEventEmitter,
   ) {
     this.htlcs = htlcs;
     this.events = events;

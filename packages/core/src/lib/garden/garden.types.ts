@@ -70,7 +70,7 @@ export type GardenEvents = {
   rbf: (order: Order, result: string) => void;
 };
 
-export type GardenEventSink = {
+export type GardenEventEmitter = {
   emit: <K extends keyof GardenEvents>(
     event: K,
     ...args: Parameters<GardenEvents[K]>
