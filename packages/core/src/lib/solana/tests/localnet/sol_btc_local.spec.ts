@@ -1,11 +1,10 @@
 import * as anchor from '@coral-xyz/anchor';
-import { Environment, Url } from '@gardenfi/utils';
+import { Environment, Network, Url } from '@gardenfi/utils';
 import { beforeAll, describe, expect, it, beforeEach } from 'vitest';
-import { MatchedOrder, Orderbook, SupportedAssets } from '@gardenfi/orderbook';
+import { Order, Orderbook, SupportedAssets } from '@gardenfi/orderbook';
 import { web3 } from '@coral-xyz/anchor';
 import { BitcoinNetwork, BitcoinProvider, BitcoinWallet } from '@gardenfi/core';
 import { SolanaHTLC } from '../../htlc/solanaHTLC';
-import { DigestKey } from '../../../garden/digestKey/digestKey';
 import { Garden } from '../../../garden/garden';
 import { BlockNumberFetcher } from '../../../blockNumberFetcher/blockNumber';
 import { Quote } from '../../../quote/quote';
@@ -28,17 +27,15 @@ function setupGarden(
   btcWallet: BitcoinWallet,
 ): Garden {
   return new Garden({
-    environment: Environment.LOCALNET,
+    environment: {
+      network: Network.TESTNET,
+    },
     digestKey,
     htlc: {
       solana: new SolanaHTLC(solanaProvider),
     },
+    apiKey: '',
     orderbook: new Orderbook(new Url(TEST_SWAPPER_RELAYER)),
-    blockNumberFetcher: new BlockNumberFetcher(
-      TEST_BLOCKFETCHER_URL,
-      Environment.LOCALNET,
-    ),
-    btcWallet: btcWallet,
     quote: new Quote('http://localhost:6969'),
   });
 }
@@ -46,80 +43,76 @@ function setupGarden(
 /**
  * Configure event listeners for garden instance and resolve the promise when successful
  */
-function setupGardenListeners(
-  garden: Garden,
-  resolver: () => void,
-  orderId?: string,
-): void {
-  garden.on('error', (order: MatchedOrder, error: string) => {
-    console.log(
-      `❌ Error executing order ${order.create_order.create_id}: ${error}`,
-    );
-  });
+// function setupGardenListeners(
+//   garden: Garden,
+//   resolver: () => void,
+//   orderId?: string,
+// ): void {
+//   garden.on('error', (order: Order, error: string) => {
+//     console.log(`❌ Error executing order ${order.order_id}: ${error}`);
+//   });
 
-  garden.on('success', (order: MatchedOrder, action: string) => {
-    console.log(
-      `✅ Successfully executed ${action} for order ${order.create_order.create_id}`,
-    );
-    // If this is the order we're waiting for, or if we're not looking for a specific order
-    if (!orderId || order.create_order.create_id === orderId) {
-      resolver(); // Resolve the promise to end the test early
-    }
-  });
+//   garden.on('success', (order: Order, action: string) => {
+//     console.log(
+//       `✅ Successfully executed ${action} for order ${order.order_id}`,
+//     );
+//     // If this is the order we're waiting for, or if we're not looking for a specific order
+//     if (!orderId || order.order_id === orderId) {
+//       resolver(); // Resolve the promise to end the test early
+//     }
+//   });
 
-  garden.on('log', (id: string, message: string) => {
-    console.log(`📝 Log [${id}]: ${message}`);
-  });
+//   garden.on('log', (id: string, message: string) => {
+//     console.log(`📝 Log [${id}]: ${message}`);
+//   });
 
-  garden.on('onPendingOrdersChanged', (orders: MatchedOrder[]) => {
-    console.log(`⏳Pending orders: ${orders.length}`);
-    orders.forEach((order) => {
-      console.log(`Pending order: ${order.create_order.create_id}`);
-    });
-  });
+//   garden.on('onPendingOrdersChanged', (orders: Order[]) => {
+//     console.log(`⏳Pending orders: ${orders.length}`);
+//     orders.forEach((order) => {
+//       console.log(`Pending order: ${order.order_id}`);
+//     });
+//   });
 
-  garden.on('rbf', (order: MatchedOrder, result: unknown) => {
-    console.log(
-      `🔄 RBF for order ${order.create_order.create_id}: ${JSON.stringify(
-        result,
-      )}`,
-    );
-  });
-}
+//   garden.on('rbf', (order: Order, result: unknown) => {
+//     console.log(
+//       `🔄 RBF for order ${order.order_id}: ${JSON.stringify(result)}`,
+//     );
+//   });
+// }
 
-async function executeWithTimeout(
-  garden: Garden,
-  orderId?: string,
-  timeoutMs: number = EXECUTE_TIMEOUT,
-): Promise<void> {
-  return new Promise<void>((resolve) => {
-    let resolved = false;
+// async function executeWithTimeout(
+//   garden: Garden,
+//   orderId?: string,
+//   timeoutMs: number = EXECUTE_TIMEOUT,
+// ): Promise<void> {
+//   return new Promise<void>((resolve) => {
+//     let resolved = false;
 
-    // Backup resolver that will prevent the test from running indefinetly
-    const resolveOnce = () => {
-      if (!resolved) {
-        resolved = true;
-        resolve();
-      }
-    };
+//     // Backup resolver that will prevent the test from running indefinetly
+//     const resolveOnce = () => {
+//       if (!resolved) {
+//         resolved = true;
+//         resolve();
+//       }
+//     };
 
-    // Setup the event listerns
-    setupGardenListeners(garden, resolve, orderId);
+//     // Setup the event listerns
+//     setupGardenListeners(garden, resolve, orderId);
 
-    // Stop the test after timeout
-    const timeout = setTimeout(() => {
-      console.log('Test execution timed out but continuing...');
-      resolveOnce();
-    }, timeoutMs);
+//     // Stop the test after timeout
+//     const timeout = setTimeout(() => {
+//       console.log('Test execution timed out but continuing...');
+//       resolveOnce();
+//     }, timeoutMs);
 
-    // Calling exectue method
-    garden.execute().catch((error) => {
-      console.error('Error during garden execution:', error);
-      clearTimeout(timeout);
-      resolveOnce();
-    });
-  });
-}
+//     // Calling exectue method
+//     // garden.execute().catch((error: any) => {
+//     //   console.error('Error during garden execution:', error);
+//     //   clearTimeout(timeout);
+//     //   resolveOnce();
+//     // });
+//   });
+// }
 
 // Helper methods
 const fundSolWallet = async (

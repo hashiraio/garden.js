@@ -16,7 +16,7 @@ import { SwapParams } from './garden.types';
 import { loadTestConfig } from '../../../../../test-config-loader';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
-describe('StarkNet Integration Tests', () => {
+describe('Garden swap tests', () => {
   const config = loadTestConfig();
   // Wallet configurations
   const EVM_PRIVATE_KEY = config.EVM_PRIVATE_KEY_2;
@@ -132,14 +132,26 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     it('should create and execute a swap', async () => {
       setupEventListeners(garden);
       const from = ChainAsset.from(
-        SupportedAssets.testnet.ethereum_sepolia.WBTC,
+        SupportedAssets.testnet.arbitrum_sepolia.WBTC,
       );
-      const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
+
+      const to = ChainAsset.from(SupportedAssets.testnet.ethereum_sepolia.USDC);
+      const sendAmount = 50000;
+      const quote = await garden.quote.getQuote(
+        from,
+        to,
+        sendAmount,
+        false,
+        {},
+      );
+
+      const recieveAmount = quote.val?.[0].destination.amount;
+      if (!recieveAmount) console.log('error fetching quote');
       const order: SwapParams = {
         fromAsset: from,
         toAsset: to,
-        sendAmount: '50000',
-        receiveAmount: '49000',
+        sendAmount: sendAmount.toString(),
+        receiveAmount: recieveAmount ? recieveAmount : '',
         additionalData: {
           btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },

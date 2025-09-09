@@ -56,87 +56,186 @@ export class Executor extends EventBroker<GardenEvents> {
     this.#api = api;
   }
 
+  private async getAddressesFromHTLCs(): Promise<string[]> {
+    const addressSet = new Set<string>();
+
+    // Collect synchronous addresses
+    const syncAddresses = [
+      this.htlcs.evm?.htlcActorAddress,
+      this.htlcs.sui?.htlcActorAddress,
+      this.htlcs.solana?.htlcActorAddress,
+      this.htlcs.starknet?.htlcActorAddress,
+    ].filter((addr): addr is string => !!addr && addr.length > 0);
+
+    syncAddresses.forEach((addr) => addressSet.add(addr.toLowerCase()));
+
+    // Handle async Bitcoin address
+    if (this.htlcs.bitcoin) {
+      try {
+        const btcAddress = await this.htlcs.bitcoin.htlcActorAddress();
+        if (btcAddress && btcAddress.length > 0) {
+          addressSet.add(btcAddress.toLowerCase());
+        }
+      } catch {
+        // ignore missing btc
+      }
+    }
+
+    return Array.from(addressSet);
+  }
+
   async execute(interval: number = 5000): Promise<() => void> {
-    return await this.#orderbook.subscribeOrders(
-      {
-        address: this.#digestKey.userId,
-        status: OrderLifecycle.pending,
-        per_page: 500,
-      },
-      async (pendingOrders) => {
-        const ordersWithStatus = pendingOrders.data.map((order) => {
-          return { ...order, status: ParseOrderStatus(order) };
-        });
-        this.emit('onPendingOrdersChanged', ordersWithStatus);
-        if (pendingOrders.data.length === 0) return;
+    const addresses = await this.getAddressesFromHTLCs();
+    if (addresses.length === 0) {
+      addresses.push(this.#digestKey.userId.toLowerCase());
+    }
 
-        for (const order of ordersWithStatus) {
-          const orderAction = parseAction(order);
+    const addressToOrders = new Map<string, Order[]>();
+    let isProcessing = false;
 
-          if (
-            isBitcoin(order.source_swap.chain) &&
-            // post refund sacp for bitcoin orders only at relevent statuses
-            (order.status === OrderStatus.InitiateDetected ||
-              order.status === OrderStatus.AwaitingRefund ||
-              order.status === OrderStatus.Initiated ||
-              order.status === OrderStatus.RefundDetected ||
-              order.status === OrderStatus.Refunded ||
-              order.status === OrderStatus.Expired) &&
-            !isCompleted(order)
-          ) {
-            await this.postRefundSACP(order);
-          }
+    const processOrders = async () => {
+      if (isProcessing) return; // Prevent concurrent processing
+      isProcessing = true;
 
-          switch (orderAction) {
-            case OrderAction.Redeem: {
-              const secrets = await this.#secretManager.generateSecret(
-                order.nonce,
-              );
-              if (!secrets.ok) {
-                this.emit('error', order, secrets.error);
-                return;
-              }
-
-              const secret = secrets.val.secret;
-              switch (getBlockchainType(order.destination_swap.chain)) {
-                case BlockchainType.EVM:
-                  await this.evmRedeem(order, secret);
-                  break;
-                case BlockchainType.Bitcoin: {
-                  await this.btcRedeem(order, secret);
-                  break;
-                }
-                case BlockchainType.Starknet: {
-                  await this.starknetRedeem(order, secret);
-                  break;
-                }
-                case BlockchainType.Solana: {
-                  await this.solRedeem(order, secrets.val.secret);
-                  break;
-                }
-                case BlockchainType.Sui: {
-                  await this.suiRedeem(order, secrets.val.secret);
-                  break;
-                }
-                default:
-                  this.emit(
-                    'error',
-                    order,
-                    `Unsupported chain: ${order.destination_swap.chain}`,
-                  );
-              }
-              break;
-            }
-            case OrderAction.Idle:
-              break;
-            default:
-            //TODO: handle refund case
-            // case OrderAction.Refund:
+      try {
+        // Merge and deduplicate orders from all addresses
+        const mergedOrdersById = new Map<string, Order>();
+        for (const orders of addressToOrders.values()) {
+          for (const order of orders) {
+            mergedOrdersById.set(order.order_id, order);
           }
         }
-      },
-      interval,
-    );
+
+        const ordersWithStatus = Array.from(mergedOrdersById.values()).map(
+          (order) => ({
+            ...order,
+            status: ParseOrderStatus(order),
+          }),
+        );
+
+        this.emit('onPendingOrdersChanged', ordersWithStatus);
+        await this.processOrderActions(ordersWithStatus);
+      } finally {
+        isProcessing = false;
+      }
+    };
+
+    const unsubscribeFns: Array<() => void> = [];
+
+    // Set up subscriptions sequentially to avoid race conditions
+    for (const address of addresses) {
+      try {
+        const unsubscribe = await this.#orderbook.subscribeOrders(
+          {
+            address,
+            status: OrderLifecycle.pending,
+            per_page: 500,
+          },
+          async (pendingOrders) => {
+            addressToOrders.set(address, pendingOrders.data);
+            await processOrders();
+          },
+          interval,
+        );
+
+        if (typeof unsubscribe === 'function') {
+          unsubscribeFns.push(unsubscribe);
+        }
+      } catch (error) {
+        this.emit(
+          'error',
+          {} as Order,
+          `Failed to subscribe to orders for address ${address}: ${error}`,
+        );
+      }
+    }
+
+    return () => {
+      unsubscribeFns.forEach((unsub) => {
+        try {
+          unsub();
+        } catch {
+          // ignore cleanup errors
+        }
+      });
+    };
+  }
+
+  private async processOrderActions(
+    orders: Array<Order & { status: OrderStatus }>,
+  ): Promise<void> {
+    const bitcoinRefundStatuses = new Set([
+      OrderStatus.InitiateDetected,
+      OrderStatus.AwaitingRefund,
+      OrderStatus.Initiated,
+      OrderStatus.RefundDetected,
+      OrderStatus.Refunded,
+      OrderStatus.Expired,
+    ]);
+
+    for (const order of orders) {
+      try {
+        // Handle Bitcoin refund SACP
+        if (
+          isBitcoin(order.source_swap.chain) &&
+          bitcoinRefundStatuses.has(order.status) &&
+          !isCompleted(order)
+        ) {
+          // await this.postRefundSACP(order);
+          this.emit('log', order.order_id, 'skipping postRefundSACP');
+        }
+
+        const orderAction = parseAction(order);
+
+        if (orderAction === OrderAction.Redeem) {
+          await this.handleRedeemAction(order);
+        }
+        // OrderAction.Idle and OrderAction.Refund cases are handled implicitly
+      } catch (error) {
+        this.emit(
+          'error',
+          order,
+          `Error processing order ${order.order_id}: ${error}`,
+        );
+      }
+    }
+  }
+
+  private async handleRedeemAction(order: Order): Promise<void> {
+    const secrets = await this.#secretManager.generateSecret(order.nonce);
+    if (!secrets.ok) {
+      this.emit('error', order, secrets.error);
+      return;
+    }
+
+    const localSecretHash = trim0x(secrets.val.secretHash);
+    const orderSecretHash = trim0x(order.source_swap.secret_hash);
+    if (localSecretHash !== orderSecretHash) {
+      this.emit('log', order.order_id, 'skipping redeem: secret hash mismatch');
+      return;
+    }
+
+    const secret = secrets.val.secret;
+    const blockchainType = getBlockchainType(order.destination_swap.chain);
+
+    const redeemHandlers = {
+      [BlockchainType.EVM]: () => this.evmRedeem(order, secret),
+      [BlockchainType.Bitcoin]: () => this.btcRedeem(order, secret),
+      [BlockchainType.Starknet]: () => this.starknetRedeem(order, secret),
+      [BlockchainType.Solana]: () => this.solRedeem(order, secret),
+      [BlockchainType.Sui]: () => this.suiRedeem(order, secret),
+    };
+
+    const handler = redeemHandlers[blockchainType];
+    if (handler) {
+      await handler();
+    } else {
+      this.emit(
+        'error',
+        order,
+        `Unsupported chain: ${order.destination_swap.chain}`,
+      );
+    }
   }
 
   private async evmRedeem(order: Order, secret: string): Promise<void> {
