@@ -125,6 +125,16 @@ export interface IGardenJS extends IOrderbook {
    * @readonly
    */
   get digestKey(): DigestKey | undefined;
+
+  /**
+   * The events.
+   */
+  on<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]): this;
+
+  /**
+   * The events.
+   */
+  off<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]): this;
 }
 
 export type OrderCacheValue = {
