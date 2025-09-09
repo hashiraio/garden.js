@@ -10,7 +10,6 @@ import {
   BlockchainType,
   ChainAsset,
   CreateOrderRequest,
-  getBlockchainType,
   IOrderbook,
   isBitcoin,
   Orderbook,
