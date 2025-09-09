@@ -158,7 +158,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
       };
       console.log(order);
       console.log(garden.digestKey?.userId);
-      const result = await garden.swap(order);
+      const result = await garden.swapAndInitiate(order);
       if (!result.ok) {
         console.log('Error while creating order ❌:', result.error);
         throw new Error(result.error);

@@ -93,6 +93,13 @@ export interface IGardenJS extends EventBroker<GardenEvents> {
    */
   swap(params: SwapParams): AsyncResult<string, string>;
 
+  /**
+   * Create Order and Initiate HTLC
+   * @param {SwapParams} params - The parameters for creating the order.
+   * @returns {AsyncResult<string, string>} The result of the swap operation.
+   */
+  swapAndInitiate(params: SwapParams): AsyncResult<string, string>;
+
   // /**
   //  * Execute an action.
   //  * @returns {Promise<() => void>} A promise that resolves to a function to cancel the execution.

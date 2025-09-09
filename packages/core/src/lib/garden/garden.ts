@@ -10,6 +10,7 @@ import {
   BlockchainType,
   ChainAsset,
   CreateOrderRequest,
+  getBlockchainType,
   IOrderbook,
   isBitcoin,
   Orderbook,
@@ -289,12 +290,95 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
   }
 
   /**
-   * Executes a swap operation by creating and polling an order, and optionally initiating the HTLC
-   * on the appropriate chain. Handles all error cases robustly and ensures proper flow.
+   * Creates an order for a swap operation and returns the order response.
+   * Does not initiate the HTLC on the source chain.
    * @param params SwapParams
    * @returns AsyncResult<Order, string>
    */
   async swap(params: SwapParams): AsyncResult<string, string> {
+    const createOrderRes = await this.createOrder(params);
+    if (!createOrderRes.ok) return Err(createOrderRes.error);
+    return Ok(createOrderRes.val);
+  }
+
+  /**
+   * Creates an order for a swap operation and initiates the HTLC on the source chain.
+   * @param params SwapParams
+   * @returns AsyncResult<Order, string>
+   */
+  async swapAndInitiate(params: SwapParams): AsyncResult<string, string> {
+    const createOrderRes = await this.createOrder(params);
+    if (!createOrderRes.ok) return Err(createOrderRes.error);
+
+    const order = createOrderRes.val;
+    const blockchainType = getBlockchainType(
+      ChainAsset.from(params.fromAsset).getChain(),
+    );
+
+    switch (blockchainType) {
+      case BlockchainType.EVM:
+        if (!this._evmHTLC || order.type !== BlockchainType.EVM) {
+          return Err(
+            'EVM HTLC is not initialized, does not support initiation, or order type is not EVM',
+          );
+        }
+        {
+          const evmInitRes = await this._evmHTLC.initiate(order);
+          if (!evmInitRes.ok)
+            return Err(`EVM HTLC initiation failed: ${evmInitRes.error}`);
+        }
+        break;
+      case BlockchainType.Solana:
+        if (!this._solanaHTLC || order.type !== BlockchainType.Solana) {
+          return Err(
+            'Solana HTLC is not initialized or does not support initiation',
+          );
+        }
+        {
+          const solanaInitRes = await this._solanaHTLC.initiate(order);
+          if (!solanaInitRes.ok)
+            return Err(`Solana HTLC initiation failed: ${solanaInitRes.error}`);
+        }
+        break;
+      case BlockchainType.Starknet:
+        if (!this._starknetHTLC || order.type !== BlockchainType.Starknet) {
+          return Err(
+            'Starknet HTLC is not initialized or does not support initiation',
+          );
+        }
+        {
+          const starknetInitRes = await this._starknetHTLC.initiate(order);
+          if (!starknetInitRes.ok)
+            return Err(
+              `Starknet HTLC initiation failed: ${starknetInitRes.error}`,
+            );
+        }
+        break;
+      case BlockchainType.Sui:
+        if (!this._suiHTLC || order.type !== BlockchainType.Sui) {
+          return Err(
+            'Sui HTLC is not initialized or does not support initiation',
+          );
+        }
+        {
+          const suiInitRes = await this._suiHTLC.initiate(order);
+          if (!suiInitRes.ok)
+            return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
+        }
+        break;
+      default:
+        return Err(`Unsupported blockchain type`);
+    }
+
+    return Ok(order.order_id);
+  }
+
+  /**
+   * Private helper to create an order for a swap operation.
+   * @param params SwapParams
+   * @returns AsyncResult<Order, string>
+   */
+  private async createOrder(params: SwapParams): AsyncResult<any, string> {
     const validation = await this.validateAndFillParams(params);
     if (!validation.ok) return Err(validation.error);
 
@@ -349,78 +433,14 @@ export class Garden extends EventBroker<GardenEvents> implements IGardenJS {
       affiliate_fees: withDefaultAffiliateFees(params.affiliateFee),
       slippage: 50,
     };
+
     const createOrderRes = await this._orderbook.createOrder(
       orderRequest,
       this._auth,
     );
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
-    switch (orderRequest.source.asset.getBlockchainType()) {
-      case BlockchainType.EVM:
-        if (!this._evmHTLC || createOrderRes.val.type !== BlockchainType.EVM) {
-          return Err(
-            'EVM HTLC is not initialized, does not support initiation, or order type is not EVM',
-          );
-        }
-        {
-          const evmInitRes = await this._evmHTLC.initiate(createOrderRes.val);
-          if (!evmInitRes.ok)
-            return Err(`EVM HTLC initiation failed: ${evmInitRes.error}`);
-        }
-        break;
-      case BlockchainType.Solana:
-        if (
-          !this._solanaHTLC ||
-          createOrderRes.val.type !== BlockchainType.Solana
-        ) {
-          return Err(
-            'Solana HTLC is not initialized or does not support initiation',
-          );
-        }
-        {
-          const solanaInitRes = await this._solanaHTLC.initiate(
-            createOrderRes.val,
-          );
-          if (!solanaInitRes.ok)
-            return Err(`Solana HTLC initiation failed: ${solanaInitRes.error}`);
-        }
-        break;
-      case BlockchainType.Starknet:
-        if (
-          !this._starknetHTLC ||
-          createOrderRes.val.type !== BlockchainType.Starknet
-        ) {
-          return Err(
-            'Starknet HTLC is not initialized or does not support initiation',
-          );
-        }
-        {
-          const starknetInitRes = await this._starknetHTLC.initiate(
-            createOrderRes.val,
-          );
-          if (!starknetInitRes.ok)
-            return Err(
-              `Starknet HTLC initiation failed: ${starknetInitRes.error}`,
-            );
-        }
-        break;
-      case BlockchainType.Sui:
-        if (!this._suiHTLC || createOrderRes.val.type !== BlockchainType.Sui) {
-          return Err(
-            'Sui HTLC is not initialized or does not support initiation',
-          );
-        }
-        {
-          const suiInitRes = await this._suiHTLC.initiate(createOrderRes.val);
-          if (!suiInitRes.ok)
-            return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
-        }
-        break;
-      default:
-        return Err(`Unsupported blockchain type`);
-    }
-
-    return Ok(createOrderRes.val.order_id);
+    return Ok(createOrderRes.val);
   }
 
   private async validateAndFillParams(params: SwapParams) {
