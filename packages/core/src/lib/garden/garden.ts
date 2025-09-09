@@ -260,9 +260,9 @@ export class Garden extends Orderbook implements IGardenJS {
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
     const order = createOrderRes.val;
-    const blockchainType = getBlockchainType(
-      ChainAsset.from(params.fromAsset).getChain(),
-    );
+    const blockchainType = ChainAsset.from(
+      params.fromAsset,
+    ).getBlockchainType();
 
     switch (blockchainType) {
       case BlockchainType.EVM:

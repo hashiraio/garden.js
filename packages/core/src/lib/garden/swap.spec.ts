@@ -85,11 +85,11 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     digestKey: DIGEST_KEY!,
     apiKey: config.API_KEY,
     wallets: {
-      // evm: evmWallet,
+      evm: evmWallet,
       starknet: starknetWallet,
-      // solana: userProvider,
+      solana: userProvider,
       bitcoin: bitcoinWallet,
-      // sui: suiSigner,
+      sui: suiSigner,
     },
   }).setRedeemServiceEnabled(false);
 
