@@ -4,6 +4,7 @@ import {
   SwapParams,
   GardenConfigWithHTLCs,
   GardenConfigWithWallets,
+  GardenHTLCModules,
 } from './garden.types';
 import {
   BlockchainType,
@@ -30,17 +31,13 @@ import { BitcoinHTLC } from '../bitcoin/bitcoinHtlc';
 import { Api, solanaProgramAddress, SolanaRelayerAddress } from '../constants';
 import { Quote } from '../quote/quote';
 import { SecretManager } from '../secretManager/secretManager';
-import { IEVMHTLC } from '../evm/htlc.types';
 import { EvmRelay } from '../evm/relay/evmRelay';
-import { IStarknetHTLC } from '../starknet/starknetHTLC.types';
 import { StarknetRelay } from '../starknet/relay/starknetRelay';
-import { ISolanaHTLC } from '../solana/htlc/ISolanaHTLC';
 import { SolanaRelay } from '../solana/relayer/solanaRelay';
-import { ISuiHTLC } from '../sui/suiHTLC.types';
 import { SuiRelay } from '../sui/relay/suiRelay';
 import { resolveApiKey, resolveDigestKey } from './utils';
 import { Executor } from './executor/executor';
-import { IBitcoinHTLC } from '../bitcoin/bitcoinhtlc.types';
+
 import {
   getBitcoinNetworkFromEnvironment,
   resolveApiConfig,
@@ -57,11 +54,7 @@ export class Garden extends Orderbook implements IGardenJS {
   private network: Network;
   private _quote: IQuote;
   private _auth: IAuth;
-  private _evmHTLC: IEVMHTLC | undefined;
-  private _starknetHTLC: IStarknetHTLC | undefined;
-  private _solanaHTLC: ISolanaHTLC | undefined;
-  private _suiHTLC: ISuiHTLC | undefined;
-  private _btcHTLC: IBitcoinHTLC | undefined;
+  private _htlcs: GardenHTLCModules;
   private _api: Api | undefined;
   private _executor: Executor | undefined;
 
@@ -84,12 +77,7 @@ export class Garden extends Orderbook implements IGardenJS {
     this._digestKey = resolveDigestKey(config.digestKey);
     this._auth = resolveApiKey(config.apiKey);
     this._quote = config.quote ?? new Quote(this._api.baseurl);
-
-    this._evmHTLC = config.htlc.evm;
-    this._starknetHTLC = config.htlc.starknet;
-    this._solanaHTLC = config.htlc.solana;
-    this._suiHTLC = config.htlc.sui;
-    this._btcHTLC = config.htlc.bitcoin;
+    this._htlcs = config.htlc;
     this._executor = this._digestKey
       ? new Executor(this._digestKey, this.htlcs, this, this._auth, this._api)
       : undefined;
@@ -115,11 +103,11 @@ export class Garden extends Orderbook implements IGardenJS {
       this._secretManager = SecretManager.fromDigestKey(
         this._digestKey.digestKey,
       );
-      if (!this._btcHTLC) {
+      if (!this._htlcs.bitcoin) {
         const provider = new BitcoinProvider(
           getBitcoinNetworkFromEnvironment(this.network),
         );
-        this._btcHTLC = new BitcoinHTLC(
+        this._htlcs.bitcoin = new BitcoinHTLC(
           BitcoinWallet.fromPrivateKey(this._digestKey.digestKey, provider),
           getBitcoinNetwork(getBitcoinNetworkFromEnvironment(this.network)),
         );
@@ -227,11 +215,11 @@ export class Garden extends Orderbook implements IGardenJS {
 
   get htlcs() {
     return {
-      evm: this._evmHTLC,
-      starknet: this._starknetHTLC,
-      solana: this._solanaHTLC,
-      sui: this._suiHTLC,
-      bitcoin: this._btcHTLC,
+      evm: this._htlcs.evm,
+      starknet: this._htlcs.starknet,
+      solana: this._htlcs.solana,
+      sui: this._htlcs.sui,
+      bitcoin: this._htlcs.bitcoin,
     } as const;
   }
 
@@ -278,37 +266,37 @@ export class Garden extends Orderbook implements IGardenJS {
 
     switch (blockchainType) {
       case BlockchainType.EVM:
-        if (!this._evmHTLC || order.type !== BlockchainType.EVM) {
+        if (!this._htlcs.evm || order.type !== BlockchainType.EVM) {
           return Err(
             'EVM HTLC is not initialized, does not support initiation, or order type is not EVM',
           );
         }
         {
-          const evmInitRes = await this._evmHTLC.initiate(order);
+          const evmInitRes = await this._htlcs.evm.initiate(order);
           if (!evmInitRes.ok)
             return Err(`EVM HTLC initiation failed: ${evmInitRes.error}`);
         }
         break;
       case BlockchainType.Solana:
-        if (!this._solanaHTLC || order.type !== BlockchainType.Solana) {
+        if (!this._htlcs.solana || order.type !== BlockchainType.Solana) {
           return Err(
             'Solana HTLC is not initialized or does not support initiation',
           );
         }
         {
-          const solanaInitRes = await this._solanaHTLC.initiate(order);
+          const solanaInitRes = await this._htlcs.solana.initiate(order);
           if (!solanaInitRes.ok)
             return Err(`Solana HTLC initiation failed: ${solanaInitRes.error}`);
         }
         break;
       case BlockchainType.Starknet:
-        if (!this._starknetHTLC || order.type !== BlockchainType.Starknet) {
+        if (!this._htlcs.starknet || order.type !== BlockchainType.Starknet) {
           return Err(
             'Starknet HTLC is not initialized or does not support initiation',
           );
         }
         {
-          const starknetInitRes = await this._starknetHTLC.initiate(order);
+          const starknetInitRes = await this._htlcs.starknet.initiate(order);
           if (!starknetInitRes.ok)
             return Err(
               `Starknet HTLC initiation failed: ${starknetInitRes.error}`,
@@ -316,13 +304,13 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.Sui:
-        if (!this._suiHTLC || order.type !== BlockchainType.Sui) {
+        if (!this._htlcs.sui || order.type !== BlockchainType.Sui) {
           return Err(
             'Sui HTLC is not initialized or does not support initiation',
           );
         }
         {
-          const suiInitRes = await this._suiHTLC.initiate(order);
+          const suiInitRes = await this._htlcs.sui.initiate(order);
           if (!suiInitRes.ok)
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
         }
@@ -360,7 +348,7 @@ export class Garden extends Orderbook implements IGardenJS {
       secretHash = secrets.val.secretHash;
     }
 
-    const btcAddress = params.addresses?.Bitcoin;
+    const btcAddress = params.btcAddress;
 
     const isSourceBitcoin = isBitcoin(
       ChainAsset.from(params.fromAsset).getChain(),
@@ -432,9 +420,9 @@ export class Garden extends Orderbook implements IGardenJS {
       isBitcoin(ChainAsset.from(params.fromAsset).getChain()) ||
       isBitcoin(ChainAsset.from(params.toAsset).getChain())
     ) {
-      if (!params.addresses?.Bitcoin)
+      if (!params.btcAddress)
         return Err(
-          'btcAddress in additionalData is required if source or destination chain is bitcoin, it is used as refund or redeem address.',
+          'btcAddress in addresses is required if source or destination chain is bitcoin, it is used as refund or redeem address.',
         );
     }
 
@@ -453,29 +441,29 @@ export class Garden extends Orderbook implements IGardenJS {
   private async getAddresses(blockchainType: BlockchainType) {
     switch (blockchainType) {
       case BlockchainType.EVM:
-        if (!this._evmHTLC)
+        if (!this._htlcs.evm)
           return Err('Please provide evmHTLC when initializing garden');
-        return Ok(this._evmHTLC.htlcActorAddress);
+        return Ok(this._htlcs.evm.htlcActorAddress);
       case BlockchainType.Bitcoin: {
-        const pubKey = await this._btcHTLC?.getPublicKey();
+        const pubKey = await this._htlcs.bitcoin?.getPublicKey();
         if (!pubKey || !isValidBitcoinPubKey(pubKey))
           return Err('Invalid btc public key');
         return Ok(toXOnly(pubKey));
       }
       case BlockchainType.Solana: {
-        if (!this._solanaHTLC)
+        if (!this._htlcs.solana)
           return Err('Please provide solanaHTLC when initializing garden');
-        return Ok(this._solanaHTLC.htlcActorAddress);
+        return Ok(this._htlcs.solana.htlcActorAddress);
       }
       case BlockchainType.Starknet: {
-        if (!this._starknetHTLC)
+        if (!this._htlcs.starknet)
           return Err('Please provide starknetHTLC when initializing garden');
-        return Ok(this._starknetHTLC.htlcActorAddress);
+        return Ok(this._htlcs.starknet.htlcActorAddress);
       }
       case BlockchainType.Sui: {
-        if (!this._suiHTLC)
+        if (!this._htlcs.sui)
           return Err('Please provide suiHTLC when initializing garden');
-        return Ok(this._suiHTLC.htlcActorAddress);
+        return Ok(this._htlcs.sui.htlcActorAddress);
       }
       default:
         return Err('Unsupported chain');

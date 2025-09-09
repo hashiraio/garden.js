@@ -85,11 +85,11 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     digestKey: DIGEST_KEY!,
     apiKey: config.API_KEY,
     wallets: {
-      evm: evmWallet,
+      // evm: evmWallet,
       starknet: starknetWallet,
-      solana: userProvider,
+      // solana: userProvider,
       bitcoin: bitcoinWallet,
-      sui: suiSigner,
+      // sui: suiSigner,
     },
   }).setRedeemServiceEnabled(false);
 
@@ -132,7 +132,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     it('should create and execute a swap', async () => {
       setupEventListeners(garden);
       const from = ChainAsset.from(
-        SupportedAssets.testnet.arbitrum_sepolia.WBTC,
+        SupportedAssets.testnet.starknet_sepolia.WBTC,
       );
 
       const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
@@ -152,9 +152,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         toAsset: to,
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
-        additionalData: {
-          btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
-        },
+        btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
       };
       console.log(order);
       console.log(garden.digestKey?.userId);

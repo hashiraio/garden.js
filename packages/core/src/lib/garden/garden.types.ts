@@ -51,7 +51,7 @@ export type SwapParams = {
   /**
    * Addresses for the order.
    */
-  addresses?: Partial<Record<BlockchainType, string>>;
+  btcAddress?: string;
   /**
    * Integrator fee for the order.
    */
