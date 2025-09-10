@@ -1,6 +1,7 @@
 import {
   AffiliateFee,
   Asset,
+  BlockchainType,
   ChainAsset,
   ChainAssetString,
   IOrderbook,
@@ -10,7 +11,6 @@ import { OrderAction, OrderStatus } from '../orderStatus/orderStatus';
 import { ApiKey, AsyncResult, IAuth, Network } from '@gardenfi/utils';
 import { ISecretManager } from '../secretManager/secretManager.types';
 import { IQuote } from '../quote/quote.types';
-import { IBlockNumberFetcher } from '../blockNumberFetcher/blockNumber';
 
 import { IEVMHTLC } from '../evm/htlc.types';
 import { IStarknetHTLC } from '../starknet/starknetHTLC.types';
