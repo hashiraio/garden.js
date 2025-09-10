@@ -107,12 +107,10 @@ describe('StarkNet Integration Tests', () => {
         toAsset: to,
         sendAmount: '10000000',
         receiveAmount: '1865',
-        additionalData: {
-          btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
-        },
+        addresses: { Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru' },
       };
       console.log(order);
-      const result = await garden.swap(order);
+      const result = await garden.createSwap(order);
       if (!result.ok) {
         console.log('Error while creating order ❌:', result.error);
         throw new Error(result.error);
@@ -138,7 +136,7 @@ describe('StarkNet Integration Tests', () => {
         additionalData: {},
       };
 
-      const result = await garden.swap(order);
+      const result = await garden.createSwap(order);
       if (!result.ok) {
         console.log('Error while creating order ❌:', result.error);
         throw new Error(result.error);
@@ -158,11 +156,11 @@ describe('StarkNet Integration Tests', () => {
     }, 150000);
 
     it('Initiate the swap', async () => {
-      if (!garden.evmHTLC) {
+      if (!garden.htlcs?.evm) {
         throw new Error('EVM HTLC is not initialized');
       }
 
-      const res = await garden.evmHTLC.initiate(matchedOrder);
+      const res = await garden.htlcs.evm.initiate(matchedOrder);
       console.log('initiated ✅ :', res.val);
       if (!res.ok) console.log('init error ❌ :', res.error);
       // expect(res.ok).toBeTruthy();
@@ -184,13 +182,10 @@ describe('StarkNet Integration Tests', () => {
         toAsset: SupportedAssets.testnet.starknet_sepolia.WBTC,
         sendAmount: '10000',
         receiveAmount: '4292202826399481',
-        additionalData: {
-          strategyId: 'btyrss59',
-          btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
-        },
+        btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
       };
 
-      const result = await garden.swap(order);
+      const result = await garden.createSwap(order);
       if (!result.ok) {
         console.log('Error while creating order ❌:', result.error);
         throw new Error(result.error);
@@ -235,7 +230,7 @@ describe('StarkNet Integration Tests', () => {
         },
       };
 
-      const result = await garden.swap(order);
+      const result = await garden.createSwap(order);
       if (!result.ok) {
         console.log('Error while creating order ❌:', result.error);
         throw new Error(result.error);
@@ -255,7 +250,10 @@ describe('StarkNet Integration Tests', () => {
     }, 150000);
 
     it.skip('Initiate the swap', async () => {
-      const res = await garden.starknetHTLC?.initiate(matchedOrder);
+      if (!garden.htlcs?.starknet) {
+        throw new Error('Starknet HTLC is not initialized');
+      }
+      const res = await garden.htlcs?.starknet.initiate(matchedOrder);
       console.log('initiated ✅ :', res?.val);
       if (res?.error) console.log('init error ❌ :', res.error);
       // expect(res.ok).toBeTruthy();

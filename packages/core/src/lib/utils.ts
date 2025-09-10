@@ -10,7 +10,12 @@ import {
   with0x,
   Network,
 } from '@gardenfi/utils';
-import { AffiliateFee, AssetHTLCInfo, Chain } from '@gardenfi/orderbook';
+import {
+  AffiliateFee,
+  AssetHTLCInfo,
+  BlockchainType,
+  Chain,
+} from '@gardenfi/orderbook';
 import { sha256 } from 'viem';
 import * as varuint from 'varuint-bitcoin';
 import * as secp256k1 from 'tiny-secp256k1';
@@ -18,7 +23,7 @@ import * as bitcoin from 'bitcoinjs-lib';
 import * as ecc from 'tiny-secp256k1';
 import { Signature } from 'starknet';
 import { API, Api, DEFAULT_AFFILIATE_ASSET } from './constants';
-import { ApiConfig } from './garden/garden.types';
+import { ApiConfig, GardenHTLCModules } from './garden/garden.types';
 import { BitcoinNetwork } from './bitcoin/provider/provider.interface';
 import { IBaseWallet } from './bitcoin/wallet/baseWallet';
 import { web3 } from '@coral-xyz/anchor';
@@ -324,4 +329,97 @@ export const withDefaultAffiliateFees = (
     address: fee.address,
     asset: fee.asset ?? DEFAULT_AFFILIATE_ASSET.asset,
   }));
+};
+
+/**
+ *
+ * @param blockchainType
+ * @param htlcs
+ * @param addresses
+ * @returns
+ */
+export const getAddresses = async (
+  blockchainType: BlockchainType,
+  htlcs: GardenHTLCModules,
+  addresses?: Partial<Record<BlockchainType, string>>,
+) => {
+  if (addresses && addresses[blockchainType]) {
+    return Ok(addresses[blockchainType]!);
+  }
+
+  switch (blockchainType) {
+    case BlockchainType.EVM:
+      if (!htlcs.evm)
+        return Err(
+          'Please provide evmHTLC when initializing garden or pass EVM address in SwapParams',
+        );
+      return Ok(htlcs.evm.htlcActorAddress);
+    case BlockchainType.Bitcoin: {
+      const pubKey = await htlcs.bitcoin?.getPublicKey();
+      if (!pubKey || !isValidBitcoinPubKey(pubKey))
+        return Err(
+          'Invalid btc public key or pass Bitcoin address in SwapParams',
+        );
+      return Ok(toXOnly(pubKey));
+    }
+    case BlockchainType.Solana: {
+      if (!htlcs.solana)
+        return Err(
+          'Please provide solanaHTLC when initializing garden or pass Solana address in SwapParams',
+        );
+      return Ok(htlcs.solana.htlcActorAddress);
+    }
+    case BlockchainType.Starknet: {
+      if (!htlcs.starknet)
+        return Err(
+          'Please provide starknetHTLC when initializing garden or pass Starknet address in SwapParams',
+        );
+      return Ok(htlcs.starknet.htlcActorAddress);
+    }
+    case BlockchainType.Sui: {
+      if (!htlcs.sui)
+        return Err(
+          'Please provide suiHTLC when initializing garden or pass Sui address in SwapParams',
+        );
+      return Ok(htlcs.sui.htlcActorAddress);
+    }
+    default:
+      return Err('Unsupported chain');
+  }
+};
+
+/**
+ * Validates that HTLCs are available for the required blockchain types for swap initiation
+ * @param blockchainType The blockchain type to check
+ * @returns AsyncResult<void, string>
+ */
+export const validateHTLCForSwap = async (
+  blockchainType: BlockchainType,
+  htlcs: GardenHTLCModules,
+): Promise<AsyncResult<void, string>> => {
+  const htlcMap: Record<BlockchainType, { htlc: any; name: string }> = {
+    [BlockchainType.EVM]: { htlc: htlcs.evm, name: 'EVM' },
+    [BlockchainType.Solana]: { htlc: htlcs.solana, name: 'Solana' },
+    [BlockchainType.Starknet]: {
+      htlc: htlcs.starknet,
+      name: 'Starknet',
+    },
+    [BlockchainType.Sui]: { htlc: htlcs.sui, name: 'Sui' },
+    [BlockchainType.Bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
+  };
+
+  const entry = htlcMap[blockchainType];
+  if (!entry) {
+    return Err(
+      `Unsupported blockchain type for swap initiation: ${blockchainType}`,
+    );
+  }
+  if (!entry.htlc) {
+    return Err(
+      `${
+        entry.name
+      } HTLC is required for swap initiation. Please provide ${entry.name.toLowerCase()}HTLC when initializing garden.`,
+    );
+  }
+  return Ok(undefined);
 };

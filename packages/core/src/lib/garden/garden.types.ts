@@ -51,7 +51,7 @@ export type SwapParams = {
   /**
    * Addresses for the order.
    */
-  btcAddress?: string;
+  addresses?: Partial<Record<BlockchainType, string>>;
   /**
    * Integrator fee for the order.
    */
@@ -159,7 +159,6 @@ export type GardenCoreConfig = {
   auth?: IAuth;
   orderbook?: IOrderbook;
   quote?: IQuote;
-  blockNumberFetcher?: IBlockNumberFetcher;
   solanaProgramAddress?: {
     native?: string;
     spl?: string;
@@ -183,8 +182,8 @@ export type GardenWalletModules = {
 };
 
 export type GardenConfigWithWallets = GardenCoreConfig & {
-  wallets: GardenWalletModules;
+  wallets?: GardenWalletModules;
 };
 export type GardenConfigWithHTLCs = GardenCoreConfig & {
-  htlc: GardenHTLCModules;
+  htlc?: GardenHTLCModules;
 };

@@ -41,13 +41,13 @@ import { resolveApiKey, resolveDigestKey } from './utils';
 import { Executor } from './executor/executor';
 
 import {
+  getAddresses,
   getBitcoinNetworkFromEnvironment,
   resolveApiConfig,
-  toXOnly,
   validateAmount,
+  validateHTLCForSwap,
   withDefaultAffiliateFees,
 } from '../utils';
-import { isValidBitcoinPubKey } from '../utils';
 import { getBitcoinNetwork } from '../bitcoin/utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
@@ -90,7 +90,7 @@ export class Garden extends Orderbook implements IGardenJS {
     this._digestKey = resolveDigestKey(config.digestKey);
     this._auth = resolveApiKey(config.apiKey);
     this._quote = config.quote ?? new Quote(this._api.baseurl);
-    this._htlcs = config.htlc;
+    this._htlcs = config.htlc ?? {};
     this._events = new GardenEventBus();
     this._executor = this._digestKey
       ? new Executor(
@@ -150,53 +150,56 @@ export class Garden extends Orderbook implements IGardenJS {
         'API not found, invalid environment ' + config.environment,
       );
 
-    const htlc = {
-      evm: config.wallets.evm
-        ? new EvmRelay(api.baseurl, config.wallets.evm, apiKey)
-        : undefined,
-      starknet: config.wallets.starknet
-        ? new StarknetRelay(
-            api.baseurl,
-            config.wallets.starknet,
-            network,
-            apiKey,
-          )
-        : undefined,
-      solana: config.wallets.solana
-        ? new SolanaRelay(
-            config.wallets.solana,
-            new Url(api.baseurl),
-            network === Network.MAINNET
-              ? SolanaRelayerAddress.mainnet
-              : SolanaRelayerAddress.testnet,
-            {
-              native:
-                config.solanaProgramAddress &&
-                config.solanaProgramAddress.native
-                  ? config.solanaProgramAddress.native
-                  : solanaProgramAddress.mainnet.native,
-              spl:
-                config.solanaProgramAddress && config.solanaProgramAddress.spl
-                  ? config.solanaProgramAddress.spl
-                  : solanaProgramAddress.mainnet.spl,
-            },
-            apiKey,
-          )
-        : undefined,
-      sui: config.wallets.sui
-        ? new SuiRelay(
-            api.baseurl,
-            config.wallets.sui,
-            network === Network.MAINNET ? Network.MAINNET : Network.TESTNET,
-          )
-        : undefined,
-      bitcoin: config.wallets.bitcoin
-        ? new BitcoinHTLC(
-            config.wallets.bitcoin,
-            getBitcoinNetwork(getBitcoinNetworkFromEnvironment(network)),
-          )
-        : undefined,
-    };
+    const htlc = config.wallets
+      ? {
+          evm: config.wallets.evm
+            ? new EvmRelay(api.baseurl, config.wallets.evm, apiKey)
+            : undefined,
+          starknet: config.wallets.starknet
+            ? new StarknetRelay(
+                api.baseurl,
+                config.wallets.starknet,
+                network,
+                apiKey,
+              )
+            : undefined,
+          solana: config.wallets.solana
+            ? new SolanaRelay(
+                config.wallets.solana,
+                new Url(api.baseurl),
+                network === Network.MAINNET
+                  ? SolanaRelayerAddress.mainnet
+                  : SolanaRelayerAddress.testnet,
+                {
+                  native:
+                    config.solanaProgramAddress &&
+                    config.solanaProgramAddress.native
+                      ? config.solanaProgramAddress.native
+                      : solanaProgramAddress.mainnet.native,
+                  spl:
+                    config.solanaProgramAddress &&
+                    config.solanaProgramAddress.spl
+                      ? config.solanaProgramAddress.spl
+                      : solanaProgramAddress.mainnet.spl,
+                },
+                apiKey,
+              )
+            : undefined,
+          sui: config.wallets.sui
+            ? new SuiRelay(
+                api.baseurl,
+                config.wallets.sui,
+                network === Network.MAINNET ? Network.MAINNET : Network.TESTNET,
+              )
+            : undefined,
+          bitcoin: config.wallets.bitcoin
+            ? new BitcoinHTLC(
+                config.wallets.bitcoin,
+                getBitcoinNetwork(getBitcoinNetworkFromEnvironment(network)),
+              )
+            : undefined,
+        }
+      : {};
 
     return new Garden({
       htlc,
@@ -247,20 +250,24 @@ export class Garden extends Orderbook implements IGardenJS {
    * @returns AsyncResult<Order, string>
    */
   async createSwap(params: SwapParams): AsyncResult<string, string> {
+    const blockchainType = ChainAsset.from(
+      params.fromAsset,
+    ).getBlockchainType();
+    const htlcValidation = await validateHTLCForSwap(
+      blockchainType,
+      this._htlcs,
+    );
+    if (!htlcValidation.ok) return Err(htlcValidation.error);
+
     const createOrderRes = await this.createOrder(params);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
     const order = createOrderRes.val;
-    const blockchainType = ChainAsset.from(
-      params.fromAsset,
-    ).getBlockchainType();
 
     switch (blockchainType) {
       case BlockchainType.EVM:
         if (!this._htlcs.evm || order.type !== BlockchainType.EVM) {
-          return Err(
-            'EVM HTLC is not initialized, does not support initiation, or order type is not EVM',
-          );
+          return Err('Order type does not match EVM blockchain type');
         }
         {
           const evmInitRes = await this._htlcs.evm.initiate(order);
@@ -270,9 +277,7 @@ export class Garden extends Orderbook implements IGardenJS {
         break;
       case BlockchainType.Solana:
         if (!this._htlcs.solana || order.type !== BlockchainType.Solana) {
-          return Err(
-            'Solana HTLC is not initialized or does not support initiation',
-          );
+          return Err('Order type does not match Solana blockchain type');
         }
         {
           const solanaInitRes = await this._htlcs.solana.initiate(order);
@@ -282,9 +287,7 @@ export class Garden extends Orderbook implements IGardenJS {
         break;
       case BlockchainType.Starknet:
         if (!this._htlcs.starknet || order.type !== BlockchainType.Starknet) {
-          return Err(
-            'Starknet HTLC is not initialized or does not support initiation',
-          );
+          return Err('Order type does not match Starknet blockchain type');
         }
         {
           const starknetInitRes = await this._htlcs.starknet.initiate(order);
@@ -296,9 +299,7 @@ export class Garden extends Orderbook implements IGardenJS {
         break;
       case BlockchainType.Sui:
         if (!this._htlcs.sui || order.type !== BlockchainType.Sui) {
-          return Err(
-            'Sui HTLC is not initialized or does not support initiation',
-          );
+          return Err('Order type does not match Sui blockchain type');
         }
         {
           const suiInitRes = await this._htlcs.sui.initiate(order);
@@ -306,8 +307,20 @@ export class Garden extends Orderbook implements IGardenJS {
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
         }
         break;
+      case BlockchainType.Bitcoin:
+        if (!this._htlcs.bitcoin || order.type !== BlockchainType.Bitcoin) {
+          return Err('Order type does not match Bitcoin blockchain type');
+        }
+        {
+          const bitcoinInitRes = await this._htlcs.bitcoin.initiate(order);
+          if (!bitcoinInitRes.ok)
+            return Err(
+              `Bitcoin HTLC initiation failed: ${bitcoinInitRes.error}`,
+            );
+        }
+        break;
       default:
-        return Err(`Unsupported blockchain type`);
+        return Err(`Unsupported blockchain type for swap initiation`);
     }
 
     return Ok(order.order_id);
@@ -339,7 +352,7 @@ export class Garden extends Orderbook implements IGardenJS {
       secretHash = secrets.val.secretHash;
     }
 
-    const btcAddress = params.btcAddress;
+    const btcAddress = params.addresses?.Bitcoin;
 
     const isSourceBitcoin = isBitcoin(
       ChainAsset.from(params.fromAsset).getChain(),
@@ -411,54 +424,30 @@ export class Garden extends Orderbook implements IGardenJS {
       isBitcoin(ChainAsset.from(params.fromAsset).getChain()) ||
       isBitcoin(ChainAsset.from(params.toAsset).getChain())
     ) {
-      if (!params.btcAddress)
+      if (!params.addresses?.Bitcoin)
         return Err(
-          'btcAddress in addresses is required if source or destination chain is bitcoin, it is used as refund or redeem address.',
+          'Bitcoin address in addresses is required if source or destination chain is bitcoin, it is used as refund or redeem address.',
         );
     }
 
-    const sendAddress = await this.getAddresses(fromAsset.getBlockchainType());
+    const sendAddress = await getAddresses(
+      fromAsset.getBlockchainType(),
+      this._htlcs,
+      params.addresses,
+    );
     if (!sendAddress.ok) return Err(sendAddress.error);
 
-    const receiveAddress = await this.getAddresses(toAsset.getBlockchainType());
+    const receiveAddress = await getAddresses(
+      toAsset.getBlockchainType(),
+      this._htlcs,
+      params.addresses,
+    );
     if (!receiveAddress.ok) return Err(receiveAddress.error);
 
     return Ok({
       sendAddress: sendAddress.val,
       receiveAddress: receiveAddress.val,
     });
-  }
-
-  private async getAddresses(blockchainType: BlockchainType) {
-    switch (blockchainType) {
-      case BlockchainType.EVM:
-        if (!this._htlcs.evm)
-          return Err('Please provide evmHTLC when initializing garden');
-        return Ok(this._htlcs.evm.htlcActorAddress);
-      case BlockchainType.Bitcoin: {
-        const pubKey = await this._htlcs.bitcoin?.getPublicKey();
-        if (!pubKey || !isValidBitcoinPubKey(pubKey))
-          return Err('Invalid btc public key');
-        return Ok(toXOnly(pubKey));
-      }
-      case BlockchainType.Solana: {
-        if (!this._htlcs.solana)
-          return Err('Please provide solanaHTLC when initializing garden');
-        return Ok(this._htlcs.solana.htlcActorAddress);
-      }
-      case BlockchainType.Starknet: {
-        if (!this._htlcs.starknet)
-          return Err('Please provide starknetHTLC when initializing garden');
-        return Ok(this._htlcs.starknet.htlcActorAddress);
-      }
-      case BlockchainType.Sui: {
-        if (!this._htlcs.sui)
-          return Err('Please provide suiHTLC when initializing garden');
-        return Ok(this._htlcs.sui.htlcActorAddress);
-      }
-      default:
-        return Err('Unsupported chain');
-    }
   }
 
   on<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]) {

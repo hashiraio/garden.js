@@ -69,14 +69,14 @@ describe('Garden swap tests', () => {
 
   console.log(
     `
-==== Wallet Addresses ====
+======= Wallet Addresses =======
 Digest Key:              ${DIGEST_KEY}
 EVM Wallet Address:      ${evmWallet.account.address}
 Solana Wallet Address:   ${user.publicKey.toString()}
 Starknet Wallet Address: ${starknetWallet.address}
 Bitcoin Wallet Address:  ${bitcoinWallet.getAddress()}
 Sui Wallet Address:      ${suiSigner.toSuiAddress()}
-=========================
+===============================
     `,
   );
 
@@ -85,13 +85,13 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     digestKey: DIGEST_KEY!,
     apiKey: config.API_KEY,
     wallets: {
-      // evm: evmWallet,
+      evm: evmWallet,
       starknet: starknetWallet,
       solana: userProvider,
       bitcoin: bitcoinWallet,
       sui: suiSigner,
     },
-  }).setRedeemServiceEnabled(false);
+  }).setRedeemServiceEnabled(true);
 
   const setupEventListeners = (garden: Garden) => {
     garden?.on('error', (order, error) => {
@@ -129,13 +129,11 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   // let matchedOrder: Order;
 
   describe.only('Should perform a swap', async () => {
-    it('should create and execute a swap', async () => {
+    it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(
-        SupportedAssets.testnet.starknet_sepolia.WBTC,
-      );
+      const from = ChainAsset.from(SupportedAssets.testnet.base_sepolia.WBTC);
 
-      const to = ChainAsset.from(SupportedAssets.testnet.sui_testnet.SUI);
+      const to = ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC);
       const sendAmount = 50000;
       const quote = await garden.quote.getQuote(
         from,
@@ -152,7 +150,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         toAsset: to,
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
-        btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+        addresses: {
+          Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+        },
       };
       console.log(order);
       console.log(garden.digestKey?.userId);
@@ -164,8 +164,97 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
       console.log('Order created and initiated ✅', result.val);
       // expect(result.error).toBeFalsy();
       // expect(result.val).toBeTruthy();
-
       await sleep(1500000); // 25 minutes
+    }, 1500000);
+
+    it.skip('should create order without HTLCs when addresses are provided', async () => {
+      const gardenWithoutHTLCs = Garden.fromWallets({
+        environment: {
+          network: Network.TESTNET,
+        },
+        apiKey: config.API_KEY,
+        wallets: {
+          evm: evmWallet,
+        },
+      });
+      const from = ChainAsset.from(
+        SupportedAssets.testnet.arbitrum_sepolia.WBTC,
+      );
+
+      const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
+      const sendAmount = 50000;
+      const quote = await gardenWithoutHTLCs.quote.getQuote(
+        from,
+        to,
+        sendAmount,
+        false,
+        {},
+      );
+
+      const recieveAmount = quote.val?.[0].destination.amount;
+
+      const swapParams: SwapParams = {
+        fromAsset: from,
+        toAsset: to,
+        sendAmount: sendAmount.toString(),
+        receiveAmount: recieveAmount ? recieveAmount : '',
+        addresses: {
+          Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+        },
+      };
+      console.log(swapParams);
+      const result = await gardenWithoutHTLCs.createOrder(swapParams);
+      if (!result.ok) {
+        console.log('Error while creating order ❌:', result.error);
+        throw new Error(result.error);
+      }
+      console.log('Order created and initiated ✅', result.val);
+    }, 1500000);
+
+    it.skip('should fail createSwap without HTLCs even when addresses are provided', async () => {
+      const gardenWithoutHTLCs = Garden.fromWallets({
+        environment: {
+          network: Network.TESTNET,
+        },
+        apiKey: config.API_KEY,
+        wallets: {
+          evm: evmWallet,
+          solana: userProvider,
+        },
+      });
+
+      const from = ChainAsset.from(
+        SupportedAssets.testnet.arbitrum_sepolia.WBTC,
+      );
+
+      const to = ChainAsset.from(SupportedAssets.testnet.solana_testnet.cbBTC);
+      const sendAmount = 50000;
+      const quote = await gardenWithoutHTLCs.quote.getQuote(
+        from,
+        to,
+        sendAmount,
+        false,
+        {},
+      );
+
+      const recieveAmount = quote.val?.[0].destination.amount;
+
+      const swapParams: SwapParams = {
+        fromAsset: to,
+        toAsset: from,
+        sendAmount: sendAmount.toString(),
+        receiveAmount: recieveAmount?.toString() ?? '',
+        addresses: {
+          Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+        },
+      };
+      console.log(swapParams);
+      const result = await gardenWithoutHTLCs.createSwap(swapParams);
+      if (!result.ok) {
+        console.log('Error while creating order ❌:', result.error);
+        throw new Error(result.error);
+      }
+      console.log('Order created and initiated ✅', result.val);
     }, 1500000);
   });
 });
