@@ -42,6 +42,7 @@ export class Executor {
   #api: Api;
   private isBackgroundServiceRunning: boolean = false;
   private executorStop: (() => void) | null = null;
+
   constructor(
     digestKey: DigestKey,
     htlcs: GardenHTLCModules,
