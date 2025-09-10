@@ -265,8 +265,8 @@ export class Garden extends Orderbook implements IGardenJS {
     const order = createOrderRes.val;
 
     switch (blockchainType) {
-      case BlockchainType.EVM:
-        if (!this._htlcs.evm || order.type !== BlockchainType.EVM) {
+      case BlockchainType.evm:
+        if (!this._htlcs.evm || order.type !== BlockchainType.evm) {
           return Err('Order type does not match EVM blockchain type');
         }
         {
@@ -275,8 +275,8 @@ export class Garden extends Orderbook implements IGardenJS {
             return Err(`EVM HTLC initiation failed: ${evmInitRes.error}`);
         }
         break;
-      case BlockchainType.Solana:
-        if (!this._htlcs.solana || order.type !== BlockchainType.Solana) {
+      case BlockchainType.solana:
+        if (!this._htlcs.solana || order.type !== BlockchainType.solana) {
           return Err('Order type does not match Solana blockchain type');
         }
         {
@@ -285,8 +285,8 @@ export class Garden extends Orderbook implements IGardenJS {
             return Err(`Solana HTLC initiation failed: ${solanaInitRes.error}`);
         }
         break;
-      case BlockchainType.Starknet:
-        if (!this._htlcs.starknet || order.type !== BlockchainType.Starknet) {
+      case BlockchainType.starknet:
+        if (!this._htlcs.starknet || order.type !== BlockchainType.starknet) {
           return Err('Order type does not match Starknet blockchain type');
         }
         {
@@ -297,8 +297,8 @@ export class Garden extends Orderbook implements IGardenJS {
             );
         }
         break;
-      case BlockchainType.Sui:
-        if (!this._htlcs.sui || order.type !== BlockchainType.Sui) {
+      case BlockchainType.sui:
+        if (!this._htlcs.sui || order.type !== BlockchainType.sui) {
           return Err('Order type does not match Sui blockchain type');
         }
         {
@@ -307,8 +307,8 @@ export class Garden extends Orderbook implements IGardenJS {
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
         }
         break;
-      case BlockchainType.Bitcoin:
-        if (!this._htlcs.bitcoin || order.type !== BlockchainType.Bitcoin) {
+      case BlockchainType.bitcoin:
+        if (!this._htlcs.bitcoin || order.type !== BlockchainType.bitcoin) {
           return Err('Order type does not match Bitcoin blockchain type');
         }
         {
@@ -352,7 +352,7 @@ export class Garden extends Orderbook implements IGardenJS {
       secretHash = secrets.val.secretHash;
     }
 
-    const btcAddress = params.addresses?.Bitcoin;
+    const btcAddress = params.addresses?.bitcoin;
 
     const isSourceBitcoin = isBitcoin(
       ChainAsset.from(params.fromAsset).getChain(),
@@ -424,7 +424,7 @@ export class Garden extends Orderbook implements IGardenJS {
       isBitcoin(ChainAsset.from(params.fromAsset).getChain()) ||
       isBitcoin(ChainAsset.from(params.toAsset).getChain())
     ) {
-      if (!params.addresses?.Bitcoin)
+      if (!params.addresses?.bitcoin)
         return Err(
           'Bitcoin address in addresses is required if source or destination chain is bitcoin, it is used as refund or redeem address.',
         );

@@ -228,8 +228,8 @@ export type SuiOrderResponse = BaseCreateOrderResponse & {
 };
 
 export type CreateOrderResponse =
-  | ({ type: BlockchainType.EVM } & EvmOrderResponse)
-  | ({ type: BlockchainType.Bitcoin } & BitcoinOrderResponse)
-  | ({ type: BlockchainType.Starknet } & StarknetOrderResponse)
-  | ({ type: BlockchainType.Solana } & SolanaOrderResponse)
-  | ({ type: BlockchainType.Sui } & SuiOrderResponse);
+  | ({ type: BlockchainType.evm } & EvmOrderResponse)
+  | ({ type: BlockchainType.bitcoin } & BitcoinOrderResponse)
+  | ({ type: BlockchainType.starknet } & StarknetOrderResponse)
+  | ({ type: BlockchainType.solana } & SolanaOrderResponse)
+  | ({ type: BlockchainType.sui } & SuiOrderResponse);

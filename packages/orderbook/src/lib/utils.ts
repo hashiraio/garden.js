@@ -131,26 +131,26 @@ export function discriminateOrderResponse(
   response: BaseCreateOrderResponse,
 ): CreateOrderResponse | null {
   if (isEvmOrderResponse(response)) {
-    return { type: BlockchainType.EVM, ...response } as CreateOrderResponse;
+    return { type: BlockchainType.evm, ...response } as CreateOrderResponse;
   }
 
   if (isStarknetOrderResponse(response)) {
     return {
-      type: BlockchainType.Starknet,
+      type: BlockchainType.starknet,
       ...response,
     } as CreateOrderResponse;
   }
 
   if (isBitcoinOrderResponse(response)) {
-    return { type: BlockchainType.Bitcoin, ...response } as CreateOrderResponse;
+    return { type: BlockchainType.bitcoin, ...response } as CreateOrderResponse;
   }
 
   if (isSolanaOrderResponse(response)) {
-    return { type: BlockchainType.Solana, ...response } as CreateOrderResponse;
+    return { type: BlockchainType.solana, ...response } as CreateOrderResponse;
   }
 
   if (isSuiOrderResponse(response)) {
-    return { type: BlockchainType.Sui, ...response } as CreateOrderResponse;
+    return { type: BlockchainType.sui, ...response } as CreateOrderResponse;
   }
 
   return null;
@@ -160,10 +160,10 @@ export function discriminateOrderResponse(
  * Utility function to get the blockchain type from an order response
  */
 export function getOrderResponseType(response: any): BlockchainType | null {
-  if (isEvmOrderResponse(response)) return BlockchainType.EVM;
-  if (isStarknetOrderResponse(response)) return BlockchainType.Starknet;
-  if (isBitcoinOrderResponse(response)) return BlockchainType.Bitcoin;
-  if (isSolanaOrderResponse(response)) return BlockchainType.Solana;
-  if (isSuiOrderResponse(response)) return BlockchainType.Sui;
+  if (isEvmOrderResponse(response)) return BlockchainType.evm;
+  if (isStarknetOrderResponse(response)) return BlockchainType.starknet;
+  if (isBitcoinOrderResponse(response)) return BlockchainType.bitcoin;
+  if (isSolanaOrderResponse(response)) return BlockchainType.solana;
+  if (isSuiOrderResponse(response)) return BlockchainType.sui;
   return null;
 }

@@ -29,11 +29,11 @@ export type AssetToken = AssetCommon & {
 export type Asset = AssetToken;
 
 export enum BlockchainType {
-  Bitcoin = 'Bitcoin',
-  EVM = 'EVM',
-  Solana = 'Solana',
-  Starknet = 'Starknet',
-  Sui = 'Sui',
+  bitcoin = 'bitcoin',
+  evm = 'evm',
+  solana = 'solana',
+  starknet = 'starknet',
+  sui = 'sui',
 }
 
 export enum NetworkType {
@@ -44,124 +44,124 @@ export enum NetworkType {
 
 export const ChainsConfig = {
   bitcoin: {
-    type: BlockchainType.Bitcoin,
+    type: BlockchainType.bitcoin,
     network: Network.MAINNET,
   },
   bitcoin_testnet: {
-    type: BlockchainType.Bitcoin,
+    type: BlockchainType.bitcoin,
     network: Network.TESTNET,
   },
   bitcoin_regtest: {
-    type: BlockchainType.Bitcoin,
+    type: BlockchainType.bitcoin,
     network: Network.LOCALNET,
   },
   ethereum: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   base: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   arbitrum: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   ethereum_sepolia: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   arbitrum_localnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.LOCALNET,
   },
   arbitrum_sepolia: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   ethereum_localnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.LOCALNET,
   },
   base_sepolia: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   solana: {
-    type: BlockchainType.Solana,
+    type: BlockchainType.solana,
     network: Network.MAINNET,
   },
   solana_testnet: {
-    type: BlockchainType.Solana,
+    type: BlockchainType.solana,
     network: Network.TESTNET,
   },
   solana_localnet: {
-    type: BlockchainType.Solana,
+    type: BlockchainType.solana,
     network: Network.LOCALNET,
   },
   bera_testnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   citrea_testnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   bera: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   monad_testnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   starknet: {
-    type: BlockchainType.Starknet,
+    type: BlockchainType.starknet,
     network: Network.MAINNET,
   },
   starknet_sepolia: {
-    type: BlockchainType.Starknet,
+    type: BlockchainType.starknet,
     network: Network.TESTNET,
   },
   starknet_devnet: {
-    type: BlockchainType.Starknet,
+    type: BlockchainType.starknet,
     network: Network.LOCALNET,
   },
   hyperliquid_testnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   hyperliquid: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   unichain: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   corn: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
   botanix: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
-  bnbchain: { type: BlockchainType.EVM, network: Network.MAINNET },
+  bnbchain: { type: BlockchainType.evm, network: Network.MAINNET },
   bnbchain_testnet: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.TESTNET,
   },
   sui: {
-    type: BlockchainType.Sui,
+    type: BlockchainType.sui,
     network: Network.MAINNET,
   },
   sui_testnet: {
-    type: BlockchainType.Sui,
+    type: BlockchainType.sui,
     network: Network.TESTNET,
   },
   core: {
-    type: BlockchainType.EVM,
+    type: BlockchainType.evm,
     network: Network.MAINNET,
   },
 } as const;
@@ -175,7 +175,7 @@ export type Chain = keyof typeof ChainsConfig;
 
 export type EvmChain = {
   [K in Chain]: (typeof ChainsConfig)[K] extends {
-    type: BlockchainType.EVM;
+    type: BlockchainType.evm;
   }
     ? K
     : never;
@@ -201,49 +201,49 @@ export const isMainnet = (chain: Chain) =>
   ChainsConfig[chain].network === Network.MAINNET;
 
 export const isBitcoin = (chain: Chain) =>
-  ChainsConfig[chain].type === BlockchainType.Bitcoin;
+  ChainsConfig[chain].type === BlockchainType.bitcoin;
 
 export const isEVM = (chain: Chain) =>
-  ChainsConfig[chain].type === BlockchainType.EVM;
+  ChainsConfig[chain].type === BlockchainType.evm;
 
 export const isSolana = (chain: Chain) =>
-  ChainsConfig[chain].type === BlockchainType.Solana;
+  ChainsConfig[chain].type === BlockchainType.solana;
 
 export const isStarknet = (chain: Chain) =>
-  ChainsConfig[chain].type === BlockchainType.Starknet;
+  ChainsConfig[chain].type === BlockchainType.starknet;
 
 export const isSui = (chain: Chain) =>
-  ChainsConfig[chain].type === BlockchainType.Sui;
+  ChainsConfig[chain].type === BlockchainType.sui;
 
 export const getBlockchainType = (chain: Chain) => ChainsConfig[chain].type;
 
 export const NativeTokenAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
 export const NATIVE_TOKENS = {
-  [BlockchainType.EVM]: 'eth',
-  [BlockchainType.Solana]: 'sol',
-  [BlockchainType.Sui]: 'sui',
+  [BlockchainType.evm]: 'eth',
+  [BlockchainType.solana]: 'sol',
+  [BlockchainType.sui]: 'sui',
 };
 
 //TODO: Change these
 export const isEvmNativeToken = (chain: Chain, tokenAddress: string) => {
   return (
     isEVM(chain) &&
-    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.EVM]
+    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.evm]
   );
 };
 
 export const isSolanaNativeToken = (chain: Chain, tokenAddress: string) => {
   return (
     isSolana(chain) &&
-    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.Solana]
+    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.solana]
   );
 };
 
 export const isSuiNativeToken = (chain: Chain, tokenAddress: string) => {
   return (
     isSui(chain) &&
-    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.Sui]
+    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.sui]
   );
 };
 
@@ -288,10 +288,10 @@ export const getChainTypeFromAssetChain = (
   assetChain: string,
 ): BlockchainType => {
   const [chain] = assetChain.split(':');
-  if (isBitcoin(chain as Chain)) return BlockchainType.Bitcoin;
-  if (isEVM(chain as Chain)) return BlockchainType.EVM;
-  if (isSolana(chain as Chain)) return BlockchainType.Solana;
-  if (isStarknet(chain as Chain)) return BlockchainType.Starknet;
-  if (isSui(chain as Chain)) return BlockchainType.Sui;
+  if (isBitcoin(chain as Chain)) return BlockchainType.bitcoin;
+  if (isEVM(chain as Chain)) return BlockchainType.evm;
+  if (isSolana(chain as Chain)) return BlockchainType.solana;
+  if (isStarknet(chain as Chain)) return BlockchainType.starknet;
+  if (isSui(chain as Chain)) return BlockchainType.sui;
   throw new Error('Invalid or unsupported chain');
 };

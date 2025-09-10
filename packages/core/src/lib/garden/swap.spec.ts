@@ -151,7 +151,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
         addresses: {
-          Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+          bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
       };
       console.log(order);
@@ -199,7 +199,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
         addresses: {
-          Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+          bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
       };
       console.log(swapParams);
@@ -245,7 +245,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount?.toString() ?? '',
         addresses: {
-          Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
+          bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
       };
       console.log(swapParams);

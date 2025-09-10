@@ -348,13 +348,13 @@ export const getAddresses = async (
   }
 
   switch (blockchainType) {
-    case BlockchainType.EVM:
+    case BlockchainType.evm:
       if (!htlcs.evm)
         return Err(
           'Please provide evmHTLC when initializing garden or pass EVM address in SwapParams',
         );
       return Ok(htlcs.evm.htlcActorAddress);
-    case BlockchainType.Bitcoin: {
+    case BlockchainType.bitcoin: {
       const pubKey = await htlcs.bitcoin?.getPublicKey();
       if (!pubKey || !isValidBitcoinPubKey(pubKey))
         return Err(
@@ -362,21 +362,21 @@ export const getAddresses = async (
         );
       return Ok(toXOnly(pubKey));
     }
-    case BlockchainType.Solana: {
+    case BlockchainType.solana: {
       if (!htlcs.solana)
         return Err(
           'Please provide solanaHTLC when initializing garden or pass Solana address in SwapParams',
         );
       return Ok(htlcs.solana.htlcActorAddress);
     }
-    case BlockchainType.Starknet: {
+    case BlockchainType.starknet: {
       if (!htlcs.starknet)
         return Err(
           'Please provide starknetHTLC when initializing garden or pass Starknet address in SwapParams',
         );
       return Ok(htlcs.starknet.htlcActorAddress);
     }
-    case BlockchainType.Sui: {
+    case BlockchainType.sui: {
       if (!htlcs.sui)
         return Err(
           'Please provide suiHTLC when initializing garden or pass Sui address in SwapParams',
@@ -398,14 +398,14 @@ export const validateHTLCForSwap = async (
   htlcs: GardenHTLCModules,
 ): Promise<AsyncResult<void, string>> => {
   const htlcMap: Record<BlockchainType, { htlc: any; name: string }> = {
-    [BlockchainType.EVM]: { htlc: htlcs.evm, name: 'EVM' },
-    [BlockchainType.Solana]: { htlc: htlcs.solana, name: 'Solana' },
-    [BlockchainType.Starknet]: {
+    [BlockchainType.evm]: { htlc: htlcs.evm, name: 'EVM' },
+    [BlockchainType.solana]: { htlc: htlcs.solana, name: 'Solana' },
+    [BlockchainType.starknet]: {
       htlc: htlcs.starknet,
       name: 'Starknet',
     },
-    [BlockchainType.Sui]: { htlc: htlcs.sui, name: 'Sui' },
-    [BlockchainType.Bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
+    [BlockchainType.sui]: { htlc: htlcs.sui, name: 'Sui' },
+    [BlockchainType.bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
   };
 
   const entry = htlcMap[blockchainType];

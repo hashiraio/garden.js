@@ -272,11 +272,11 @@ export class Executor {
     const blockchainType = getBlockchainType(order.destination_swap.chain);
 
     const redeemHandlers = {
-      [BlockchainType.EVM]: () => this.evmRedeem(order, secret),
-      [BlockchainType.Bitcoin]: () => this.btcRedeem(order, secret),
-      [BlockchainType.Starknet]: () => this.starknetRedeem(order, secret),
-      [BlockchainType.Solana]: () => this.solRedeem(order, secret),
-      [BlockchainType.Sui]: () => this.suiRedeem(order, secret),
+      [BlockchainType.evm]: () => this.evmRedeem(order, secret),
+      [BlockchainType.bitcoin]: () => this.btcRedeem(order, secret),
+      [BlockchainType.starknet]: () => this.starknetRedeem(order, secret),
+      [BlockchainType.solana]: () => this.solRedeem(order, secret),
+      [BlockchainType.sui]: () => this.suiRedeem(order, secret),
     };
 
     const handler = redeemHandlers[blockchainType];
