@@ -19,7 +19,6 @@ import {
   Order,
   isEvmOrderResponse,
   EvmChain,
-  ChainAssetString,
   ChainAsset,
 } from '@gardenfi/orderbook';
 import { AtomicSwapABI } from '../abi/atomicSwap';
@@ -89,9 +88,7 @@ export class EvmRelay implements IEVMHTLC {
     if (!assetInfo.ok) return Err(assetInfo.error);
     const { htlcAddress, tokenAddress } = assetInfo.val;
 
-    const asset = ChainAsset.fromString(
-      order.source_swap.asset as ChainAssetString,
-    );
+    const asset = ChainAsset.fromString(order.source_swap.asset);
 
     if (isEvmNativeToken(asset.getChain(), asset.getSymbol())) {
       return this._initiateOnNativeHTLC(
@@ -284,6 +281,28 @@ export class EvmRelay implements IEVMHTLC {
 
     if (!this.wallet.account) return Err('No account found');
     try {
+      // If typed_data is null, this is a native initiate: send the initiate_transaction directly
+      if (order.typed_data === null) {
+        const tx = order.initiate_transaction;
+        if (!tx)
+          return Err('No initiate_transaction found for native initiate');
+        const txHash = await this.wallet.sendTransaction({
+          account: this.wallet.account,
+          to: with0x(tx.to),
+          value: BigInt(tx.value),
+          data: with0x(tx.data),
+          gas: BigInt(tx.gas_limit),
+          chain: this.wallet.chain,
+        });
+
+        const receipt = await waitForTransactionReceipt(this.wallet, txHash);
+        if (receipt.val?.status !== 'success') {
+          return Err('Native initiate transaction failed');
+        }
+
+        return Ok(txHash);
+      }
+
       if (order.approval_transaction) {
         const approvalResult = await this.executeApprovalTransaction(order);
         if (approvalResult.error) {
