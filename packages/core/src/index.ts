@@ -14,7 +14,6 @@ export type {
   GardenConfigWithHTLCs,
   ApiConfig,
 } from './lib/garden/garden.types';
-export { OrderAction } from './lib/orderStatus/orderStatus';
 
 export { EvmRelay } from './lib/evm/relay/evmRelay';
 export type { IEVMRelay, EVMRelayOpts } from './lib/evm/relay/evmRelay.types';
@@ -30,15 +29,6 @@ export { SolanaHTLC } from './lib/solana/htlc/solanaHTLC';
 
 export { BlockNumberFetcher } from './lib/blockNumberFetcher/blockNumber';
 export type { IBlockNumberFetcher } from './lib/blockNumberFetcher/blockNumber';
-
-export { OrderStatus, SwapStatus } from './lib/orderStatus/status';
-
-export {
-  parseAction,
-  ParseOrderStatus,
-  isCompleted,
-  isDeadlinePassed,
-} from './lib/orderStatus/orderStatus';
 
 export { SecretManager } from './lib/secretManager/secretManager';
 export type {

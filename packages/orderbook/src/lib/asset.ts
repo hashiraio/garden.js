@@ -11,6 +11,19 @@ export type AssetCommon = {
   atomicSwapAddress: string;
 };
 
+export enum OrderStatus {
+  Created = 'Created',
+  InitiateDetected = 'Initiate Detected',
+  Initiated = 'Initiated',
+  AwaitingRedeem = 'Awaiting Redeem',
+  RedeemDetected = 'Redeem Detected',
+  Redeemed = 'Redeemed',
+  AwaitingRefund = 'Awaiting Refund',
+  RefundDetected = 'Refund Detected',
+  Refunded = 'Refunded',
+  Expired = 'Expired',
+}
+
 export enum OrderLifecycle {
   refunded = 'refunded',
   expired = 'expired',

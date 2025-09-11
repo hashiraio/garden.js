@@ -130,7 +130,7 @@ describe('swap and execute using garden', () => {
       },
     };
 
-    const result = await garden.swap(orderObj);
+    const result = await garden.createSwap(orderObj);
     if (!result.ok) {
       console.log('error while creating order ❌ :', result.error);
       throw new Error(result.error);
@@ -154,12 +154,12 @@ describe('swap and execute using garden', () => {
     if (isBitcoin(order.source_swap.chain)) {
       console.warn('Bitcoin swap, skipping initiation');
     }
-    if (!garden.evmHTLC) {
+    if (!garden.htlcs.evm) {
       console.warn('EVMHTLC is not initialized, skipping initiation');
       return;
     }
 
-    const res = await garden.evmHTLC.initiate(order);
+    const res = await garden.htlcs.evm.initiate(order);
     console.log('initiated ✅ :', res.val);
     if (!res.ok) console.log('init error ❌ :', res.error);
     expect(res.ok).toBeTruthy();
@@ -225,9 +225,8 @@ describe.only('switch network with http transport', () => {
         toAsset: 'base_sepolia:wbtc',
         sendAmount: '50000',
         receiveAmount,
-        additionalData: {},
       };
-      const order = await garden.swap(swapData);
+      const order = await garden.createSwap(swapData);
       if (!order.ok) {
         const errorMsg = `Error while creating order: ${order.error}`;
         console.log('❌', errorMsg);
@@ -238,7 +237,7 @@ describe.only('switch network with http transport', () => {
       if (!res.val) {
         throw new Error('order not found');
       }
-      const initRes = await garden.evmHTLC?.initiate(res.val);
+      const initRes = await garden.htlcs.evm?.initiate(res.val);
       if (initRes?.error) {
         const errorMsg = `Error while initing order: ${initRes.error}`;
         console.log('❌', errorMsg);

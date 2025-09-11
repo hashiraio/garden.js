@@ -6,8 +6,9 @@ import {
   ChainAssetString,
   IOrderbook,
   Order,
+  OrderAction,
+  OrderStatus,
 } from '@gardenfi/orderbook';
-import { OrderAction, OrderStatus } from '../orderStatus/orderStatus';
 import { ApiKey, AsyncResult, IAuth, Network } from '@gardenfi/utils';
 import { ISecretManager } from '../secretManager/secretManager.types';
 import { IQuote } from '../quote/quote.types';

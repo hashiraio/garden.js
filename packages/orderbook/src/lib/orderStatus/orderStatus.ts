@@ -1,17 +1,4 @@
-import { isBitcoin, Order } from '@gardenfi/orderbook';
-
-export enum OrderStatus {
-  Created = 'Created',
-  InitiateDetected = 'Initiate Detected',
-  Initiated = 'Initiated',
-  AwaitingRedeem = 'Awaiting Redeem',
-  RedeemDetected = 'Redeem Detected',
-  Redeemed = 'Redeemed',
-  AwaitingRefund = 'Awaiting Refund',
-  RefundDetected = 'Refund Detected',
-  Refunded = 'Refunded',
-  Expired = 'Expired',
-}
+import { isBitcoin, Order, OrderStatus } from '@gardenfi/orderbook';
 
 export const ParseOrderStatus = (order: Order) => {
   const { created_at, source_swap, destination_swap } = order;

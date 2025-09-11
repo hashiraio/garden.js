@@ -28,3 +28,10 @@ export {
 } from './lib/utils';
 export { ChainAsset } from './lib/chainAsset/chainAsset';
 export type { ChainAssetString } from './lib/chainAsset/chainAsset';
+export {
+  OrderAction,
+  ParseOrderStatus,
+  isCompleted,
+  isDeadlinePassed,
+  parseAction,
+} from './lib/orderStatus/orderStatus';

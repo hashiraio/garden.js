@@ -16,16 +16,14 @@ import {
   getBlockchainType,
   IOrderbook,
   isBitcoin,
-  Order,
-  OrderLifecycle,
-} from '@gardenfi/orderbook';
-import {
   isCompleted,
+  Order,
   OrderAction,
+  OrderLifecycle,
   OrderStatus,
+  OrderWithStatus,
   parseAction,
-  ParseOrderStatus,
-} from '../../orderStatus/orderStatus';
+} from '@gardenfi/orderbook';
 import { ISecretManager } from '../../secretManager/secretManager.types';
 import { SecretManager } from '../../secretManager/secretManager';
 import { GardenCache } from '../cache/GardenCache';
@@ -172,22 +170,17 @@ export class Executor {
         const allOrdersArrays = await Promise.all(orderPromises);
 
         // Merge and deduplicate orders from all addresses
-        const mergedOrdersById = new Map<string, Order>();
+        const mergedOrdersById = new Map<string, OrderWithStatus>();
         for (const orders of allOrdersArrays) {
           for (const order of orders) {
             mergedOrdersById.set(order.order_id, order);
           }
         }
 
-        const ordersWithStatus = Array.from(mergedOrdersById.values()).map(
-          (order) => ({
-            ...order,
-            status: ParseOrderStatus(order),
-          }),
-        );
+        const mergedOrders = Array.from(mergedOrdersById.values());
 
-        this.events.emit('onPendingOrdersChanged', ordersWithStatus);
-        await this.processOrderActions(ordersWithStatus);
+        this.events.emit('onPendingOrdersChanged', mergedOrders);
+        await this.processOrderActions(mergedOrders);
       } finally {
         isProcessing = false;
       }
@@ -207,7 +200,7 @@ export class Executor {
   }
 
   private async processOrderActions(
-    orders: Array<Order & { status: OrderStatus }>,
+    orders: Array<OrderWithStatus>,
   ): Promise<void> {
     const bitcoinRefundStatuses = new Set([
       OrderStatus.InitiateDetected,

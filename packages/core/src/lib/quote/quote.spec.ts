@@ -45,8 +45,8 @@ describe('quote', () => {
 
   it('get quote ƒrom assets', async () => {
     const res = await quote.getQuoteFromAssets({
-      fromAsset: SupportedAssets.mainnet.arbitrum_WBTC,
-      toAsset: SupportedAssets.mainnet.bitcoin_BTC,
+      fromAsset: SupportedAssets.mainnet.arbitrum.WBTC,
+      toAsset: SupportedAssets.mainnet.bitcoin.BTC,
       amount: 100000,
       isExactOut: true,
     });

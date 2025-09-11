@@ -107,7 +107,7 @@ describe('StarkNet Integration Tests', () => {
         toAsset: to,
         sendAmount: '10000000',
         receiveAmount: '1865',
-        addresses: { Bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru' },
+        addresses: { bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru' },
       };
       console.log(order);
       const result = await garden.createSwap(order);

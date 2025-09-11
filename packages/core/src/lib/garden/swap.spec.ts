@@ -91,7 +91,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
       bitcoin: bitcoinWallet,
       sui: suiSigner,
     },
-  }).setRedeemServiceEnabled(true);
+  }).setRedeemServiceEnabled(false);
 
   const setupEventListeners = (garden: Garden) => {
     garden?.on('error', (order, error) => {
@@ -118,7 +118,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
     garden?.on('onPendingOrdersChanged', (orders) => {
       console.log('pending orders :', orders.length);
       orders.forEach((order) => {
-        console.log('pending order :', order.order_id);
+        console.log('orderId :', order.order_id, 'status :', order.status);
       });
     });
     garden?.on('rbf', (order, result) => {

@@ -1,6 +1,5 @@
 import NodeCache from 'node-cache';
-import { Order } from '@gardenfi/orderbook';
-import { OrderAction } from 'src/lib/orderStatus/orderStatus';
+import { Order, OrderAction } from '@gardenfi/orderbook';
 
 // Cache types for different purposes
 export enum CacheType {

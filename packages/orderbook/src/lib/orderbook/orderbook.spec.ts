@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, test } from 'vitest';
 import { DigestKey, Siwe, Url } from '@gardenfi/utils';
 import { Orderbook } from './orderbook';
-import { CreateOrderRequest, Order } from './orderbook.types';
+import { CreateOrderRequest, OrderWithStatus } from './orderbook.types';
 import { ChainAsset } from '../chainAsset/chainAsset';
 // import { Order } from './orderbook.types';s
 // import {
@@ -29,7 +29,7 @@ describe('orders provider', async () => {
     expect(order.error).toBeUndefined();
     if (order.val) {
       expect(order.val.order_id).toEqual(id);
-      expectTypeOf(order.val).toEqualTypeOf<Order>();
+      expectTypeOf(order.val).toEqualTypeOf<OrderWithStatus>();
     }
   });
 
@@ -40,7 +40,7 @@ describe('orders provider', async () => {
     expect(orders.error).toBeUndefined();
     if (orders.val) {
       expect(orders.val.data.length).toBeGreaterThan(0);
-      expectTypeOf(orders.val.data).toEqualTypeOf<Order[]>();
+      expectTypeOf(orders.val.data).toEqualTypeOf<OrderWithStatus[]>();
     }
   });
 
@@ -51,7 +51,7 @@ describe('orders provider', async () => {
     console.log('orders.val.data :', orders.val?.data);
     if (orders.val) {
       expect(orders.val.data.length).toBeGreaterThan(0);
-      expectTypeOf(orders.val.data).toEqualTypeOf<Order[]>();
+      expectTypeOf(orders.val.data).toEqualTypeOf<OrderWithStatus[]>();
     }
   });
 
@@ -61,7 +61,7 @@ describe('orders provider', async () => {
       async (orders) => {
         console.log('subscribe orders :', orders);
         expect(orders.data.length).toBeGreaterThan(0);
-        expectTypeOf(orders.data).toEqualTypeOf<Order[]>();
+        expectTypeOf(orders.data).toEqualTypeOf<OrderWithStatus[]>();
       },
       1000,
     );

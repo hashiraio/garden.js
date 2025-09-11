@@ -1,5 +1,5 @@
 import { AsyncResult, IAuth, Request } from '@gardenfi/utils';
-import { BlockchainType, Chain, OrderLifecycle } from '../asset';
+import { BlockchainType, Chain, OrderLifecycle, OrderStatus } from '../asset';
 import type { Calldata, RawArgs, TypedData } from 'starknet';
 import { ChainAsset } from '../chainAsset/chainAsset';
 
@@ -20,7 +20,7 @@ export interface IOrderbook {
    * @param id - The create Id of the order
    * @returns {AsyncResult<Order, string>} A promise that resolves to the order.
    */
-  getOrder(id: string, request?: Request): AsyncResult<Order, string>;
+  getOrder(id: string, request?: Request): AsyncResult<OrderWithStatus, string>;
 
   /**
    * Get all orders from the orderbook based on the provided filters.
@@ -31,7 +31,7 @@ export interface IOrderbook {
   getOrders(
     queryParams: GetOrderQueryParams,
     request?: Request,
-  ): AsyncResult<PaginatedData<Order>, string>;
+  ): AsyncResult<PaginatedData<OrderWithStatus>, string>;
 
   /**
    * A wrapper around getOrders that polls for every provided interval and returns orders based on the provided filters.
@@ -43,7 +43,7 @@ export interface IOrderbook {
    */
   subscribeOrders(
     queryParams: GetOrderQueryParams,
-    cb: (orders: PaginatedData<Order>) => Promise<void>,
+    cb: (orders: PaginatedData<OrderWithStatus>) => Promise<void>,
     interval?: number,
     request?: Request,
   ): Promise<() => void>;
@@ -121,6 +121,10 @@ export type Order = {
   affiliate_fees: AffiliateFee[];
   integrator: string;
   version: string;
+};
+
+export type OrderWithStatus = Order & {
+  status: OrderStatus;
 };
 
 export type AssetHTLCInfo = {

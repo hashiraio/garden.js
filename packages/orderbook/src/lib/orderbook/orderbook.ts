@@ -5,6 +5,7 @@ import {
   PaginatedData,
   CreateOrderRequest,
   GetOrderQueryParams,
+  OrderWithStatus,
 } from './orderbook.types';
 import {
   APIResponse,
@@ -17,6 +18,7 @@ import {
   Request,
 } from '@gardenfi/utils';
 import { ConstructUrl, discriminateOrderResponse } from '../utils';
+import { ParseOrderStatus } from '../orderStatus/orderStatus';
 
 /**
  * A class that allows you to create and manage orders with the orderbook url.
@@ -67,7 +69,10 @@ export class Orderbook implements IOrderbook {
     }
   }
 
-  async getOrder(id: string, request?: Request): AsyncResult<Order, string> {
+  async getOrder(
+    id: string,
+    request?: Request,
+  ): AsyncResult<OrderWithStatus, string> {
     try {
       const url = this.url.endpoint(`/v2/orders`).endpoint(id);
       const res = await Fetcher.get<APIResponse<Order>>(url, { ...request });
@@ -75,7 +80,10 @@ export class Orderbook implements IOrderbook {
       if (res.error) return Err(res.error);
       if (!res.result)
         return Err('GetOrder: Unexpected error, result is undefined');
-      return Ok(res.result);
+
+      const orderWithStatus = ParseOrderStatus(res.result);
+
+      return Ok({ ...res.result, status: orderWithStatus });
     } catch (error: any) {
       return Err(
         `GetOrder: ${error instanceof Error ? error.message : String(error)}`,
@@ -86,7 +94,7 @@ export class Orderbook implements IOrderbook {
   async getOrders(
     queryParams: GetOrderQueryParams,
     request?: Request,
-  ): AsyncResult<PaginatedData<Order>, string> {
+  ): AsyncResult<PaginatedData<OrderWithStatus>, string> {
     const endpoint = '/v2/orders';
     const url = ConstructUrl(this.url, endpoint, queryParams);
 
@@ -100,7 +108,15 @@ export class Orderbook implements IOrderbook {
       if (!res.result)
         return Err('GetAllOrders: Unexpected error, result is undefined');
 
-      return Ok(res.result);
+      const ordersWithStatus = res.result.data.map((order) => ({
+        ...order,
+        status: ParseOrderStatus(order),
+      }));
+
+      return Ok({
+        ...res.result,
+        data: ordersWithStatus,
+      });
     } catch (error: any) {
       return Err(
         `GetAllOrders: ${
@@ -121,7 +137,7 @@ export class Orderbook implements IOrderbook {
    */
   async subscribeOrders(
     queryParams: GetOrderQueryParams,
-    cb: (orders: PaginatedData<Order>) => Promise<void>,
+    cb: (orders: PaginatedData<OrderWithStatus>) => Promise<void>,
     interval?: number,
     request?: Request,
   ): Promise<() => void> {
