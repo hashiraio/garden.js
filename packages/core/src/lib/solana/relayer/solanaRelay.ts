@@ -421,9 +421,7 @@ export class SolanaRelay implements ISolanaHTLC {
         return Err(`Failed to fetch order by id: ${orderResult.error}`);
       }
 
-      const asset = ChainAsset.fromString(
-        orderResult.val.source_swap.asset as ChainAssetString,
-      );
+      const asset = ChainAsset.fromString(orderResult.val.source_swap.asset);
       if (isSolanaNativeToken(asset.getChain(), asset.getSymbol())) {
         return await this.initiateNativeSwap(orderResult.val);
       }

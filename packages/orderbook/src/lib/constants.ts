@@ -290,7 +290,7 @@ export const SupportedAssets = {
         chain: Chains.citrea_testnet,
         logo: 'https://garden.imgix.net/token-images/bitcoin.svg',
         atomicSwapAddress: '0xE413743B51f3cC8b3ac24addf50D18fa138cB0Bb',
-        tokenAddress: null,
+        tokenAddress: 'primary',
       },
       CBBTC: {
         name: 'Citrea Bridged Bitcoin',
@@ -456,7 +456,7 @@ export const SupportedAssets = {
         chain: Chains.ethereum,
         logo: 'https://garden.imgix.net/chain_images/ethereum.svg',
         atomicSwapAddress: '0xE413743B51f3cC8b3ac24addf50D18fa138cB0Bb',
-        tokenAddress: null,
+        tokenAddress: 'primary',
       },
       USDC: {
         name: 'USD Coin',
@@ -512,7 +512,7 @@ export const SupportedAssets = {
         chain: Chains.solana,
         logo: 'https://garden-finance.imgix.net/chain_images/solana.png',
         atomicSwapAddress: '2bag6xpshpvPe7SJ9nSDLHpxqhEAoHPGpEkjNSv7gxoF',
-        tokenAddress: null,
+        tokenAddress: 'primary',
       },
       USDC: {
         name: 'USD Coin',
@@ -608,7 +608,7 @@ export const SupportedAssets = {
         chain: Chains.corn,
         logo: 'https://garden.imgix.net/token-images/bitcorn.svg',
         atomicSwapAddress: '0xE413743B51f3cC8b3ac24addf50D18fa138cB0Bb',
-        tokenAddress: null,
+        tokenAddress: 'primary',
       },
     },
     botanix: {
@@ -619,7 +619,7 @@ export const SupportedAssets = {
         chain: Chains.botanix,
         logo: 'https://garden.imgix.net/token-images/bitcoin.svg',
         atomicSwapAddress: '0xE413743B51f3cC8b3ac24addf50D18fa138cB0Bb',
-        tokenAddress: null,
+        tokenAddress: 'primary',
       },
     },
     bnbchain: {

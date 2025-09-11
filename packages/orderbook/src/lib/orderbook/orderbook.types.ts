@@ -194,7 +194,7 @@ export type BitcoinOrderResponse = BaseCreateOrderResponse & {
   amount: number;
 };
 
-type WithTypedData<T, D> = T & { typed_data: D };
+type WithTypedData<T, D> = T & { typed_data: D | null };
 
 type EvmTypedData = {
   domain: Record<string, unknown>;
