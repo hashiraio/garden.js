@@ -292,6 +292,22 @@ export class StarknetRelay implements IStarknetHTLC {
     const approvalRes = await this.executeApprovalTransaction(order);
     if (approvalRes.error) return Err(approvalRes.error);
     const { typed_data } = order;
+    if (typed_data === null) {
+      const tx = order.initiate_transaction;
+      if (!tx) return Err('No initiate_transaction found for native initiate');
+      const txHash = await this.account.execute([
+        {
+          contractAddress: with0x(tx.to),
+          entrypoint: with0x(tx.selector as string),
+          calldata: tx.calldata,
+        },
+      ]);
+      await this.starknetProvider.waitForTransaction(txHash.transaction_hash, {
+        retryInterval: 2000,
+        successStates: [TransactionExecutionStatus.SUCCEEDED],
+      });
+      return Ok(txHash.transaction_hash);
+    }
     const signature = await this.account.signMessage(typed_data);
     const formattedSignature = formatStarknetSignature(signature);
     if (formattedSignature.error) {
