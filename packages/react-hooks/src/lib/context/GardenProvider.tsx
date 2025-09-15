@@ -12,12 +12,6 @@ import type {
   GardenContextType,
   GardenProviderProps,
 } from './gardenProvider.types';
-import {
-  BlockchainType,
-  getBlockchainType,
-  isBitcoin,
-  Order,
-} from '@gardenfi/orderbook';
 import { hasAnyValidValue } from '../utils';
 import { useDigestKey } from '../hooks/useDigestKey';
 import { Err, Ok } from '@gardenfi/utils';
@@ -29,7 +23,7 @@ export const GardenContext = createContext<GardenContextType>({
 export const GardenProvider: FC<GardenProviderProps> = ({
   children,
   config,
-  handleSecretManagement,
+  setRedeemServiceEnabled = true,
 }) => {
   const [garden, setGarden] = useState<IGardenJS>();
 
@@ -65,105 +59,44 @@ export const GardenProvider: FC<GardenProviderProps> = ({
   const swapAndInitiate = async (params: SwapParams) => {
     if (!garden) return Err('Garden not initialized');
 
-    const order = await garden.swap(params);
-    if (!order.val) return Err(order.error);
+    const order = await garden.createSwap(params);
+    if (!order.val) return Err(order.error || 'Unknown error occurred');
 
-    if (isBitcoin(order.val.source_swap.chain)) return Ok(order.val);
-
-    let init_tx_hash: string;
-
-    switch (getBlockchainType(order.val.source_swap.chain)) {
-      case BlockchainType.EVM: {
-        if (!garden.evmHTLC)
-          return Err('EVM HTLC not initialized: Please provide evmHTLC');
-
-        const initRes = await garden.evmHTLC.initiate(order.val);
-        if (!initRes.ok) return Err(initRes.error);
-        init_tx_hash = initRes.val;
-        break;
-      }
-      case BlockchainType.Starknet: {
-        if (!garden.starknetHTLC)
-          return Err(
-            'Starknet HTLC not initialized: Please provide starknetHTLC',
-          );
-
-        const starknetInitRes = await garden.starknetHTLC.initiate(order.val);
-        if (!starknetInitRes.ok) return Err(starknetInitRes.error);
-        init_tx_hash = starknetInitRes.val;
-        break;
-      }
-      case BlockchainType.Solana: {
-        if (!garden.solanaHTLC)
-          return Err('Solana HTLC not initialized: Please provide solanaHTLC');
-
-        const solanaInitRes = await garden.solanaHTLC.initiate(order.val);
-        if (!solanaInitRes.ok) return Err(solanaInitRes.error);
-        init_tx_hash = solanaInitRes.val;
-        break;
-      }
-      case BlockchainType.Sui: {
-        if (!garden.suiHTLC)
-          return Err('Sui HTLC not initialized: Please provide suiHTLC');
-
-        const suiInitRes = await garden.suiHTLC.initiate(order.val);
-        if (!suiInitRes.ok) return Err(suiInitRes.error);
-        init_tx_hash = suiInitRes.val;
-        break;
-      }
-      case BlockchainType.Bitcoin:
-        init_tx_hash = order.val.source_swap.initiate_tx_hash;
-        break;
-      default:
-        return Err('Unsupported chain');
-    }
-
-    const updatedOrder: Order = {
-      ...order.val,
-      source_swap: {
-        ...order.val.source_swap,
-        initiate_tx_hash: init_tx_hash,
-      },
-    };
-
-    return Ok(updatedOrder);
+    return Ok(order.val);
   };
 
-  // Initialize Garden
   useEffect(() => {
-    if (!window || !digestKey) return;
+    if (!window) return;
+
+    if (!!setRedeemServiceEnabled && !digestKey) return;
+
     if (!('wallets' in config) && !('htlc' in config)) return;
 
     let garden: Garden;
     if (
       'wallets' in config &&
-      Object.keys(config.wallets).length > 0 &&
-      hasAnyValidValue(config.wallets)
+      Object.keys(config.wallets ?? {}).length > 0 &&
+      hasAnyValidValue(config.wallets ?? {})
     ) {
       garden = Garden.fromWallets({
         ...config,
-        digestKey: digestKey,
-      }).handleSecretManagement(
-        handleSecretManagement ? handleSecretManagement : false,
-      );
+        digestKey: !!setRedeemServiceEnabled ? digestKey : undefined,
+      }).setRedeemServiceEnabled(setRedeemServiceEnabled);
     } else if (
       'htlc' in config &&
-      Object.keys(config.htlc).length > 0 &&
-      hasAnyValidValue(config.htlc)
+      Object.keys(config.htlc ?? {}).length > 0 &&
+      hasAnyValidValue(config.htlc ?? {})
     ) {
       garden = new Garden({
         ...config,
-        digestKey: digestKey,
-      }).handleSecretManagement(
-        handleSecretManagement ? handleSecretManagement : false,
-      );
+        digestKey: !!setRedeemServiceEnabled ? digestKey : undefined,
+      }).setRedeemServiceEnabled(setRedeemServiceEnabled);
     } else {
-      // Handle case where neither wallets nor htlc is provided
       return;
     }
 
     setGarden(garden);
-  }, [config, digestKey, handleSecretManagement]);
+  }, [config, digestKey, setRedeemServiceEnabled]);
 
   return (
     <GardenContext.Provider

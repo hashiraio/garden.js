@@ -76,7 +76,7 @@ export class Garden extends Orderbook implements IGardenJS {
   /**
    * If true, the redeem service will be enabled.
    */
-  private redeemServiceEnabled: boolean = true;
+  private _redeemServiceEnabled: boolean = true;
   private _secretManager: ISecretManager | undefined;
   private _digestKey: DigestKey | undefined;
 
@@ -113,7 +113,7 @@ export class Garden extends Orderbook implements IGardenJS {
    * @returns this
    */
   setRedeemServiceEnabled(enabled: boolean): this {
-    this.redeemServiceEnabled = enabled;
+    this._redeemServiceEnabled = enabled;
 
     if (enabled) {
       this._executor?.stopBackgroundService();
@@ -135,7 +135,7 @@ export class Garden extends Orderbook implements IGardenJS {
       }
       this._executor?.startBackgroundService(
         this.executeInterval,
-        this.redeemServiceEnabled,
+        this._redeemServiceEnabled,
       );
     }
     return this;
@@ -226,7 +226,7 @@ export class Garden extends Orderbook implements IGardenJS {
   }
 
   get secretManager() {
-    if (this.redeemServiceEnabled || !this._secretManager)
+    if (this._redeemServiceEnabled || !this._secretManager)
       throw new Error('Secret manager is not available');
 
     return this._secretManager;
@@ -242,6 +242,10 @@ export class Garden extends Orderbook implements IGardenJS {
 
   get executor() {
     return this._executor;
+  }
+
+  get redeemServiceEnabled() {
+    return this._redeemServiceEnabled;
   }
 
   /**

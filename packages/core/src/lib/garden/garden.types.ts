@@ -127,6 +127,12 @@ export interface IGardenJS extends IOrderbook {
   get digestKey(): DigestKey | undefined;
 
   /**
+   * The redeem service enabled.
+   * @readonly
+   */
+  get redeemServiceEnabled(): boolean;
+
+  /**
    * The events.
    */
   on<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]): this;

@@ -15,7 +15,7 @@ export type GardenContextType = {
    * @params {SwapParams} - The parameters for creating the order.
    * @returns {AsyncResult<string, string>} - create order ID.
    */
-  swapAndInitiate?: (params: SwapParams) => AsyncResult<Order, string>;
+  swapAndInitiate?: (params: SwapParams) => AsyncResult<string, string>;
   /**
    * Get all the pending orders of the user. This will return all the orders that are yet to be initiated, redeemed, or refunded.
    * It will not return orders that have expired (deadline expiry).
@@ -42,5 +42,11 @@ export type GardenProviderProps = {
   config:
     | Omit<GardenConfigWithHTLCs, 'digestKey'>
     | Omit<GardenConfigWithWallets, 'digestKey'>;
-  handleSecretManagement?: boolean;
+  /**
+   * Controls whether the redeem service is enabled.
+   * - When `true` (default): Manual order fetching with digestKey required
+   * - When `false`: Event-based order updates, no digestKey required
+   * @default true
+   */
+  setRedeemServiceEnabled?: boolean;
 };

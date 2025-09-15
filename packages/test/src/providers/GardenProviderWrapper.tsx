@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { GardenProvider } from "@gardenfi/react-hooks";
-import { Environment } from "@gardenfi/utils";
-import { useWalletClient } from "wagmi";
+import { GardenProvider } from '@gardenfi/react-hooks';
+import { Network } from '@gardenfi/utils';
+import { useWalletClient } from 'wagmi';
 
 const getStorage = (): Storage => {
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     return localStorage;
   }
   return {
@@ -20,12 +20,14 @@ const getStorage = (): Storage => {
 
 function GardenProviderWrapper({ children }: { children: React.ReactNode }) {
   const { data: walletClient } = useWalletClient();
-  
+
   return (
     <GardenProvider
       config={{
         store: getStorage(),
-        environment: Environment.TESTNET,
+        environment: {
+          network: Network.MAINNET,
+        },
         walletClient: walletClient,
       }}
     >
