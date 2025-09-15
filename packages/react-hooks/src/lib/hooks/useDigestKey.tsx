@@ -3,7 +3,7 @@ import { DIGEST_KEY, STORE_NAME, VERSION } from '../constants';
 import { useEffect, useState } from 'react';
 import { DB_NAME } from '../constants';
 
-export const useDigestKey = () => {
+export const useDigestKey = (setRedeemServiceEnabled: boolean = true) => {
   const [digestKey, setDigestKey] = useState<DigestKey>();
 
   //Initialize digest key
@@ -71,7 +71,7 @@ export const useDigestKey = () => {
 
         getRequest.onsuccess = () => {
           if (getRequest.result) {
-            // Key already exists
+            // Key already exists, just use it
             const digestKeyResult = DigestKey.from(getRequest.result.value);
             if (!digestKeyResult.error) {
               setDigestKey(digestKeyResult.val);
@@ -85,18 +85,25 @@ export const useDigestKey = () => {
             console.error('Error generating new digest key:', newValue.error);
             return;
           }
-          const putRequest = store.put({
-            id: DIGEST_KEY,
-            value: newValue.val.digestKey,
-          });
 
-          putRequest.onsuccess = () => {
+          // Only store in IndexedDB if setRedeemServiceEnabled is false
+          if (!setRedeemServiceEnabled) {
+            const putRequest = store.put({
+              id: DIGEST_KEY,
+              value: newValue.val.digestKey,
+            });
+
+            putRequest.onsuccess = () => {
+              setDigestKey(DigestKey.from(newValue.val.digestKey).val);
+            };
+
+            putRequest.onerror = (e) => {
+              console.error('Error storing new digest key:', e);
+            };
+          } else {
+            // If setRedeemServiceEnabled is true, just set the digestKey without storing
             setDigestKey(DigestKey.from(newValue.val.digestKey).val);
-          };
-
-          putRequest.onerror = (e) => {
-            console.error('Error storing new digest key:', e);
-          };
+          }
         };
 
         getRequest.onerror = (e) => {
@@ -119,7 +126,7 @@ export const useDigestKey = () => {
         db.close();
       }
     };
-  }, []);
+  }, [setRedeemServiceEnabled]);
 
   return { digestKey };
 };

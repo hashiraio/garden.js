@@ -27,7 +27,7 @@ export const GardenProvider: FC<GardenProviderProps> = ({
 }) => {
   const [garden, setGarden] = useState<IGardenJS>();
 
-  const { digestKey } = useDigestKey();
+  const { digestKey } = useDigestKey(setRedeemServiceEnabled);
   const { pendingOrders } = useOrderbook(garden);
 
   const quote = useMemo(() => {
