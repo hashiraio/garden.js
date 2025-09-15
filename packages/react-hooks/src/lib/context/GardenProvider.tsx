@@ -80,7 +80,7 @@ export const GardenProvider: FC<GardenProviderProps> = ({
     ) {
       garden = Garden.fromWallets({
         ...config,
-        digestKey: !!setRedeemServiceEnabled ? digestKey : undefined,
+        digestKey: setRedeemServiceEnabled ? undefined : digestKey,
       }).setRedeemServiceEnabled(setRedeemServiceEnabled);
     } else if (
       'htlc' in config &&
@@ -89,7 +89,7 @@ export const GardenProvider: FC<GardenProviderProps> = ({
     ) {
       garden = new Garden({
         ...config,
-        digestKey: !!setRedeemServiceEnabled ? digestKey : undefined,
+        digestKey: setRedeemServiceEnabled ? undefined : digestKey,
       }).setRedeemServiceEnabled(setRedeemServiceEnabled);
     } else {
       return;

@@ -1,12 +1,12 @@
 import { IGardenJS, OrderWithStatus } from '@gardenfi/core';
 import { OrderLifecycle } from '@gardenfi/orderbook';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 export const useOrderbook = (garden: IGardenJS | undefined) => {
   const [pendingOrders, setPendingOrders] = useState<OrderWithStatus[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchPendingOrders = async () => {
+  const fetchPendingOrders = useCallback(async () => {
     if (!garden) return;
 
     try {
@@ -75,7 +75,7 @@ export const useOrderbook = (garden: IGardenJS | undefined) => {
     } catch (error) {
       console.error('Error fetching pending orders:', error);
     }
-  };
+  }, [garden]);
 
   useEffect(() => {
     if (!garden) return;
@@ -103,7 +103,7 @@ export const useOrderbook = (garden: IGardenJS | undefined) => {
         garden.off('onPendingOrdersChanged', handlePendingOrdersChange);
       };
     }
-  }, [garden]);
+  }, [garden, fetchPendingOrders]);
 
   return { pendingOrders };
 };
