@@ -33,6 +33,8 @@
     "@mysten/signers": "^0.3.4",
     "@mysten/sui": "^1.37.1",
     "@mysten/wallet-standard": "^0.16.9",
+    "@privy-io/js-sdk-core": "^0.54.2",
+    "@privy-io/server-auth": "^1.32.2",
     "@solana/spl-token": "^0.4.13",
     "bignumber.js": "^9.1.2",
     "bip32": "^4.0.0",
