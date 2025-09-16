@@ -56,7 +56,7 @@ export const GardenProvider: FC<GardenProviderProps> = ({
     [garden, quote],
   );
 
-  const swapAndInitiate = async (params: SwapParams) => {
+  const swap = async (params: SwapParams) => {
     if (!garden) return Err('Garden not initialized');
 
     const order = await garden.createSwap(params);
@@ -101,7 +101,7 @@ export const GardenProvider: FC<GardenProviderProps> = ({
   return (
     <GardenContext.Provider
       value={{
-        swapAndInitiate,
+        swap,
         pendingOrders,
         getQuote,
         garden,

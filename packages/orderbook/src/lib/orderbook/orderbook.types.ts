@@ -233,3 +233,15 @@ export type SolanaOrderResponse = BaseCreateOrderResponse & {
 export type SuiOrderResponse = BaseCreateOrderResponse & {
   ptb_bytes: number[];
 };
+
+type OrderResponseMap = {
+  [BlockchainType.evm]: EvmOrderResponse;
+  [BlockchainType.bitcoin]: BitcoinOrderResponse;
+  [BlockchainType.starknet]: StarknetOrderResponse;
+  [BlockchainType.solana]: SolanaOrderResponse;
+  [BlockchainType.sui]: SuiOrderResponse;
+};
+
+export type CreateOrderResponse<T extends BlockchainType = BlockchainType> = {
+  type: T;
+} & OrderResponseMap[T];
