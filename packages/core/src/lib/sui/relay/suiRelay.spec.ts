@@ -70,7 +70,6 @@ describe.only('sui relay tests', () => {
       symbol: 'SOL',
       tokenAddress: 'primary',
     },
-    additionalData: {},
     sendAmount: '10000000',
     receiveAmount: '2060',
   };
@@ -142,7 +141,7 @@ describe.only('sui relay tests', () => {
         solana: solanaHtlc,
       },
     }).setRedeemServiceEnabled(true);
-    const order = await garden.swap(create_order);
+    const order = await garden.createSwap(create_order);
     console.log('matched order', order);
     // const initRes = await htlc.initiate(order.val!);
     // console.log('initRes', initRes);

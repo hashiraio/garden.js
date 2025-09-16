@@ -1,4 +1,4 @@
-import { Order } from '@gardenfi/orderbook';
+import { BitcoinOrderResponse, Order } from '@gardenfi/orderbook';
 import { AsyncResult } from '@gardenfi/utils';
 import { IBitcoinProvider } from './provider/provider.interface';
 
@@ -8,7 +8,10 @@ export interface IBitcoinHTLC {
    * @param order - The matched order.
    * @returns A promise resolving to the transaction hash of the initiation.
    */
-  initiate(order: Order, fee?: number): AsyncResult<string, string>;
+  initiate(
+    order: Order | BitcoinOrderResponse,
+    fee?: number,
+  ): AsyncResult<string, string>;
 
   /**
    * Redeems funds from the HTLC contract to the actor's address.

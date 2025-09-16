@@ -409,25 +409,38 @@ export class SolanaRelay implements ISolanaHTLC {
   private async initiateWithCreateOrderResponse(
     order: SolanaOrderResponse,
   ): AsyncResult<string, string> {
-    if (!this.relayer) return Err('No relayer address');
-    const { versioned_tx, order_id } = order;
+    if (!this.relayer) {
+      return Err('No relayer address');
+    }
+    const { versioned_tx, versioned_tx_gasless } = order;
+
+    if (versioned_tx_gasless === null) {
+      try {
+        const buffer = Buffer.from(versioned_tx, 'base64');
+        const transaction = web3.VersionedTransaction.deserialize(buffer);
+
+        const txHash = await this.provider.sendAndConfirm(transaction);
+
+        const isConfirmed = await waitForSolanaTxConfirmation(
+          this.provider.connection,
+          txHash,
+        );
+        return isConfirmed
+          ? Ok(txHash)
+          : Err('Failed to initiate HTLC transaction');
+      } catch (err) {
+        return Err(`Error in non-gasless flow: ${err}`);
+      }
+    }
 
     const headers = await this.auth.getAuthHeaders();
-    if (!headers.ok) return Err(headers.error);
+    if (!headers.ok) {
+      return Err(headers.error);
+    }
 
     try {
-      const orderResult = await this.orderbook.getOrder(order_id);
-      if (orderResult.error || !orderResult.val) {
-        return Err(`Failed to fetch order by id: ${orderResult.error}`);
-      }
-
-      const asset = ChainAsset.fromString(orderResult.val.source_swap.asset);
-      if (isSolanaNativeToken(asset.getChain(), asset.getSymbol())) {
-        return await this.initiateNativeSwap(orderResult.val);
-      }
-
       const transaction = web3.VersionedTransaction.deserialize(
-        Buffer.from(versioned_tx, 'base64'),
+        Buffer.from(versioned_tx_gasless, 'base64'),
       );
 
       const signedTx = await this.provider.wallet.signTransaction(transaction);
@@ -446,7 +459,7 @@ export class SolanaRelay implements ISolanaHTLC {
           .endpoint(order.order_id)
           .addSearchParams({ action: 'initiate' }),
         {
-          body: JSON.stringify({ serialized_tx: signatureBase64 }),
+          body: JSON.stringify({ signature: signatureBase64 }),
           headers: {
             ...headers.val,
             'Content-Type': 'application/json',

@@ -42,7 +42,7 @@ type OrderResponseTypeGuard<T> = (response: any) => response is T;
  * Type guard for EVM order responses
  */
 export const isEvmOrderResponse: OrderResponseTypeGuard<EvmOrderResponse> = (
-  response: any,
+  response,
 ): response is EvmOrderResponse => {
   return (
     hasKeys(response, ['typed_data', 'initiate_transaction']) &&
@@ -63,7 +63,7 @@ export const isEvmOrderResponse: OrderResponseTypeGuard<EvmOrderResponse> = (
  */
 export const isStarknetOrderResponse: OrderResponseTypeGuard<
   StarknetOrderResponse
-> = (response: any): response is StarknetOrderResponse => {
+> = (response): response is StarknetOrderResponse => {
   return (
     hasKeys(response, ['typed_data', 'initiate_transaction']) &&
     typeof response.initiate_transaction === 'object' &&
@@ -77,7 +77,7 @@ export const isStarknetOrderResponse: OrderResponseTypeGuard<
  */
 export const isBitcoinOrderResponse: OrderResponseTypeGuard<
   BitcoinOrderResponse
-> = (response: any): response is BitcoinOrderResponse => {
+> = (response): response is BitcoinOrderResponse => {
   return (
     hasKeys(response, ['to', 'amount']) &&
     typeof response.to === 'string' &&
@@ -90,7 +90,7 @@ export const isBitcoinOrderResponse: OrderResponseTypeGuard<
  */
 export const isSolanaOrderResponse: OrderResponseTypeGuard<
   SolanaOrderResponse
-> = (response: any): response is SolanaOrderResponse => {
+> = (response): response is SolanaOrderResponse => {
   return (
     hasKeys(response, ['versioned_tx']) &&
     typeof response.versioned_tx === 'string'
@@ -101,7 +101,7 @@ export const isSolanaOrderResponse: OrderResponseTypeGuard<
  * Type guard for Sui order responses
  */
 export const isSuiOrderResponse: OrderResponseTypeGuard<SuiOrderResponse> = (
-  response: any,
+  response,
 ): response is SuiOrderResponse => {
   return (
     hasKeys(response, ['ptb_bytes']) &&
@@ -114,7 +114,7 @@ export const isSuiOrderResponse: OrderResponseTypeGuard<SuiOrderResponse> = (
  * Type guard for Order objects (matched orders)
  */
 export const isOrder: OrderResponseTypeGuard<Order> = (
-  response: any,
+  response,
 ): response is Order => {
   return (
     hasKeys(response, ['source_swap', 'destination_swap']) &&

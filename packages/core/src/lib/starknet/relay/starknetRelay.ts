@@ -275,10 +275,13 @@ export class StarknetRelay implements IStarknetHTLC {
       });
 
       return Ok(txHash.transaction_hash);
-    } catch (error: any) {
+    } catch (error) {
       console.error('executeApprovalTransaction error:', error);
       return Err(
-        'Failed to execute approval: ' + (error?.message || String(error)),
+        'Failed to execute approval: ' +
+          (error instanceof Error
+            ? error?.message || String(error)
+            : String(error)),
       );
     }
   }
