@@ -84,7 +84,7 @@ export class Orderbook implements IOrderbook {
       const orderWithStatus = ParseOrderStatus(res.result);
 
       return Ok({ ...res.result, status: orderWithStatus });
-    } catch (error: any) {
+    } catch (error) {
       return Err(
         `GetOrder: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -117,7 +117,7 @@ export class Orderbook implements IOrderbook {
         ...res.result,
         data: ordersWithStatus,
       });
-    } catch (error: any) {
+    } catch (error) {
       return Err(
         `GetAllOrders: ${
           error instanceof Error ? error.message : String(error)

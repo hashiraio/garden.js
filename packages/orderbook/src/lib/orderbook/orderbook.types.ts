@@ -54,6 +54,8 @@ export type GetOrdersFilters = {
   tx_hash?: string;
   from_chain?: Chain;
   to_chain?: Chain;
+  from_owner?: string;
+  to_owner?: string;
   status?: OrderLifecycle | OrderLifecycle[];
   [key: string]: string | string[] | number | undefined;
 };
@@ -225,15 +227,9 @@ export type StarknetOrderResponse = WithTypedData<
 
 export type SolanaOrderResponse = BaseCreateOrderResponse & {
   versioned_tx: string;
+  versioned_tx_gasless: string | null;
 };
 
 export type SuiOrderResponse = BaseCreateOrderResponse & {
   ptb_bytes: number[];
 };
-
-export type CreateOrderResponse =
-  | ({ type: BlockchainType.evm } & EvmOrderResponse)
-  | ({ type: BlockchainType.bitcoin } & BitcoinOrderResponse)
-  | ({ type: BlockchainType.starknet } & StarknetOrderResponse)
-  | ({ type: BlockchainType.solana } & SolanaOrderResponse)
-  | ({ type: BlockchainType.sui } & SuiOrderResponse);
