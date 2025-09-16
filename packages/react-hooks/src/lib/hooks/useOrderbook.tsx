@@ -6,7 +6,9 @@ import { PENDING_ORDERS_STORE } from '../constants';
 
 export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
   const [pendingOrders, setPendingOrders] = useState<OrderWithStatus[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
+  const FETCH_DELAY = 5000; // 5 seconds
 
   const fetchPendingOrders = useCallback(async () => {
     if (!garden) return;
@@ -62,14 +64,36 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
     if (!garden) return;
 
     if (garden.redeemServiceEnabled) {
-      fetchPendingOrders();
+      let stopped = false;
 
-      intervalRef.current = setInterval(fetchPendingOrders, 5000);
+      const scheduleNext = () => {
+        if (stopped) return;
+        timeoutRef.current = setTimeout(run, FETCH_DELAY);
+      };
+
+      const run = async () => {
+        if (stopped) return;
+        if (isFetchingRef.current) {
+          scheduleNext();
+          return;
+        }
+        isFetchingRef.current = true;
+        try {
+          await fetchPendingOrders();
+        } finally {
+          isFetchingRef.current = false;
+        }
+        scheduleNext();
+      };
+
+      // initial fetch
+      run();
 
       return () => {
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+        stopped = true;
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
         }
       };
     } else {
