@@ -15,6 +15,7 @@ import type {
 import { hasAnyValidValue } from '../utils';
 import { useDigestKey } from '../hooks/useDigestKey';
 import { Err, Ok } from '@gardenfi/utils';
+import { PENDING_ORDERS_STORE } from '../constants';
 
 export const GardenContext = createContext<GardenContextType>({
   pendingOrders: [],
@@ -23,12 +24,13 @@ export const GardenContext = createContext<GardenContextType>({
 export const GardenProvider: FC<GardenProviderProps> = ({
   children,
   config,
+  store,
   setRedeemServiceEnabled = true,
 }) => {
   const [garden, setGarden] = useState<IGardenJS>();
 
   const { digestKey } = useDigestKey(setRedeemServiceEnabled);
-  const { pendingOrders } = useOrderbook(garden);
+  const { pendingOrders } = useOrderbook(garden, store);
 
   const quote = useMemo(() => {
     const { api } = resolveApiConfig(config.environment);
@@ -61,6 +63,17 @@ export const GardenProvider: FC<GardenProviderProps> = ({
 
     const order = await garden.createSwap(params);
     if (!order.val) return Err(order.error || 'Unknown error occurred');
+
+    if (setRedeemServiceEnabled) {
+      try {
+        const existing = store.getItem(PENDING_ORDERS_STORE);
+        const ids: string[] = existing ? JSON.parse(existing) : [];
+        if (!ids.includes(order.val)) ids.push(order.val);
+        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(ids));
+      } catch (e) {
+        console.error('Failed to persist pending order id', e);
+      }
+    }
 
     return Ok(order.val);
   };

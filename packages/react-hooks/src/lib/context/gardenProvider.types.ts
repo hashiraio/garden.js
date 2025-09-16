@@ -2,7 +2,7 @@ import { OrderWithStatus, QuoteParamsForAssets } from '@gardenfi/core';
 import { IGardenJS, QuoteResponse, SwapParams } from '@gardenfi/core';
 import { IOrderbook, Order } from '@gardenfi/orderbook';
 import { GardenConfigWithHTLCs, GardenConfigWithWallets } from '@gardenfi/core';
-import { AsyncResult } from '@gardenfi/utils';
+import { AsyncResult, IStore } from '@gardenfi/utils';
 
 export type GardenContextType = {
   /**
@@ -42,6 +42,7 @@ export type GardenProviderProps = {
   config:
     | Omit<GardenConfigWithHTLCs, 'digestKey'>
     | Omit<GardenConfigWithWallets, 'digestKey'>;
+  store: IStore;
   /**
    * Controls whether the redeem service is enabled.
    * - When `true` (default): Manual order fetching with digestKey required

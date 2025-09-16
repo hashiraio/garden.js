@@ -1,8 +1,10 @@
 import { IGardenJS, OrderWithStatus } from '@gardenfi/core';
-import { OrderLifecycle } from '@gardenfi/orderbook';
+import { OrderStatus } from '@gardenfi/orderbook';
+import { IStore } from '@gardenfi/utils';
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { PENDING_ORDERS_STORE } from '../constants';
 
-export const useOrderbook = (garden: IGardenJS | undefined) => {
+export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
   const [pendingOrders, setPendingOrders] = useState<OrderWithStatus[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -10,72 +12,56 @@ export const useOrderbook = (garden: IGardenJS | undefined) => {
     if (!garden) return;
 
     try {
-      const addresses: string[] = [];
+      const existing = store.getItem(PENDING_ORDERS_STORE);
+      const ids: string[] = existing ? JSON.parse(existing) : [];
 
-      const syncAddresses = [
-        garden.htlcs.evm?.htlcActorAddress,
-        garden.htlcs.sui?.htlcActorAddress,
-        garden.htlcs.solana?.htlcActorAddress,
-        garden.htlcs.starknet?.htlcActorAddress,
-        garden.htlcs.bitcoin?.htlcActorAddress,
-      ].filter((addr): addr is string => !!addr && addr.length > 0);
-
-      addresses.push(...syncAddresses.map((addr) => addr.toLowerCase()));
-
-      if (garden.htlcs.bitcoin) {
-        try {
-          const btcAddress = await garden.htlcs.bitcoin.htlcActorAddress();
-          if (btcAddress && btcAddress.length > 0) {
-            addresses.push(btcAddress.toLowerCase());
-          }
-        } catch {
-          // ignore missing btc
-        }
+      if (ids.length === 0) {
+        setPendingOrders([]);
+        return;
       }
 
-      if (addresses.length === 0 && garden.digestKey) {
-        addresses.push(garden.digestKey.userId.toLowerCase());
-      }
+      const results = await Promise.all(
+        ids.map((id) => garden.orderbook.getOrder(id)),
+      );
 
-      const orderPromises = addresses.map(async (address) => {
-        try {
-          const result = await garden.orderbook.getOrders({
-            from_owner: address,
-            status: OrderLifecycle.inProgress,
-            per_page: 500,
-          });
+      const orders: OrderWithStatus[] = [];
+      const remainingIds: string[] = [];
 
-          if (result.ok) {
-            return result.val.data;
-          } else {
-            console.error(
-              `Failed to fetch orders for address ${address}: ${result.error}`,
-            );
-            return [];
-          }
-        } catch (error) {
-          console.error(
-            `Failed to fetch orders for address ${address}:`,
-            error,
-          );
-          return [];
+      results.forEach((res, idx) => {
+        if (!res.ok) {
+          remainingIds.push(ids[idx]);
+          return;
         }
+
+        const order = res.val;
+        const isCompleted =
+          order.status === OrderStatus.Redeemed ||
+          order.status === OrderStatus.Refunded ||
+          order.status === OrderStatus.Expired;
+        if (isCompleted) {
+          return;
+        }
+
+        orders.push(order);
+        remainingIds.push(ids[idx]);
       });
 
-      const allOrdersArrays = await Promise.all(orderPromises);
+      try {
+        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(remainingIds));
+      } catch (e) {
+        console.error('Error persisting remaining pending order ids', e);
+      }
 
-      const allOrders = allOrdersArrays.flat();
-      setPendingOrders(allOrders);
+      setPendingOrders(orders);
     } catch (error) {
       console.error('Error fetching pending orders:', error);
     }
-  }, [garden]);
+  }, [garden, store]);
 
   useEffect(() => {
     if (!garden) return;
 
     if (garden.redeemServiceEnabled) {
-      // When redeem service is enabled, fetch orders manually
       fetchPendingOrders();
 
       intervalRef.current = setInterval(fetchPendingOrders, 5000);
