@@ -27,7 +27,9 @@ export const ParseOrderStatus = (order: Order) => {
   }
   if (destination_swap.refund_tx_hash) return OrderStatus.AwaitingRefund;
 
-  const _isExpired = isDeadlinePassed(new Date(created_at), 1);
+  const _isExpired = isBitcoin(source_swap.chain)
+    ? isDeadlinePassed(new Date(created_at), 6)
+    : isDeadlinePassed(new Date(created_at), 1);
 
   // ---------------------- INITIATE CASE ----------------------
   if (destination_swap.initiate_tx_hash) return OrderStatus.AwaitingRedeem;
