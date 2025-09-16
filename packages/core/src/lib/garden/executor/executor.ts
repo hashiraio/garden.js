@@ -141,7 +141,7 @@ export class Executor {
         const orderPromises = addresses.map(async (address) => {
           try {
             const result = await this.#orderbook.getOrders({
-              address,
+              from_owner: address,
               status: OrderLifecycle.pending,
               per_page: 500,
             });
@@ -169,18 +169,8 @@ export class Executor {
         // Wait for all order fetches to complete
         const allOrdersArrays = await Promise.all(orderPromises);
 
-        // Merge and deduplicate orders from all addresses
-        const mergedOrdersById = new Map<string, OrderWithStatus>();
-        for (const orders of allOrdersArrays) {
-          for (const order of orders) {
-            mergedOrdersById.set(order.order_id, order);
-          }
-        }
-
-        const mergedOrders = Array.from(mergedOrdersById.values());
-
-        this.events.emit('onPendingOrdersChanged', mergedOrders);
-        await this.processOrderActions(mergedOrders);
+        this.events.emit('onPendingOrdersChanged', allOrdersArrays.flat());
+        await this.processOrderActions(allOrdersArrays.flat());
       } finally {
         isProcessing = false;
       }

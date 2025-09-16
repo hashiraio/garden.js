@@ -1,13 +1,21 @@
 import {
   AffiliateFee,
   Asset,
+  BitcoinOrderResponse,
   BlockchainType,
+  Chain,
   ChainAsset,
   ChainAssetString,
+  CreateOrderResponse,
+  EvmOrderResponse,
   IOrderbook,
   Order,
   OrderAction,
   OrderStatus,
+  SolanaOrderResponse,
+  StarknetOrderResponse,
+  SuiOrderResponse,
+  getBlockchainType,
 } from '@gardenfi/orderbook';
 import { ApiKey, AsyncResult, IAuth, Network } from '@gardenfi/utils';
 import { ISecretManager } from '../secretManager/secretManager.types';
@@ -193,3 +201,14 @@ export type GardenConfigWithWallets = GardenCoreConfig & {
 export type GardenConfigWithHTLCs = GardenCoreConfig & {
   htlc?: GardenHTLCModules;
 };
+
+export type ResponseTypeMap = {
+  [BlockchainType.evm]: EvmOrderResponse;
+  [BlockchainType.bitcoin]: BitcoinOrderResponse;
+  [BlockchainType.starknet]: StarknetOrderResponse;
+  [BlockchainType.solana]: SolanaOrderResponse;
+  [BlockchainType.sui]: SuiOrderResponse;
+};
+
+export type CreateOrderResponseFromParams<T extends SwapParams> =
+  CreateOrderResponse;

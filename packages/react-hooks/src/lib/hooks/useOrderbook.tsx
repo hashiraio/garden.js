@@ -40,7 +40,7 @@ export const useOrderbook = (garden: IGardenJS | undefined) => {
       const orderPromises = addresses.map(async (address) => {
         try {
           const result = await garden.orderbook.getOrders({
-            address,
+            from_owner: address,
             status: OrderLifecycle.inProgress,
             per_page: 500,
           });
@@ -64,15 +64,8 @@ export const useOrderbook = (garden: IGardenJS | undefined) => {
 
       const allOrdersArrays = await Promise.all(orderPromises);
 
-      const mergedOrdersById = new Map<string, OrderWithStatus>();
-      for (const orders of allOrdersArrays) {
-        for (const order of orders) {
-          mergedOrdersById.set(order.order_id, order);
-        }
-      }
-
-      const mergedOrders = Array.from(mergedOrdersById.values());
-      setPendingOrders(mergedOrders);
+      const allOrders = allOrdersArrays.flat();
+      setPendingOrders(allOrders);
     } catch (error) {
       console.error('Error fetching pending orders:', error);
     }

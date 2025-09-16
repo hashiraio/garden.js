@@ -131,7 +131,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(SupportedAssets.testnet.base_sepolia.WBTC);
+      const from = ChainAsset.from(
+        SupportedAssets.testnet.solana_testnet.cbBTC,
+      );
 
       const to = ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC);
       const sendAmount = 50000;

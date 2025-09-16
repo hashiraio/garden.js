@@ -7,14 +7,21 @@ import {
   GardenHTLCModules,
   GardenEventEmitter,
   GardenEvents,
+  CreateOrderResponseFromParams,
 } from './garden.types';
 import {
   BlockchainType,
   ChainAsset,
   CreateOrderRequest,
+  CreateOrderResponse,
   IOrderbook,
   isBitcoin,
   Orderbook,
+  isEvmOrderResponse,
+  isStarknetOrderResponse,
+  isSolanaOrderResponse,
+  isSuiOrderResponse,
+  isBitcoinOrderResponse,
 } from '@gardenfi/orderbook';
 import {
   IAuth,
@@ -270,7 +277,7 @@ export class Garden extends Orderbook implements IGardenJS {
 
     switch (blockchainType) {
       case BlockchainType.evm:
-        if (!this._htlcs.evm || order.type !== BlockchainType.evm) {
+        if (!this._htlcs.evm || !isEvmOrderResponse(order)) {
           return Err('Order type does not match EVM blockchain type');
         }
         {
@@ -280,7 +287,7 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.solana:
-        if (!this._htlcs.solana || order.type !== BlockchainType.solana) {
+        if (!this._htlcs.solana || !isSolanaOrderResponse(order)) {
           return Err('Order type does not match Solana blockchain type');
         }
         {
@@ -290,7 +297,7 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.starknet:
-        if (!this._htlcs.starknet || order.type !== BlockchainType.starknet) {
+        if (!this._htlcs.starknet || !isStarknetOrderResponse(order)) {
           return Err('Order type does not match Starknet blockchain type');
         }
         {
@@ -302,7 +309,7 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.sui:
-        if (!this._htlcs.sui || order.type !== BlockchainType.sui) {
+        if (!this._htlcs.sui || !isSuiOrderResponse(order)) {
           return Err('Order type does not match Sui blockchain type');
         }
         {
@@ -312,7 +319,7 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.bitcoin:
-        if (!this._htlcs.bitcoin || order.type !== BlockchainType.bitcoin) {
+        if (!this._htlcs.bitcoin || !isBitcoinOrderResponse(order)) {
           return Err('Order type does not match Bitcoin blockchain type');
         }
         {
@@ -330,13 +337,13 @@ export class Garden extends Orderbook implements IGardenJS {
     return Ok(order.order_id);
   }
 
-  /**
-   * Create an order
-   */
-  override async createOrder(
+  override async createOrder<T extends SwapParams>(
     arg: CreateOrderRequest | SwapParams,
     auth?: IAuth,
-  ): AsyncResult<any, string> {
+  ): AsyncResult<
+    CreateOrderResponse | CreateOrderResponseFromParams<T>,
+    string
+  > {
     if (hasKeys(arg, ['source', 'destination', 'nonce'])) {
       return super.createOrder(arg as CreateOrderRequest, auth ?? this._auth);
     }
@@ -400,7 +407,14 @@ export class Garden extends Orderbook implements IGardenJS {
     const createOrderRes = await super.createOrder(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
-    return Ok(createOrderRes.val);
+    const sourceType = ChainAsset.from(params.fromAsset).getBlockchainType();
+    if (createOrderRes.val.type !== sourceType) {
+      return Err('Order response type does not match source blockchain type');
+    }
+
+    return Ok(
+      createOrderRes.val as unknown as CreateOrderResponseFromParams<T>,
+    );
   }
 
   private async validateAndFillParams(params: SwapParams) {
