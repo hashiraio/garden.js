@@ -87,10 +87,7 @@ export class Executor {
     return Array.from(addressSet);
   }
 
-  startBackgroundService(
-    interval: number = 5000,
-    redeemServiceEnabled: boolean,
-  ): void {
+  start(interval: number = 5000, redeemServiceEnabled: boolean): void {
     if (this.isBackgroundServiceRunning || this.executorStop) {
       return;
     }
@@ -99,7 +96,7 @@ export class Executor {
     (async () => {
       try {
         if (redeemServiceEnabled) {
-          this.stopBackgroundService();
+          this.stop();
           return;
         }
         const stop = await this.execute(interval);
@@ -111,7 +108,7 @@ export class Executor {
     })();
   }
 
-  stopBackgroundService(): void {
+  stop(): void {
     if (this.executorStop) {
       try {
         this.executorStop();

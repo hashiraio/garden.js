@@ -123,7 +123,7 @@ export class Garden extends Orderbook implements IGardenJS {
     this._redeemServiceEnabled = enabled;
 
     if (enabled) {
-      this._executor?.stopBackgroundService();
+      this._executor?.stop();
     } else {
       if (!this._digestKey) {
         throw new Error('Digest key is required for manual secret management');
@@ -140,10 +140,7 @@ export class Garden extends Orderbook implements IGardenJS {
           getBitcoinNetwork(getBitcoinNetworkFromEnvironment(this.network)),
         );
       }
-      this._executor?.startBackgroundService(
-        this.executeInterval,
-        this._redeemServiceEnabled,
-      );
+      this._executor?.start(this.executeInterval, this._redeemServiceEnabled);
     }
     return this;
   }
@@ -316,18 +313,6 @@ export class Garden extends Orderbook implements IGardenJS {
           const suiInitRes = await this._htlcs.sui.initiate(order);
           if (!suiInitRes.ok)
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
-        }
-        break;
-      case BlockchainType.bitcoin:
-        if (!this._htlcs.bitcoin || !isBitcoinOrderResponse(order)) {
-          return Err('Order type does not match Bitcoin blockchain type');
-        }
-        {
-          const bitcoinInitRes = await this._htlcs.bitcoin.initiate(order);
-          if (!bitcoinInitRes.ok)
-            return Err(
-              `Bitcoin HTLC initiation failed: ${bitcoinInitRes.error}`,
-            );
         }
         break;
       default:
