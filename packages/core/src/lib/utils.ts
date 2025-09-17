@@ -341,7 +341,6 @@ export const withDefaultAffiliateFees = (
 export const getAddresses = async (
   blockchainType: BlockchainType,
   htlcs: GardenHTLCModules,
-  addresses?: Partial<Record<BlockchainType, string>>,
 ) => {
   // if (addresses && addresses[blockchainType]) {
   //   return Ok(addresses[blockchainType]!);

@@ -249,35 +249,47 @@ export class Garden extends Orderbook implements IGardenJS {
     const createOrderRes = await this.createOrder(params);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
-    const order = createOrderRes.val;
+    const createOrderResponse = createOrderRes.val;
 
     switch (blockchainType) {
       case BlockchainType.evm:
-        if (!this._htlcs.evm || !isEvmOrderResponse(order)) {
+        if (!this._htlcs.evm || !isEvmOrderResponse(createOrderResponse)) {
           return Err('Order type does not match EVM blockchain type');
         }
         {
-          const evmInitRes = await this._htlcs.evm.initiate(order);
+          const evmInitRes = await this._htlcs.evm.initiate(
+            createOrderResponse,
+          );
           if (!evmInitRes.ok)
             return Err(`EVM HTLC initiation failed: ${evmInitRes.error}`);
         }
         break;
       case BlockchainType.solana:
-        if (!this._htlcs.solana || !isSolanaOrderResponse(order)) {
+        if (
+          !this._htlcs.solana ||
+          !isSolanaOrderResponse(createOrderResponse)
+        ) {
           return Err('Order type does not match Solana blockchain type');
         }
         {
-          const solanaInitRes = await this._htlcs.solana.initiate(order);
+          const solanaInitRes = await this._htlcs.solana.initiate(
+            createOrderResponse,
+          );
           if (!solanaInitRes.ok)
             return Err(`Solana HTLC initiation failed: ${solanaInitRes.error}`);
         }
         break;
       case BlockchainType.starknet:
-        if (!this._htlcs.starknet || !isStarknetOrderResponse(order)) {
+        if (
+          !this._htlcs.starknet ||
+          !isStarknetOrderResponse(createOrderResponse)
+        ) {
           return Err('Order type does not match Starknet blockchain type');
         }
         {
-          const starknetInitRes = await this._htlcs.starknet.initiate(order);
+          const starknetInitRes = await this._htlcs.starknet.initiate(
+            createOrderResponse,
+          );
           if (!starknetInitRes.ok)
             return Err(
               `Starknet HTLC initiation failed: ${starknetInitRes.error}`,
@@ -285,11 +297,13 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.sui:
-        if (!this._htlcs.sui || !isSuiOrderResponse(order)) {
+        if (!this._htlcs.sui || !isSuiOrderResponse(createOrderResponse)) {
           return Err('Order type does not match Sui blockchain type');
         }
         {
-          const suiInitRes = await this._htlcs.sui.initiate(order);
+          const suiInitRes = await this._htlcs.sui.initiate(
+            createOrderResponse,
+          );
           if (!suiInitRes.ok)
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
         }
@@ -298,7 +312,7 @@ export class Garden extends Orderbook implements IGardenJS {
         return Err(`Unsupported blockchain type for swap initiation`);
     }
 
-    return Ok(order.order_id);
+    return Ok(createOrderResponse.order_id);
   }
 
   override async createOrder<T extends SwapParams>(
@@ -414,14 +428,12 @@ export class Garden extends Orderbook implements IGardenJS {
     const sendAddress = await getAddresses(
       fromAsset.getBlockchainType(),
       this._htlcs,
-      params.addresses,
     );
     if (!sendAddress.ok) return Err(sendAddress.error);
 
     const receiveAddress = await getAddresses(
       toAsset.getBlockchainType(),
       this._htlcs,
-      params.addresses,
     );
     if (!receiveAddress.ok) return Err(receiveAddress.error);
 
