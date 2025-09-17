@@ -35,7 +35,7 @@ import {
 } from '@gardenfi/utils';
 import { IQuote } from '../quote/quote.types';
 import { BitcoinHTLC } from '../bitcoin/bitcoinHtlc';
-import { Api, solanaProgramAddress, SolanaRelayerAddress } from '../constants';
+import { Api } from '../constants';
 import { Quote } from '../quote/quote';
 import { SecretManager } from '../secretManager/secretManager';
 import { EvmRelay } from '../evm/relay/evmRelay';
@@ -169,30 +169,15 @@ export class Garden extends Orderbook implements IGardenJS {
             ? new SolanaRelay(
                 config.wallets.solana,
                 new Url(api.baseurl),
-                network === Network.MAINNET
-                  ? SolanaRelayerAddress.mainnet
-                  : SolanaRelayerAddress.testnet,
-                {
-                  native:
-                    config.solanaProgramAddress &&
-                    config.solanaProgramAddress.native
-                      ? config.solanaProgramAddress.native
-                      : solanaProgramAddress.mainnet.native,
-                  spl:
-                    config.solanaProgramAddress &&
-                    config.solanaProgramAddress.spl
-                      ? config.solanaProgramAddress.spl
-                      : solanaProgramAddress.mainnet.spl,
-                },
+                network,
                 apiKey,
+                {
+                  programAddress: config.solanaProgramAddress,
+                },
               )
             : undefined,
           sui: config.wallets.sui
-            ? new SuiRelay(
-                api.baseurl,
-                config.wallets.sui,
-                network === Network.MAINNET ? Network.MAINNET : Network.TESTNET,
-              )
+            ? new SuiRelay(api.baseurl, config.wallets.sui, network)
             : undefined,
           bitcoin: config.wallets.bitcoin
             ? new BitcoinHTLC(

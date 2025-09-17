@@ -12,14 +12,13 @@ import {
   IAuth,
   Ok,
   Url,
+  Network,
 } from '@gardenfi/utils';
 import { ISolanaHTLC } from '../htlc/ISolanaHTLC';
 import {
   isSolanaNativeToken,
   Order,
   SolanaOrderResponse,
-  Orderbook,
-  IOrderbook,
   isSolanaOrderResponse,
   ChainAsset,
   ChainAssetString,
@@ -28,6 +27,7 @@ import {
   getAssetInfoFromOrder,
   waitForSolanaTxConfirmation,
 } from '../../utils';
+import { SolanaRelayerAddress, solanaProgramAddress } from '../../constants';
 import * as Spl from '@solana/spl-token';
 
 /**
@@ -49,27 +49,46 @@ export class SolanaRelay implements ISolanaHTLC {
    * Creates a new instance of SolanaRelay.
    * @param {AnchorProvider} provider - An abstraction of RPC connection and a Wallet
    * @param {Url} endpoint - API endpoint of the relayer node
-   * @param {string} relayer - On-chain address of the relayer in base58 format
-   * @param {string} splProgramAddress - On-chain address of the SPL token swap program
-   * @param {string} nativeProgramAddress - On-chain address of the native token swap program
+   * @param {Network} network - Chain network for selecting default relayer and program addresses
+   * @param {IAuth} auth - Auth provider for relayer endpoints
+   * @param {object} [overrides] - Optional overrides for relayer/program addresses
+   * @param {string} [overrides.relayer] - Custom relayer address (base58)
+   * @param {{native?: string; spl?: string}} [overrides.programAddress] - Custom program addresses
    * @throws {Error} If any required parameters are missing or invalid
    */
   constructor(
     private provider: AnchorProvider,
     private url: Url,
-    relayer: string,
-    programAddress: {
-      native?: string;
-      spl?: string;
-    },
+    network: Network,
     auth: IAuth,
+    overrides?: {
+      relayer?: string;
+      programAddress?: {
+        native?: string;
+        spl?: string;
+      };
+    },
   ) {
     if (!provider) throw new Error('Provider is required');
     if (!url) throw new Error('Endpoint URL is required');
-    if (!relayer) throw new Error('Relayer address is required');
+    if (network === undefined || network === null)
+      throw new Error('Network is required');
+
+    // Resolve defaults from constants based on network, allowing user overrides
+    const defaultPrograms =
+      network === Network.MAINNET
+        ? solanaProgramAddress.mainnet
+        : solanaProgramAddress.staging;
+
+    const resolvedPrograms = {
+      native: overrides?.programAddress?.native ?? defaultPrograms.native,
+      spl: overrides?.programAddress?.spl ?? defaultPrograms.spl,
+    };
+
+    const resolvedRelayer = overrides?.relayer ?? SolanaRelayerAddress[network];
 
     try {
-      this.relayer = new web3.PublicKey(relayer);
+      this.relayer = new web3.PublicKey(resolvedRelayer);
       this.auth = auth;
     } catch (cause) {
       throw new Error(
@@ -79,24 +98,24 @@ export class SolanaRelay implements ISolanaHTLC {
     }
 
     // Initialize SPL program
-    const splIdlWithAddress = programAddress.spl
+    const splIdlWithAddress = resolvedPrograms.spl
       ? {
           ...rawSplIdl,
           metadata: {
             ...(rawSplIdl.metadata ?? {}),
           },
-          address: programAddress.spl,
+          address: resolvedPrograms.spl,
         }
       : undefined;
 
     // Initialize Native program
-    const nativeIdlWithAddress = programAddress.native
+    const nativeIdlWithAddress = resolvedPrograms.native
       ? {
           ...rawNativeIdl,
           metadata: {
             ...(rawNativeIdl.metadata ?? {}),
           },
-          address: programAddress.native,
+          address: resolvedPrograms.native,
         }
       : undefined;
 

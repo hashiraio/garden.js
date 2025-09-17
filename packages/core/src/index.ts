@@ -27,9 +27,6 @@ export { SolanaRelay } from './lib/solana/relayer/solanaRelay';
 export type { ISolanaHTLC } from './lib/solana/htlc/ISolanaHTLC';
 export { SolanaHTLC } from './lib/solana/htlc/solanaHTLC';
 
-export { BlockNumberFetcher } from './lib/blockNumberFetcher/blockNumber';
-export type { IBlockNumberFetcher } from './lib/blockNumberFetcher/blockNumber';
-
 export { SecretManager } from './lib/secretManager/secretManager';
 export type {
   ISecretManager,

@@ -118,7 +118,7 @@ export const GardenProvider: FC<GardenProviderProps> = ({
         pendingOrders,
         getQuote,
         garden,
-        orderBook: garden?.orderbook,
+        orderBook: garden,
       }}
     >
       {children}

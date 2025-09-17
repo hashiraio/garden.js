@@ -22,9 +22,7 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
         return;
       }
 
-      const results = await Promise.all(
-        ids.map((id) => garden.orderbook.getOrder(id)),
-      );
+      const results = await Promise.all(ids.map((id) => garden.getOrder(id)));
 
       const orders: OrderWithStatus[] = [];
       const remainingIds: string[] = [];

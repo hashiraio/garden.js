@@ -343,9 +343,9 @@ export const getAddresses = async (
   htlcs: GardenHTLCModules,
   addresses?: Partial<Record<BlockchainType, string>>,
 ) => {
-  if (addresses && addresses[blockchainType]) {
-    return Ok(addresses[blockchainType]!);
-  }
+  // if (addresses && addresses[blockchainType]) {
+  //   return Ok(addresses[blockchainType]!);
+  // }
 
   switch (blockchainType) {
     case BlockchainType.evm:
@@ -355,7 +355,7 @@ export const getAddresses = async (
         );
       return Ok(htlcs.evm.htlcActorAddress);
     case BlockchainType.bitcoin: {
-      const pubKey = await htlcs.bitcoin?.getPublicKey();
+      const pubKey = htlcs.bitcoin?.getPublicKey;
       if (!pubKey || !isValidBitcoinPubKey(pubKey))
         return Err(
           'Invalid btc public key or pass Bitcoin address in SwapParams',
