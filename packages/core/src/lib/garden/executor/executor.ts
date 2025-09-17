@@ -39,7 +39,7 @@ export class Executor {
   #auth: IAuth;
   #api: Api;
   private isBackgroundServiceRunning: boolean = false;
-  private executorStop: (() => void) | null = null;
+  private stopBackgroundExecution: (() => void) | null = null;
 
   constructor(
     digestKey: DigestKey,
@@ -77,7 +77,7 @@ export class Executor {
   }
 
   start(interval: number = 5000, redeemServiceEnabled: boolean): void {
-    if (this.isBackgroundServiceRunning || this.executorStop) {
+    if (this.isBackgroundServiceRunning || this.stopBackgroundExecution) {
       return;
     }
 
@@ -89,7 +89,7 @@ export class Executor {
           return;
         }
         const stop = await this.execute(interval);
-        if (stop) this.executorStop = stop;
+        if (stop) this.stopBackgroundExecution = stop;
       } catch (error) {
         console.error('Error starting background executor:', error);
         this.isBackgroundServiceRunning = false;
@@ -98,13 +98,13 @@ export class Executor {
   }
 
   stop(): void {
-    if (this.executorStop) {
+    if (this.stopBackgroundExecution) {
       try {
-        this.executorStop();
+        this.stopBackgroundExecution();
       } catch {
         console.error('Error stopping background executor');
       }
-      this.executorStop = null;
+      this.stopBackgroundExecution = null;
     }
     this.isBackgroundServiceRunning = false;
   }
