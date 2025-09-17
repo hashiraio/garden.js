@@ -252,7 +252,7 @@ export class EvmRelay implements IEVMHTLC {
 
       const receipt = await waitForTransactionReceipt(this.wallet, txHash);
 
-      if (receipt.val?.status !== 'success') {
+      if (receipt.val && receipt.val.status !== 'success') {
         return Err('Approval transaction failed');
       }
 
@@ -296,7 +296,7 @@ export class EvmRelay implements IEVMHTLC {
         });
 
         const receipt = await waitForTransactionReceipt(this.wallet, txHash);
-        if (receipt.val?.status !== 'success') {
+        if (receipt.val && receipt.val.status !== 'success') {
           return Err('Native initiate transaction failed');
         }
 
