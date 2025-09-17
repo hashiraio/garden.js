@@ -15,7 +15,7 @@ import { Orderbook } from '@gardenfi/orderbook';
 import { Url } from '@gardenfi/utils';
 
 // Initialize the orderbook with the API URL
-const orderbook = new Orderbook(new Url('<ORDERBOOK_API>'));
+const orderbook = new Orderbook(new Url('<ORDERBOOK_API_URL>'));
 
 // Get matched orders for a user
 const matchedOrdersResult = await orderbook.getMatchedOrders(

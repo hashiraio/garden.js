@@ -320,7 +320,7 @@ export class BitcoinWallet extends AbstractBitcoinWallet {
     return this.provider.getBalance(await this.getAddress());
   }
 
-  async getPublicKey(): Promise<string> {
+  getPublicKey(): string {
     return this.signer.publicKey.toString('hex');
   }
 

@@ -11,16 +11,22 @@ import {
   num,
   shortString,
 } from 'starknet';
-import { MatchedOrder } from '@gardenfi/orderbook';
+import {
+  isStarknetOrderResponse,
+  Order,
+  StarknetOrderResponse,
+} from '@gardenfi/orderbook';
 import {
   APIResponse,
   AsyncResult,
   Err,
   Fetcher,
+  IAuth,
   Network,
   Ok,
   Url,
   hexToU32Array,
+  trim0x,
   with0x,
 } from '@gardenfi/utils';
 import { IStarknetHTLC } from '../starknetHTLC.types';
@@ -48,11 +54,13 @@ export class StarknetRelay implements IStarknetHTLC {
   private account: AccountInterface;
   private starknetProvider: RpcProvider;
   private chainId: string;
+  private auth: IAuth;
 
   constructor(
     relayerUrl: string | Url,
     account: AccountInterface,
     network: Network,
+    auth: IAuth,
     nodeUrl?: string,
   ) {
     this.url = relayerUrl instanceof Url ? relayerUrl : new Url(relayerUrl);
@@ -61,6 +69,7 @@ export class StarknetRelay implements IStarknetHTLC {
       nodeUrl: nodeUrl || STARKNET_CONFIG[network].nodeUrl,
     });
     this.chainId = STARKNET_CONFIG[network].chainId;
+    this.auth = auth;
   }
 
   get htlcActorAddress(): string {
@@ -68,18 +77,24 @@ export class StarknetRelay implements IStarknetHTLC {
     return this.account.address;
   }
 
-  async initiate(order: MatchedOrder): AsyncResult<string, string> {
+  async initiate(
+    order: Order | StarknetOrderResponse,
+  ): AsyncResult<string, string> {
+    if (isStarknetOrderResponse(order)) {
+      return this.initiateWithCreateOrderResponse(order);
+    }
     if (!this.account.address) return Err('No account address');
-    const { create_order, source_swap } = order;
+    const { source_swap } = order;
+    const { redeemer, amount } = source_swap;
 
     if (
-      !source_swap.amount ||
-      !source_swap.redeemer ||
-      !create_order.timelock ||
-      !create_order.secret_hash
-    )
+      !amount ||
+      !redeemer ||
+      !source_swap.secret_hash ||
+      !source_swap.timelock
+    ) {
       return Err('Invalid order');
-
+    }
     try {
       const contract = new Contract(
         starknetHtlcABI,
@@ -109,14 +124,11 @@ export class StarknetRelay implements IStarknetHTLC {
 
   private async approveAndInitiate(
     tokenAddress: string,
-    order: MatchedOrder,
+    order: Order,
   ): AsyncResult<string, string> {
-    const { create_order, source_swap } = order;
+    const { source_swap } = order;
     const { redeemer, amount } = source_swap;
-    const { secret_hash, timelock } = create_order;
-    if (!secret_hash) {
-      return Err('Invalid order: secret_hash is undefined');
-    }
+    const { secret_hash, timelock } = source_swap;
     const contractAddress = source_swap.asset;
 
     try {
@@ -154,15 +166,13 @@ export class StarknetRelay implements IStarknetHTLC {
     }
   }
 
-  private async initiateRelay(
-    order: MatchedOrder,
-  ): AsyncResult<string, string> {
-    const { create_order, source_swap } = order;
+  private async initiateRelay(order: Order): AsyncResult<string, string> {
+    const { source_swap } = order;
     const { redeemer, amount } = source_swap;
-    if (!create_order.secret_hash) {
+    if (!source_swap.secret_hash) {
       return Err('Invalid order: secret_hash is undefined');
     }
-    const secretHash = with0x(create_order.secret_hash);
+    const secretHash = with0x(source_swap.secret_hash);
     const DOMAIN = {
       name: 'HTLC',
       version: shortString.encodeShortString('1'),
@@ -177,7 +187,7 @@ export class StarknetRelay implements IStarknetHTLC {
       message: {
         redeemer: redeemer,
         amount: cairo.uint256(amount),
-        timelock: create_order.timelock,
+        timelock: order.source_swap.timelock,
         secretHash: hexToU32Array(secretHash),
       },
     };
@@ -188,13 +198,14 @@ export class StarknetRelay implements IStarknetHTLC {
         return Err(formattedSignature.error);
       }
 
-      const res = await Fetcher.post<APIResponse<string>>(
-        this.url.endpoint('initiate'),
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'initiate' }),
         {
           body: JSON.stringify({
-            order_id: create_order.create_id,
             signature: formattedSignature.val,
-            perform_on: 'Source',
           }),
           headers: {
             'Content-Type': 'application/json',
@@ -210,20 +221,22 @@ export class StarknetRelay implements IStarknetHTLC {
     }
   }
 
-  async redeem(
-    order: MatchedOrder,
-    secret: string,
-  ): AsyncResult<string, string> {
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
-      const res = await Fetcher.post<APIResponse<string>>(
-        this.url.endpoint('redeem'),
+      const headers = await this.auth.getAuthHeaders();
+      if (!headers.ok) return Err(headers.error);
+
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'redeem' }),
         {
           body: JSON.stringify({
-            order_id: order.create_order.create_id,
-            secret: secret,
-            perform_on: 'Destination',
+            secret: trim0x(secret),
           }),
           headers: {
+            ...headers.val,
             'Content-Type': 'application/json',
           },
           retryCount: 10,
@@ -236,6 +249,93 @@ export class StarknetRelay implements IStarknetHTLC {
     } catch (error) {
       return Err(String(error));
     }
+  }
+
+  async executeApprovalTransaction(
+    order: StarknetOrderResponse,
+  ): AsyncResult<string, string> {
+    if (!this.account.address) return Err('No account address');
+
+    if (!order.approval_transaction) {
+      return Ok('No approval transaction required');
+    }
+
+    try {
+      const approvalTx = order.approval_transaction;
+      const txHash = await this.account.execute([
+        {
+          contractAddress: with0x(approvalTx.to),
+          entrypoint: with0x(approvalTx.selector as string),
+          calldata: approvalTx.calldata,
+        },
+      ]);
+      await this.starknetProvider.waitForTransaction(txHash.transaction_hash, {
+        retryInterval: 2000,
+        successStates: [TransactionExecutionStatus.SUCCEEDED],
+      });
+
+      return Ok(txHash.transaction_hash);
+    } catch (error) {
+      console.error('executeApprovalTransaction error:', error);
+      return Err(
+        'Failed to execute approval: ' +
+          (error instanceof Error
+            ? error?.message || String(error)
+            : String(error)),
+      );
+    }
+  }
+
+  async initiateWithCreateOrderResponse(
+    order: StarknetOrderResponse,
+  ): AsyncResult<string, string> {
+    const headers = await this.auth.getAuthHeaders();
+    if (!headers.ok) return Err(headers.error);
+    if (!this.account.address) return Err('No account address');
+    const approvalRes = await this.executeApprovalTransaction(order);
+    if (approvalRes.error) return Err(approvalRes.error);
+    const { typed_data } = order;
+    if (typed_data === null) {
+      const tx = order.initiate_transaction;
+      if (!tx) return Err('No initiate_transaction found for native initiate');
+      const txHash = await this.account.execute([
+        {
+          contractAddress: with0x(tx.to),
+          entrypoint: with0x(tx.selector as string),
+          calldata: tx.calldata,
+        },
+      ]);
+      await this.starknetProvider.waitForTransaction(txHash.transaction_hash, {
+        retryInterval: 2000,
+        successStates: [TransactionExecutionStatus.SUCCEEDED],
+      });
+      return Ok(txHash.transaction_hash);
+    }
+    const signature = await this.account.signMessage(typed_data);
+    const formattedSignature = formatStarknetSignature(signature);
+    if (formattedSignature.error) {
+      return Err(formattedSignature.error);
+    }
+
+    const res = await Fetcher.patch<APIResponse<string>>(
+      this.url
+        .endpoint('/v2/orders')
+        .endpoint(order.order_id)
+        .addSearchParams({ action: 'initiate' }),
+      {
+        body: JSON.stringify({
+          signature: Array.isArray(formattedSignature.val)
+            ? formattedSignature.val.join(',')
+            : formattedSignature.val,
+        }),
+        headers: {
+          ...headers.val,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+    if (res.error) return Err(res.error);
+    return Ok(res.result as string);
   }
 
   async refund(): AsyncResult<string, string> {

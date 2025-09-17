@@ -16,11 +16,12 @@ import { Garden } from '../../garden/garden';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { SecretManager } from '../../secretManager/secretManager';
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { loadTestConfig } from '../../../../../../test-config-loader';
 
 describe.only('sui gas budget tests', () => {
   it('should test gas budget allocations per transaction', async () => {
-    const privateKey =
-      'suiprivkey1qrgdeyaw552slccg8gkqzacz64q3fyh3px890ltq3qkm0f90xm22j5ddka9';
+    const config = loadTestConfig();
+    const privateKey = config.SUI_PRIVATE_KEY;
 
     const signer = Ed25519Keypair.fromSecretKey(privateKey);
     const client = new SuiClient({ url: getFullnodeUrl('testnet') });
@@ -31,7 +32,8 @@ describe.only('sui gas budget tests', () => {
   });
 });
 describe.only('sui htlc init tests', () => {
-  const url = 'https://testnet.api.hashira.io/orders';
+  const config = loadTestConfig();
+  const url = config.TEST_RELAY_URL;
   const create_order: CreateOrderReqWithStrategyId = {
     source_chain: 'sui_testnet',
     destination_chain: 'bitcoin_testnet',
@@ -51,19 +53,21 @@ describe.only('sui htlc init tests', () => {
   };
   let garden: Garden;
   it('should initiate', async () => {
-    const privateKey =
-      'suiprivkey1qrgdeyaw552slccg8gkqzacz64q3fyh3px890ltq3qkm0f90xm22j5ddka9';
+    const privateKey = config.SUI_PRIVATE_KEY;
 
     const signer = Ed25519Keypair.fromSecretKey(privateKey);
 
-    const htlc = new SuiHTLC(signer, Network.TESTNET);
+    const htlc = new SuiHTLC(signer, Network.TESTNET, new Url(url));
     garden = new Garden({
       auth: new ApiKey(
         'AAAAAGm47cw6Og5G37SuhX_uiXy8CYZCwx5XHgNS1DCsTi_HOzpOaAoYBPZLbGm1th0qVlom1EuaV_OtU6oJ_UIffIpsfVVDbKAc',
       ),
       orderbook: new Orderbook(new Url(url)),
       digestKey: DigestKey.generateRandom().val!,
-      environment: Environment.TESTNET,
+      environment: {
+        environment: Environment.TESTNET,
+        evmRelay: config.TEST_ORDERBOOK_STAGE,
+      },
       htlc: {
         sui: htlc,
       },
@@ -79,7 +83,8 @@ describe.only('sui htlc init tests', () => {
 describe(
   'sui htlc redeem tests',
   () => {
-    const url = 'https://testnet.api.hashira.io/orders';
+    const config = loadTestConfig();
+    const url = config.TEST_RELAY_URL;
     const create_order: CreateOrderReqWithStrategyId = {
       source_chain: 'solana_testnet',
       destination_chain: 'sui_testnet',
@@ -100,12 +105,11 @@ describe(
     let garden: Garden;
     it('should initiate and redeem', async () => {
       // If you have a specific private key, use the import method:
-      // const privateKey = 'suiprivkey1qrgdeyaw552slccg8gkqzacz64q3fyh3px890ltq3qkm0f90xm22j5ddka9';
+      // const privateKey = config.SUI_PRIVATE_KEY;
       // const signer = await WebCryptoSigner.import(privateKey);
 
       // For testing, generate a new signer:
-      const privateKey =
-        'suiprivkey1qrgdeyaw552slccg8gkqzacz64q3fyh3px890ltq3qkm0f90xm22j5ddka9';
+      const privateKey = config.SUI_PRIVATE_KEY;
 
       const signer = Ed25519Keypair.fromSecretKey(privateKey);
 
@@ -117,7 +121,7 @@ describe(
         digestKey: DigestKey.generateRandom().val!,
         environment: Environment.TESTNET,
         htlc: {
-          sui: new SuiHTLC(signer, Network.TESTNET),
+          sui: new SuiHTLC(signer, Network.TESTNET, new Url(url)),
         },
       });
       const secretManager = SecretManager.fromDigestKey(

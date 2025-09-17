@@ -23,24 +23,22 @@ import { SwapParams } from '../../../garden/garden.types';
 // import { skip } from 'node:test';
 import { SolanaRelay } from '../../relayer/solanaRelay';
 import { Asset } from 'gardenfi/orderbook';
+import { loadTestConfig } from '../../../../../../../test-config-loader';
+
+// Load test configuration
+const config = loadTestConfig();
 
 // Shared constants
-const TEST_RPC_URL = 'https://api.devnet.solana.com';
-const TEST_ORDERBOOK_STAGE = 'https://testnet.api.hashira.io';
-const TEST_STAGE_AUTH = 'https://testnet.api.hashira.io/auth';
+const TEST_RPC_URL = config.TEST_RPC_URL;
+const TEST_ORDERBOOK_STAGE = config.TEST_ORDERBOOK_STAGE;
+const TEST_STAGE_AUTH = config.TEST_STAGE_AUTH;
 // const TEST_BLOCKFETCHER_URL = 'https://info-stage.hashira.io';
-const TEST_STAGE_QUOTE = 'https://quote-staging.hashira.io/';
-const TEST_STAGE_EVM_RELAY = 'https://testnet.api.hashira.io/relayer';
-const TEST_SOLANA_RELAY = 'https://solana-relayer-staging.hashira.io/';
+const TEST_STAGE_QUOTE = config.TEST_STAGE_QUOTE;
+const TEST_STAGE_EVM_RELAY = config.TEST_STAGE_EVM_RELAY;
+const TEST_SOLANA_RELAY = config.TEST_SOLANA_RELAY;
 
-const TEST_PRIVATE_KEY =
-  '9c1508f9071bf5fefc69fbb71c98cd3150a323e953c6979ef8b508f1461dd2e1';
-const PRIV = [
-  73, 87, 221, 5, 63, 180, 104, 26, 64, 41, 225, 50, 165, 84, 157, 74, 187, 105,
-  53, 112, 214, 236, 175, 55, 86, 247, 214, 120, 101, 90, 62, 178, 103, 156,
-  200, 13, 24, 181, 121, 93, 15, 85, 202, 164, 4, 30, 165, 77, 244, 66, 207, 78,
-  179, 255, 45, 233, 17, 131, 203, 187, 120, 110, 176, 172,
-];
+const TEST_PRIVATE_KEY = config.EVM_PRIVATE_KEY_2.replace('0x', '');
+const PRIV = config.SOLANA_PRIV;
 
 // Timeout constants
 const EXECUTE_TIMEOUT = 90000;

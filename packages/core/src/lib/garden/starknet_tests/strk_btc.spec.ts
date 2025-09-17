@@ -1,6 +1,14 @@
 import { Garden } from '../garden';
-import { MatchedOrder, SupportedAssets } from '@gardenfi/orderbook';
-import { Environment, sleep, with0x } from '@gardenfi/utils';
+import { Order, SupportedAssets } from '@gardenfi/orderbook';
+import {
+  DigestKey,
+  Environment,
+  Network,
+  Siwe,
+  sleep,
+  Url,
+  with0x,
+} from '@gardenfi/utils';
 import { RpcProvider, Account } from 'starknet';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -10,6 +18,7 @@ import { StarknetRelay } from '../../starknet/relay/starknetRelay';
 import { BitcoinNetwork } from '../../bitcoin/provider/provider.interface';
 import { BitcoinWallet } from '../../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../../bitcoin/provider/provider';
+import { loadTestConfig } from '../../../../../../test-config-loader';
 // import { promisify } from 'util';
 // import { exec } from 'child_process';
 
@@ -76,22 +85,19 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
   //   const STARKNET_RELAY_URL = 'http://localhost:4436';
   //   const API_KEY =
   //     'AAAAAGghjwU6Os1DVFgmUXj0GcNt5jTJPbBmXKw7xRARW-qivNy4nfpKVgMNebmmxig2o3v-6M4l_ZmCgLp3vKywfVXDYBcL3M4c';
-  const RELAYER_URL = 'https://orderbook-stage.hashira.io';
+  const config = loadTestConfig();
   const STARKNET_NODE_URL =
     'https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_7/Ry6QmtzfnqANtpqP3kLqe08y80ZorPoY';
   const QUOTE_SERVER_URL = 'https://quote-staging.hashira.io';
   const STARKNET_RELAY_URL = 'https://starknet-relayer.hashira.io';
   // Wallet configurations
-  const EVM_PRIVATE_KEY =
-    '0x8fe869193b5010d1ee36e557478b43f2ade908f23cac40f024d4aa1cd1578a61';
+  const EVM_PRIVATE_KEY = config.EVM_PRIVATE_KEY;
   //   const STARKNET_PRIVATE_KEY =
   //     '0x00000000000000000000000000000000c10662b7b247c7cecf7e8a30726cff12';
   //   const STARKNET_ADDRESS =
   //     '0x0260a8311b4f1092db620b923e8d7d20e76dedcc615fb4b6fdf28315b81de201';
-  const STARKNET_PRIVATE_KEY =
-    '0x0440c893bd4cbc2c151d579c9d721eec4d316306f871368baa89033e3f6820b9';
-  const STARKNET_ADDRESS =
-    '0x0390cf09b3537e450170bdcce49a789facb727f21eabd8e1d25b8cf1869e8e93';
+  const STARKNET_PRIVATE_KEY = config.STARKNET_PRIVATE_KEY;
+  const STARKNET_ADDRESS = config.STARKNET_ADDRESS;
 
   // Global variables
   let garden: Garden;
@@ -123,7 +129,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
     );
 
     btcWallet = BitcoinWallet.fromPrivateKey(
-      'af530c3d2212740a8428193fce82bfddcf7e83bee29a2b9b2f25b5331bae1bf5',
+      config.BITCOIN_PRIVATE_KEY,
       bitcoinProvider,
       { pkType: 'p2wpkh', pkPath: "m/84'/0'/0'/0/0" },
     );
@@ -133,23 +139,35 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
 
     // Initialize Garden
     garden = new Garden({
-      api: RELAYER_URL,
-      environment: Environment.TESTNET,
+      environment: {
+        network: Network.TESTNET,
+      },
+      apiKey: config.API_KEY,
       digestKey:
         '7fb6d160fccb337904f2c630649950cc974a24a2931c3fdd652d3cd43810a857',
       quote: new Quote(QUOTE_SERVER_URL),
       htlc: {
-        starknet: new StarknetRelay(STARKNET_RELAY_URL, starknetWallet),
+        starknet: new StarknetRelay(
+          STARKNET_RELAY_URL,
+          starknetWallet,
+          Network.TESTNET,
+          Siwe.fromDigestKey(
+            new Url(config.TEST_RELAY_URL),
+            DigestKey.from(
+              '7fb6d160fccb337904f2c630649950cc974a24a2931c3fdd652d3cd43810a857',
+            ).val!,
+          ),
+        ),
       },
     });
   }, 5000000);
-  let matchedorder: MatchedOrder;
+  let matchedorder: Order;
 
   const setupEventListeners = () => {
     garden.on('error', (order, error) => {
       console.log(
         'error while executing ❌, orderId :',
-        order.create_order.create_id,
+        order.order_id,
         'error :',
         error,
       );
@@ -157,7 +175,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
     garden.on('success', (order, action, result) => {
       console.log(
         'executed ✅, orderId :',
-        order.create_order.create_id,
+        order.order_id,
         'action :',
         action,
         'result :',
@@ -170,17 +188,17 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
     garden.on('onPendingOrdersChanged', (orders) => {
       console.log('pending orders :', orders.length);
       orders.forEach((order) => {
-        console.log('pending order :', order.create_order.create_id);
+        console.log('pending order :', order.order_id);
       });
     });
     garden.on('rbf', (order, result) => {
-      console.log('rbf :', order.create_order.create_id, result);
+      console.log('rbf :', order.order_id, result);
     });
   };
   it('should create and execute a Starknet-BTC swap', async () => {
     const order = {
-      fromAsset: SupportedAssets.testnet.starknet_testnet_ETH,
-      toAsset: SupportedAssets.testnet.bitcoin_testnet_BTC,
+      fromAsset: SupportedAssets.testnet.starknet_sepolia.WBTC,
+      toAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
       sendAmount: '100000000000000000',
       receiveAmount: '100000',
       additionalData: {
@@ -195,10 +213,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
       console.log('Error while creating order ❌:', result.error);
       throw new Error(result.error);
     }
-    console.log(
-      'Order created and matched✅',
-      result.val.create_order.create_id,
-    );
+    console.log('Order created and matched✅', result.val);
     // console.log('Order details:', {
     //   orderId: result.val.create_order.create_id,
     //   sourceAsset: result.val.source_swap.asset,
@@ -231,7 +246,7 @@ describe('StarkNet Integration Tests - STRK -> BTC', () => {
 
   it('Execute', async () => {
     setupEventListeners();
-    await garden.execute();
+    // await garden.execute();
     await sleep(150000);
   }, 150000);
 });

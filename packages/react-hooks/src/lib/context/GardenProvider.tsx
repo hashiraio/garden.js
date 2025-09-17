@@ -12,15 +12,10 @@ import type {
   GardenContextType,
   GardenProviderProps,
 } from './gardenProvider.types';
-import {
-  BlockchainType,
-  getBlockchainType,
-  isBitcoin,
-  MatchedOrder,
-} from '@gardenfi/orderbook';
 import { hasAnyValidValue } from '../utils';
 import { useDigestKey } from '../hooks/useDigestKey';
 import { Err, Ok } from '@gardenfi/utils';
+import { PENDING_ORDERS_STORE } from '../constants';
 
 export const GardenContext = createContext<GardenContextType>({
   pendingOrders: [],
@@ -29,16 +24,17 @@ export const GardenContext = createContext<GardenContextType>({
 export const GardenProvider: FC<GardenProviderProps> = ({
   children,
   config,
-  handleSecretManagement,
+  store,
+  setRedeemServiceEnabled = true,
 }) => {
   const [garden, setGarden] = useState<IGardenJS>();
 
-  const { digestKey } = useDigestKey();
-  const { pendingOrders } = useOrderbook(garden);
+  const { digestKey } = useDigestKey(setRedeemServiceEnabled);
+  const { pendingOrders } = useOrderbook(garden, store);
 
   const quote = useMemo(() => {
     const { api } = resolveApiConfig(config.environment);
-    return config.quote ?? new Quote(api.quote);
+    return config.quote ?? new Quote(api.baseurl);
   }, [config.environment, config.quote]);
 
   const getQuote = useMemo(
@@ -62,117 +58,65 @@ export const GardenProvider: FC<GardenProviderProps> = ({
     [garden, quote],
   );
 
-  const swapAndInitiate = async (params: SwapParams) => {
+  const swap = async (params: SwapParams) => {
     if (!garden) return Err('Garden not initialized');
 
-    const order = await garden.swap(params);
-    if (!order.val) return Err(order.error);
+    const order = await garden.createSwap(params);
+    if (!order.val) return Err(order.error || 'Unknown error occurred');
 
-    if (isBitcoin(order.val.source_swap.chain)) return Ok(order.val);
-
-    let init_tx_hash: string;
-
-    switch (getBlockchainType(order.val.source_swap.chain)) {
-      case BlockchainType.EVM: {
-        if (!garden.evmHTLC)
-          return Err('EVM HTLC not initialized: Please provide evmHTLC');
-
-        const initRes = await garden.evmHTLC.initiate(order.val);
-        if (!initRes.ok) return Err(initRes.error);
-        init_tx_hash = initRes.val;
-        break;
+    if (setRedeemServiceEnabled) {
+      try {
+        const existing = store.getItem(PENDING_ORDERS_STORE);
+        const ids: string[] = existing ? JSON.parse(existing) : [];
+        if (!ids.includes(order.val)) ids.push(order.val);
+        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(ids));
+      } catch (e) {
+        console.error('Failed to persist pending order id', e);
       }
-      case BlockchainType.Starknet: {
-        if (!garden.starknetHTLC)
-          return Err(
-            'Starknet HTLC not initialized: Please provide starknetHTLC',
-          );
-
-        const starknetInitRes = await garden.starknetHTLC.initiate(order.val);
-        if (!starknetInitRes.ok) return Err(starknetInitRes.error);
-        init_tx_hash = starknetInitRes.val;
-        break;
-      }
-      case BlockchainType.Solana: {
-        if (!garden.solanaHTLC)
-          return Err('Solana HTLC not initialized: Please provide solanaHTLC');
-
-        const solanaInitRes = await garden.solanaHTLC.initiate(order.val);
-        if (!solanaInitRes.ok) return Err(solanaInitRes.error);
-        init_tx_hash = solanaInitRes.val;
-        break;
-      }
-      case BlockchainType.Sui: {
-        if (!garden.suiHTLC)
-          return Err('Sui HTLC not initialized: Please provide suiHTLC');
-
-        const suiInitRes = await garden.suiHTLC.initiate(order.val);
-        if (!suiInitRes.ok) return Err(suiInitRes.error);
-        init_tx_hash = suiInitRes.val;
-        break;
-      }
-      case BlockchainType.Bitcoin:
-        init_tx_hash = order.val.source_swap.initiate_tx_hash;
-        break;
-      default:
-        return Err('Unsupported chain');
     }
 
-    const updatedOrder: MatchedOrder = {
-      ...order.val,
-      source_swap: {
-        ...order.val.source_swap,
-        initiate_tx_hash: init_tx_hash,
-      },
-    };
-
-    return Ok(updatedOrder);
+    return Ok(order.val);
   };
 
-  // Initialize Garden
   useEffect(() => {
-    if (!window || !digestKey) return;
+    if (!!setRedeemServiceEnabled && !digestKey) return;
+
     if (!('wallets' in config) && !('htlc' in config)) return;
 
     let garden: Garden;
     if (
       'wallets' in config &&
-      Object.keys(config.wallets).length > 0 &&
-      hasAnyValidValue(config.wallets)
+      Object.keys(config.wallets ?? {}).length > 0 &&
+      hasAnyValidValue(config.wallets ?? {})
     ) {
       garden = Garden.fromWallets({
         ...config,
-        digestKey: digestKey,
-      }).handleSecretManagement(
-        handleSecretManagement ? handleSecretManagement : false,
-      );
+        digestKey: setRedeemServiceEnabled ? undefined : digestKey,
+      }).setRedeemServiceEnabled(setRedeemServiceEnabled);
     } else if (
       'htlc' in config &&
-      Object.keys(config.htlc).length > 0 &&
-      hasAnyValidValue(config.htlc)
+      Object.keys(config.htlc ?? {}).length > 0 &&
+      hasAnyValidValue(config.htlc ?? {})
     ) {
       garden = new Garden({
         ...config,
-        digestKey: digestKey,
-      }).handleSecretManagement(
-        handleSecretManagement ? handleSecretManagement : false,
-      );
+        digestKey: setRedeemServiceEnabled ? undefined : digestKey,
+      }).setRedeemServiceEnabled(setRedeemServiceEnabled);
     } else {
-      // Handle case where neither wallets nor htlc is provided
       return;
     }
 
     setGarden(garden);
-  }, [config, digestKey, handleSecretManagement]);
+  }, [config, digestKey, setRedeemServiceEnabled]);
 
   return (
     <GardenContext.Provider
       value={{
-        swapAndInitiate,
+        swap,
         pendingOrders,
         getQuote,
         garden,
-        orderBook: garden?.orderbook,
+        orderBook: garden,
       }}
     >
       {children}

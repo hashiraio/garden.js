@@ -1,6 +1,6 @@
 {
   "name": "@gardenfi/react-hooks",
-  "version": "2.5.2",
+  "version": "2.5.3",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -2,33 +2,26 @@ import { AsyncResult, Err, Ok, Result } from '../../result/result';
 import { AuthHeaderEnum, AuthHeader, IAuth } from '../auth.types';
 
 export class ApiKey implements IAuth {
-  private readonly apiKey: string;
+  private readonly _apiKey: string;
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
+    this._apiKey = apiKey;
   }
 
   async getToken(): AsyncResult<string, string> {
     const verify = this.verifyToken();
     if (verify.error) return Err(verify.error);
 
-    if (verify.val) return Ok(this.apiKey);
+    if (verify.val) return Ok(this._apiKey);
 
     return Err('Token verification failed');
   }
 
   verifyToken(): Result<boolean, string> {
-    const decodedBytes = this.decodeBase64UrlSafe(this.apiKey);
-    const data = this.extractData(decodedBytes);
-
-    if (!data.ok) {
-      return Err(data.error);
+    if (this._apiKey.length === 64) {
+      return Ok(true);
     }
-
-    const { expiryTimestamp } = data.val;
-    if (expiryTimestamp < new Date()) return Err('Token expired');
-
-    return Ok(true);
+    return Err('Invalid API key length');
   }
 
   private decodeBase64UrlSafe(base64Url: string) {

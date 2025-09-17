@@ -26,7 +26,7 @@ export abstract class AbstractBitcoinWallet implements IBitcoinWallet {
   abstract getAddress(): Promise<string>;
   abstract getBalance(): Promise<number>;
   abstract sign(hexString: string): Promise<string>;
-  abstract getPublicKey(): Promise<string>;
+  abstract getPublicKey(): string;
   abstract getNetwork(): Promise<Network>;
   abstract getProvider(): Promise<IBitcoinProvider>;
   abstract send(toAddress: string, amt: number, fee?: number): Promise<string>;

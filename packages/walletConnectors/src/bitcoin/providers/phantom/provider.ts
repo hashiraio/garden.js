@@ -11,7 +11,7 @@ import {
   Ok,
 } from '@gardenfi/utils';
 import { WALLET_CONFIG } from './../../constants';
-import { BitcoinProvider, BitcoinWallet, BitcoinNetwork } from '@gardenfi/core';
+import { BitcoinProvider, BitcoinWallet } from '@gardenfi/core';
 import { getBalance } from '../../utils';
 
 initEccLib(ecc);
@@ -95,7 +95,7 @@ export class PhantomProvider implements IInjectedBitcoinProvider {
       //considering only mainnet because phantom doesn't support testnet
       const network = bitcoin.networks.bitcoin;
 
-      const provider = new BitcoinProvider(BitcoinNetwork.Mainnet);
+      const provider = new BitcoinProvider(Network.MAINNET);
       try {
         const { txHex, utxoCount } = await BitcoinWallet.generateUnsignedPSBT(
           provider,

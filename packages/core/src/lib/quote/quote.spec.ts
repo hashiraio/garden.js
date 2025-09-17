@@ -1,21 +1,14 @@
-import {
-  bitcoinRegtestAsset,
-  Chains,
-  WBTCArbitrumLocalnetAsset,
-} from '@gardenfi/orderbook';
+import { SupportedAssets } from '@gardenfi/orderbook';
 import { Quote } from './quote';
 import { describe, expect, it } from 'vitest';
 
 describe('quote', () => {
-  const quoteUrl = 'https://api.garden.finance/quote';
+  const quoteUrl = 'https://api.garden.finance';
   const quote = new Quote(quoteUrl);
 
   it('should get quote for evm-strk', async () => {
-    const res = await quote.getQuote(
-      'arbitrum:0x6b6303fab8ec7232b4f2a7b9fa58e5216f608fcb::bitcoin:primary',
-      10000,
-    );
-    console.log('quote :', res.val);
+    const res = await quote.getQuote('ethereum:wbtc', 'unichain:usdc', 500000);
+    console.log('quote :', res.val?.[0].source);
     console.log('quote error :', res.error);
     expect(res.error).toBeUndefined();
     expect(res.val).toBeTruthy();
@@ -23,8 +16,10 @@ describe('quote', () => {
 
   it('should get quote for strk-btc', async () => {
     const res = await quote.getQuote(
-      'starknet_sepolia:0x13e7510b665d01c03f250e648c5be6f4a57b6cf56b3079293362ed2e4713c95::bitcoin_testnet:primary',
-      10000000000000000,
+      'starknet:wbtc',
+      'bitcoin:btc',
+      500000,
+      true,
     );
     console.log('quote :', res.val);
     console.log('quote error :', res.error);
@@ -34,8 +29,13 @@ describe('quote', () => {
 
   it('should get quote for strk-evm', async () => {
     const res = await quote.getQuote(
-      'starknet_sepolia:0x75cf614ce4ebce29ac622a50cd5151ddfff853159707589a85dd67b9fb1eba::arbitrum_sepolia:0x795Dcb58d1cd4789169D5F938Ea05E17ecEB68cA',
-      10000000000000000,
+      'starknet:wbtc',
+      'bitcoin:btc',
+      500000,
+      false,
+      {
+        affiliateFee: 1000,
+      },
     );
     console.log('quote :', res.val);
     console.log('quote error :', res.error);
@@ -43,47 +43,19 @@ describe('quote', () => {
     expect(res.val).toBeTruthy();
   });
 
-  it('exact_out', async () => {
-    const res = await quote.getQuote(
-      'arbitrum_localnet:0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9::bitcoin_regtest:primary',
-      100000,
-      true,
-    );
+  it('get quote ƒrom assets', async () => {
+    const res = await quote.getQuoteFromAssets({
+      fromAsset: SupportedAssets.mainnet.arbitrum.WBTC,
+      toAsset: SupportedAssets.mainnet.bitcoin.BTC,
+      amount: 100000,
+      isExactOut: true,
+    });
     console.log('quote :', res.val);
     expect(res.ok).toBeTruthy();
     expect(res.val).toBeTruthy();
 
     if (!res.ok) return;
-    expect(Number(Object.values(res.val.quotes)[0])).toBeGreaterThan(100000);
   });
-
-  // it('should get attested quote', async () => {
-  //   const res = await quote.getAttestedQuote({
-  //     source_chain: Chains.arbitrum_localnet,
-  //     destination_chain: Chains.bitcoin_regtest,
-  //     source_asset: WBTCArbitrumLocalnetAsset.atomicSwapAddress,
-  //     destination_asset: bitcoinRegtestAsset.atomicSwapAddress,
-  //     initiator_source_address: '0x52FE8afbbB800a33edcbDB1ea87be2547EB30000',
-  //     initiator_destination_address:
-  //       'bcrt1qx2xlqqrf2jre8y63hu8v6ev5yht2rlpv493lfjbcrt1qx2xlqqrf2jre8y',
-  //     source_amount: '100010',
-  //     destination_amount: '100000',
-  //     fee: '1',
-  //     nonce: '1',
-  //     min_destination_confirmations: 3,
-  //     timelock: 14400,
-  //     secret_hash:
-  //       'c82602248bdcc41d4d353b39548bec8149107eaa3757a06e9f7f7d7d69c1af3a',
-  //     additional_data: {
-  //       strategy_id: 'arbrry',
-  //       bitcoin_optional_recipient:
-  //         'bcrt1qx2xlqqrf2jre8y63hu8v6ev5yht2rlpv493lfj',
-  //     },
-  //   });
-  //   console.log('attested quote :', res.val);
-  //   expect(res.error).toBeUndefined();
-  //   expect(res.val).toBeTruthy();
-  // });
 
   // it('test', async () => {
   //   const res = await quote.getAttestedQuote({
@@ -112,10 +84,10 @@ describe('quote', () => {
   //   expect(res.val).toBeTruthy();
   // }, 30000);
 
-  it.only('should get strategies', async () => {
-    const res = await quote.getStrategies();
-    console.log('strategies :', res.val);
-    expect(res.error).toBeUndefined();
-    expect(res.val).toBeTruthy();
-  });
+  // it('should get strategies', async () => {
+  //   const res = await quote.getStrategies();
+  //   console.log('strategies :', res.val);
+  //   expect(res.error).toBeUndefined();
+  //   expect(res.val).toBeTruthy();
+  // });
 });

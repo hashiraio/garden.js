@@ -10,6 +10,7 @@ import { StarknetRelay } from '../../starknet/relay/starknetRelay';
 import { BitcoinNetwork } from '../../bitcoin/provider/provider.interface';
 import { BitcoinWallet } from '../../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../../bitcoin/provider/provider';
+import { loadTestConfig } from '../../../../../../test-config-loader';
 // import axios from 'axios';
 // import { promisify } from 'util';
 // import { exec } from 'child_process';
@@ -56,29 +57,16 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
   //   const STARKNET_NODE_URL = 'http://localhost:8547/rpc';
   //   const QUOTE_SERVER_URL = 'http://localhost:6969';
   //   const STARKNET_RELAY_URL = 'http://localhost:4436';
-  // const API_KEY =
-  //   'AAAAAGghjwU6Os1DVFgmUXj0GcNt5jTJPbBmXKw7xRARW-qivNy4nfpKVgMNebmmxig2o3v-6M4l_ZmCgLp3vKywfVXDYBcL3M4c';
-
+  const config = loadTestConfig();
   const RELAYER_URL = 'https://orderbook-stage.hashira.io';
   const STARKNET_NODE_URL = 'https://starknet-mainnet.public.blastapi.io';
   const QUOTE_SERVER_URL = 'https://quote-staging.hashira.io';
   const STARKNET_RELAY_URL = 'https://starknet-relayer.hashira.io';
-  //   const API_KEY =
-  //     'AAAAAGnCHgI6OtNjaHxlzdsgXaIseznp7jFo1eU7QKEYhopsgu1EAVZOPgAHGNJJSYdVclaWkOhORmKpS14PqjyFu1-5sdtTmMob';
-
   // Wallet configurations
-  const EVM_PRIVATE_KEY =
-    '0x8fe869193b5010d1ee36e557478b43f2ade908f23cac40f024d4aa1cd1578a61';
-  //   const STARKNET_PRIVATE_KEY =
-  //     '0x00000000000000000000000000000000c10662b7b247c7cecf7e8a30726cff12';
-  //   const STARKNET_ADDRESS =
-  //     '0x0260a8311b4f1092db620b923e8d7d20e76dedcc615fb4b6fdf28315b81de201';
-
+  const EVM_PRIVATE_KEY = config.EVM_PRIVATE_KEY;
   //testnet
-  const STARKNET_PRIVATE_KEY =
-    '0x0440c893bd4cbc2c151d579c9d721eec4d316306f871368baa89033e3f6820b9';
-  const STARKNET_ADDRESS =
-    '0x0390cf09b3537e450170bdcce49a789facb727f21eabd8e1d25b8cf1869e8e93';
+  const STARKNET_PRIVATE_KEY = config.STARKNET_PRIVATE_KEY;
+  const STARKNET_ADDRESS = config.STARKNET_ADDRESS;
 
   // Global variables
   let garden: Garden;
@@ -119,7 +107,7 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
       'https://48.217.250.147:18443',
     );
     btcWallet = BitcoinWallet.fromPrivateKey(
-      'af530c3d2212740a8428193fce82bfddcf7e83bee29a2b9b2f25b5331bae1bf5',
+      config.BITCOIN_PRIVATE_KEY,
       bitcoinProvider,
       { pkType: 'p2wpkh', pkPath: "m/84'/0'/0'/0/0" },
     );

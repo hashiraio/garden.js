@@ -6,17 +6,30 @@ import {
   Fetcher,
   trim0x,
   waitForTransactionReceipt,
+  APIResponse,
+  IAuth,
+  Url,
+  with0x,
 } from '@gardenfi/utils';
 import { WalletClient, createPublicClient, getContract, http } from 'viem';
-import { isEVM, isEvmNativeToken, MatchedOrder } from '@gardenfi/orderbook';
-import { APIResponse, IAuth, Url, with0x } from '@gardenfi/utils';
+import {
+  EvmOrderResponse,
+  isEVM,
+  isEvmNativeToken,
+  Order,
+  isEvmOrderResponse,
+  EvmChain,
+  ChainAsset,
+} from '@gardenfi/orderbook';
 import { AtomicSwapABI } from '../abi/atomicSwap';
 import { IEVMHTLC } from '../htlc.types';
 import {
   evmToViemChainMap,
+  getChainNameFromChainId,
   switchOrAddNetwork,
 } from './../../switchOrAddNetwork';
 import { nativeHTLCAbi } from '../abi/nativeHTLC';
+import { getAssetInfoFromOrder } from '../../utils';
 
 export class EvmRelay implements IEVMHTLC {
   private url: Url;
@@ -24,7 +37,7 @@ export class EvmRelay implements IEVMHTLC {
   private wallet: WalletClient;
 
   constructor(url: string | Url, wallet: WalletClient, auth: IAuth) {
-    this.url = new Url('/relayer', url);
+    this.url = new Url(url.toString());
     this.auth = auth;
     this.wallet = wallet;
   }
@@ -34,7 +47,11 @@ export class EvmRelay implements IEVMHTLC {
     return this.wallet.account.address;
   }
 
-  async initiate(order: MatchedOrder): AsyncResult<string, string> {
+  // ---------------------- INITIATE ----------------------
+  async initiate(order: Order | EvmOrderResponse): AsyncResult<string, string> {
+    if (isEvmOrderResponse(order)) {
+      return this.initiateWithCreateOrderResponse(order);
+    }
     if (!this.wallet.account) return Err('No account found');
     if (
       this.wallet.account.address.toLowerCase() !==
@@ -44,39 +61,43 @@ export class EvmRelay implements IEVMHTLC {
     if (!isEVM(order.source_swap.chain))
       return Err('Source chain is not an EVM chain');
 
-    const _walletClient = await switchOrAddNetwork(
-      order.source_swap.chain,
-      this.wallet,
-    );
+    const evmChain = order.source_swap.chain as EvmChain;
+    const _walletClient = await switchOrAddNetwork(evmChain, this.wallet);
     if (!_walletClient.ok) return Err(_walletClient.error);
     this.wallet = _walletClient.val.walletClient;
     if (!this.wallet.account) return Err('No account found');
 
-    const { create_order, source_swap } = order;
+    const { source_swap } = order;
 
     if (
       !source_swap.amount ||
       !source_swap.redeemer ||
-      !create_order.timelock ||
-      !create_order.secret_hash
+      !source_swap.timelock ||
+      !source_swap.secret_hash
     )
       return Err('Invalid order');
 
-    const secretHash = with0x(create_order.secret_hash);
-    const timelock = BigInt(create_order.timelock);
+    const secretHash = with0x(source_swap.secret_hash);
+    const timelock = BigInt(source_swap.timelock);
     const redeemer = with0x(source_swap.redeemer);
     const amount = BigInt(source_swap.amount);
 
-    const tokenAddress = await this.getTokenAddress(order.source_swap.asset);
-    if (!tokenAddress.ok ) return Err(tokenAddress.error);
+    const assetInfo = await getAssetInfoFromOrder(
+      order.source_swap.asset,
+      this.url,
+    );
+    if (!assetInfo.ok) return Err(assetInfo.error);
+    const { htlcAddress, tokenAddress } = assetInfo.val;
 
-    if (isEvmNativeToken(order.source_swap.chain, tokenAddress.val)) {
+    const asset = ChainAsset.fromString(order.source_swap.asset);
+
+    if (isEvmNativeToken(asset.chain, asset.symbol)) {
       return this._initiateOnNativeHTLC(
         secretHash,
         timelock,
         amount,
         redeemer,
-        order.source_swap.asset,
+        htlcAddress,
       );
     } else {
       return this._initiateOnErc20HTLC(
@@ -84,25 +105,10 @@ export class EvmRelay implements IEVMHTLC {
         timelock,
         amount,
         redeemer,
-        order.source_swap.asset,
-        tokenAddress.val,
-        create_order.create_id,
+        htlcAddress,
+        tokenAddress,
+        order.order_id,
       );
-    }
-  }
-
-  private async getTokenAddress(asset: string): AsyncResult<string, string> {
-    try {
-      const atomicSwap = getContract({
-        address: with0x(asset),
-        abi: AtomicSwapABI,
-        client: this.wallet,
-      });
-
-      const token = await atomicSwap.read.token();
-      return Ok(token);
-    } catch (error) {
-      return Err('Failed to get token address', String(error));
     }
   }
 
@@ -142,7 +148,7 @@ export class EvmRelay implements IEVMHTLC {
     timelock: bigint,
     amount: bigint,
     redeemer: `0x${string}`,
-    asset: string,
+    htlcAddress: string,
     tokenAddress: string,
     orderId: string,
   ): AsyncResult<string, string> {
@@ -153,7 +159,7 @@ export class EvmRelay implements IEVMHTLC {
       if (!auth.ok) return Err(auth.error);
 
       const atomicSwap = getContract({
-        address: with0x(asset),
+        address: with0x(htlcAddress),
         abi: AtomicSwapABI,
         client: this.wallet,
       });
@@ -161,7 +167,7 @@ export class EvmRelay implements IEVMHTLC {
       const approval = await checkAllowanceAndApprove(
         Number(amount),
         tokenAddress,
-        asset,
+        htlcAddress,
         this.wallet,
       );
       if (!approval.ok) return Err(approval.error);
@@ -192,19 +198,18 @@ export class EvmRelay implements IEVMHTLC {
           secretHash,
         },
       });
-
       const headers: Record<string, string> = {
         ...auth.val,
         'Content-Type': 'application/json',
       };
-
-      const res = await Fetcher.post<APIResponse<string>>(
-        this.url.endpoint('initiate'),
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(orderId)
+          .addSearchParams({ action: 'initiate' }),
         {
           body: JSON.stringify({
-            order_id: orderId,
             signature,
-            perform_on: 'Source',
           }),
           headers,
         },
@@ -225,21 +230,138 @@ export class EvmRelay implements IEVMHTLC {
     }
   }
 
-  async redeem(
-    order: MatchedOrder,
-    secret: string,
+  // ---------------------- INITIATE WITH CREATE ORDER RESPONSE ----------------------
+  private async initiateWithCreateOrderResponse(
+    order: EvmOrderResponse,
   ): AsyncResult<string, string> {
+    const chainId = order.initiate_transaction.chain_id;
+
+    const chainName = getChainNameFromChainId(chainId);
+    if (!chainName) {
+      return Err(`Unsupported chain ID: ${chainId}`);
+    }
+
+    const _walletClient = await switchOrAddNetwork(chainName, this.wallet);
+    if (!_walletClient.ok) return Err(_walletClient.error);
+    this.wallet = _walletClient.val.walletClient;
+
+    if (!this.wallet.account) return Err('No account found');
+    try {
+      // Native Initiate
+      if (order.typed_data === null) {
+        const tx = order.initiate_transaction;
+        if (!tx)
+          return Err('No initiate_transaction found for native initiate');
+        const txHash = await this.wallet.sendTransaction({
+          account: this.wallet.account,
+          to: with0x(tx.to),
+          value: BigInt(tx.value),
+          data: with0x(tx.data),
+          gas: BigInt(tx.gas_limit),
+          chain: this.wallet.chain,
+        });
+
+        const receipt = await waitForTransactionReceipt(this.wallet, txHash);
+        if (receipt.val && receipt.val.status !== 'success') {
+          return Err('Native initiate transaction failed');
+        }
+
+        return Ok(txHash);
+      }
+
+      // Erc20 Initiate
+      if (order.approval_transaction) {
+        const approvalResult = await this.executeApprovalTransaction(order);
+        if (approvalResult.error) {
+          return Err(`Approval failed: ${approvalResult.error}`);
+        }
+        console.log('Approval transaction completed:', approvalResult.val);
+      }
+
+      // Erc20 Initiate with Approval
+      const { typed_data } = order;
+
+      const signature = await this.wallet.signTypedData({
+        account: this.wallet.account,
+        domain: typed_data.domain,
+        types: typed_data.types,
+        primaryType: typed_data.primaryType,
+        message: typed_data.message,
+      });
+      const headers: Record<string, string> = {
+        ...(await this.auth.getAuthHeaders()).val,
+        'Content-Type': 'application/json',
+      };
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'initiate' }),
+        {
+          body: JSON.stringify({
+            signature,
+          }),
+          headers,
+        },
+      );
+      if (res.error) return Err(res.error);
+      if (!res.result) return Err('Initiate failed: Result is undefined');
+      return Ok(res.result);
+    } catch (error) {
+      console.error('initiateWithCreateOrderResponse error:', error);
+      return Err('Failed to initiate: ' + String(error));
+    }
+  }
+
+  private async executeApprovalTransaction(
+    order: EvmOrderResponse,
+  ): AsyncResult<string, string> {
+    if (!this.wallet.account) return Err('No account found');
+
+    if (!order.approval_transaction) {
+      return Ok('No approval transaction required');
+    }
+
+    try {
+      const approvalTx = order.approval_transaction;
+
+      const txHash = await this.wallet.sendTransaction({
+        account: this.wallet.account,
+        to: with0x(approvalTx.to),
+        value: BigInt(approvalTx.value),
+        data: with0x(approvalTx.data),
+        gas: BigInt(approvalTx.gas_limit),
+        chain: this.wallet.chain,
+      });
+
+      const receipt = await waitForTransactionReceipt(this.wallet, txHash);
+
+      if (receipt.val && receipt.val.status !== 'success') {
+        return Err('Approval transaction failed');
+      }
+
+      return Ok(txHash);
+    } catch (error: any) {
+      console.error('executeApprovalTransaction error:', error);
+      return Err(
+        'Failed to execute approval: ' + (error?.message || String(error)),
+      );
+    }
+  }
+
+  // ---------------------- REDEEM ----------------------
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
       const headers = await this.auth.getAuthHeaders();
       if (!headers.ok) return Err(headers.error);
-
-      const res = await Fetcher.post<APIResponse<string>>(
-        this.url.endpoint('redeem'),
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'redeem' }),
         {
           body: JSON.stringify({
-            order_id: order.create_order.create_id,
             secret: trim0x(secret),
-            perform_on: 'Destination',
           }),
           headers: {
             ...headers.val,
@@ -274,6 +396,7 @@ export class EvmRelay implements IEVMHTLC {
     }
   }
 
+  // ---------------------- REDEEM ----------------------
   async refund(): AsyncResult<string, string> {
     return Err('Refund not supported');
   }

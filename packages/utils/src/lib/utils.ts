@@ -26,7 +26,7 @@ export const parseJwt = <T>(token: string): T | undefined => {
 export enum Network {
   MAINNET = 'mainnet',
   TESTNET = 'testnet',
-  LOCALNET = 'localnet'
+  LOCALNET = 'localnet',
 }
 
 export enum Environment {
@@ -68,7 +68,10 @@ export function hexToU32Array(
   return result;
 }
 
-export function trim0x(str: string){
+export function trim0x(str: string) {
   if (str.startsWith('0x')) return str.slice(2);
   return str;
-};
+}
+
+export const hasKeys = (obj: any, keys: string[]) =>
+  obj && typeof obj === 'object' && keys.every((k) => k in obj);

@@ -3,7 +3,7 @@ import idl from '../idl/native/solana_native_swaps.json';
 import { SolanaNativeSwaps } from '../idl/native/solana_native_swaps';
 import { SwapConfig, validateSecret } from '../solanaTypes';
 import { ISolanaHTLC } from './ISolanaHTLC';
-import { MatchedOrder } from '@gardenfi/orderbook';
+import { Order } from '@gardenfi/orderbook';
 import { AsyncResult, Err, Ok } from '@gardenfi/utils';
 
 /**
@@ -42,18 +42,17 @@ export class SolanaHTLC implements ISolanaHTLC {
 
   /**
    * Initiates a swap by creating a new swap account and locking funds.
-   * @param {MatchedOrder} order - The matched order containing swap details
+   * @param {Order} order - The matched order containing swap details
    * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
    */
-  async initiate(order: MatchedOrder): AsyncResult<string, string> {
+  async initiate(order: Order): AsyncResult<string, string> {
     if (!order) return Err('Order is required');
 
     try {
-      const { redeemer, secretHash, amount, expiresIn } = SwapConfig.from(
-        order,
-      );
+      const { redeemer, secretHash, amount, expiresIn } =
+        SwapConfig.from(order);
 
       // Initializing the data on blockchain
       const pdaSeeds = [
@@ -84,16 +83,13 @@ export class SolanaHTLC implements ISolanaHTLC {
 
   /**
    * Redeems a swap by providing the secret.
-   * @param {MatchedOrder} order - Matched order object containing swap details
+   * @param {Order} order - Matched order object containing swap details
    * @param {string} secret - Secret key in hex format
    * @returns {AsyncResult<string, string>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
    */
-  async redeem(
-    order: MatchedOrder,
-    secret: string,
-  ): AsyncResult<string, string> {
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
     if (!order) return Err('Order is required');
     if (!secret) return Err('Secret is required');
     const { secretHash } = SwapConfig.from(order);
@@ -137,12 +133,12 @@ export class SolanaHTLC implements ISolanaHTLC {
 
   /**
    * Refunds the swap back to the initiator.
-   * @param {MatchedOrder} order - Matched order object
+   * @param {Order} order - Matched order object
    * @returns {AsyncResult<string, string>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
    */
-  async refund(order: MatchedOrder): AsyncResult<string, string> {
+  async refund(order: Order): AsyncResult<string, string> {
     if (!order) return Err('Order is required');
 
     const { secretHash } = SwapConfig.from(order);

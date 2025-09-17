@@ -14,14 +14,15 @@ import {
   corn,
   bsc,
   bscTestnet,
-} from "viem/chains";
+  coreDao,
+} from 'viem/chains';
 import {
   ArbitrumLocalnet,
   EthereumLocalnet,
   EvmChain,
-} from "@gardenfi/orderbook";
-import { createWalletClient, custom, http, WalletClient } from "viem";
-import { AsyncResult, Err, Ok } from "@gardenfi/utils";
+} from '@gardenfi/orderbook';
+import { createWalletClient, custom, http, WalletClient } from 'viem';
+import { AsyncResult, Err, Ok } from '@gardenfi/utils';
 
 type ViemError = {
   code?: number;
@@ -35,70 +36,70 @@ const updatedSepolia = {
   ...sepolia,
   rpcUrls: {
     default: {
-      http: ["https://ethereum-sepolia-rpc.publicnode.com"],
+      http: ['https://ethereum-sepolia-rpc.publicnode.com'],
     },
   },
 };
 
 export const botanixMainnet: viemChain = {
   id: 3637,
-  name: "Botanix",
+  name: 'Botanix',
   nativeCurrency: {
-    name: "Botanix",
-    symbol: "BOTX",
+    name: 'Botanix',
+    symbol: 'BOTX',
     decimals: 18,
   },
   blockExplorers: {
     default: {
-      name: "Botanix Explorer",
-      url: "https://botanixscan.io/",
+      name: 'Botanix Explorer',
+      url: 'https://botanixscan.io/',
     },
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc.botanixlabs.com/"],
+      http: ['https://rpc.botanixlabs.com/'],
     },
   },
 };
 
 export const hyperliquidTestnet: viemChain = {
   id: 998,
-  name: "Hyperliquid EVM Testnet",
+  name: 'Hyperliquid EVM Testnet',
   nativeCurrency: {
-    name: "Hyperliquid",
-    symbol: "HYPE",
+    name: 'Hyperliquid',
+    symbol: 'HYPE',
     decimals: 18,
   },
   blockExplorers: {
     default: {
-      name: "Hyperliquid Explorer",
-      url: "https://testnet.purrsec.com/",
+      name: 'Hyperliquid Explorer',
+      url: 'https://testnet.purrsec.com/',
     },
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc.hyperliquid-testnet.xyz/evm"],
+      http: ['https://rpc.hyperliquid-testnet.xyz/evm'],
     },
   },
 };
 
 export const hyperliquid: viemChain = {
   id: 999,
-  name: "HyperEVM",
+  name: 'HyperEVM',
   nativeCurrency: {
-    name: "Hyperliquid",
-    symbol: "HYPE",
+    name: 'Hyperliquid',
+    symbol: 'HYPE',
     decimals: 18,
   },
   blockExplorers: {
     default: {
-      name: "Hyperliquid Explorer",
-      url: "https://hyperscan.gas.zip/",
+      name: 'Hyperliquid Explorer',
+      url: 'https://hyperscan.gas.zip/',
     },
   },
   rpcUrls: {
     default: {
-      http: ["https://rpc.hyperliquid.xyz/evm"],
+      http: ['https://rpc.hyperliquid.xyz/evm'],
     },
   },
 };
@@ -114,6 +115,7 @@ export const evmToViemChainMap: Record<EvmChain, viemChain> = {
   base: base,
   bera_testnet: berachainTestnetbArtio,
   citrea_testnet: citreaTestnet,
+  core: coreDao,
   bera: berachain,
   monad_testnet: monadTestnet,
   hyperliquid_testnet: hyperliquidTestnet,
@@ -123,6 +125,15 @@ export const evmToViemChainMap: Record<EvmChain, viemChain> = {
   botanix: botanixMainnet,
   bnbchain: bsc,
   bnbchain_testnet: bscTestnet,
+};
+
+export const getChainNameFromChainId = (chainId: number): EvmChain | null => {
+  for (const [chainName, viemChain] of Object.entries(evmToViemChainMap)) {
+    if (viemChain.id === chainId) {
+      return chainName as EvmChain;
+    }
+  }
+  return null;
 };
 
 /**
@@ -140,7 +151,7 @@ export const switchOrAddNetwork = async (
   if (chainID) {
     try {
       if (chainID.id === currentChainId) {
-        return Ok({ message: "Already on the network", walletClient });
+        return Ok({ message: 'Already on the network', walletClient });
       }
       await walletClient.switchChain({ id: chainID.id });
       const newWalletClient = createWalletClient({
@@ -150,7 +161,7 @@ export const switchOrAddNetwork = async (
       });
 
       return Ok({
-        message: "Switched chain",
+        message: 'Switched chain',
         walletClient: newWalletClient as WalletClient,
       });
     } catch (error) {
@@ -168,15 +179,15 @@ export const switchOrAddNetwork = async (
             });
 
             return Ok({
-              message: "Added network",
+              message: 'Added network',
               walletClient: newWalletClient as WalletClient,
             });
           } catch (addError) {
-            return Err("Failed to add network");
+            return Err('Failed to add network');
           }
         } else if (
-          error.body?.method?.includes("wallet_switchEthereumChain") ||
-          error.message?.includes("wallet_switchEthereumChain")
+          error.body?.method?.includes('wallet_switchEthereumChain') ||
+          error.message?.includes('wallet_switchEthereumChain')
         ) {
           const newWalletClient = createWalletClient({
             account: walletClient.account,
@@ -184,25 +195,25 @@ export const switchOrAddNetwork = async (
             transport: http(),
           });
           return Ok({
-            message: "Added network",
+            message: 'Added network',
             walletClient: newWalletClient as WalletClient,
           });
         } else {
-          return Err("Failed to switch network");
+          return Err('Failed to switch network');
         }
       } else {
-        return Err("Failed to switch network");
+        return Err('Failed to switch network');
       }
     }
   } else {
-    return Err("Chain not supported");
+    return Err('Chain not supported');
   }
 };
 
 const isViemError = (error: unknown): error is ViemError => {
   return (
-    typeof error === "object" &&
+    typeof error === 'object' &&
     error != null &&
-    ("code" in error || "message" in error || "body" in error)
+    ('code' in error || 'message' in error || 'body' in error)
   );
 };
