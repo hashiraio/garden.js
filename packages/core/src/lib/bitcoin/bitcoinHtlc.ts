@@ -157,7 +157,7 @@ export class BitcoinHTLC implements IBitcoinHTLC {
   /**
    * prevout script for the BitcoinHTLC address
    */
-  private async getOutputScript(order: Order, addressType?: TxType) {
+  private getOutputScript(order: Order, addressType?: TxType) {
     return bitcoin.address.toOutputScript(
       this.address(order, addressType || 'redeem'),
       this.network,
@@ -197,7 +197,7 @@ export class BitcoinHTLC implements IBitcoinHTLC {
       'redeem',
       { fee },
     );
-    const output = await this.getOutputScript(order, 'redeem');
+    const output = this.getOutputScript(order, 'redeem');
 
     const hashType =
       bitcoin.Transaction.SIGHASH_SINGLE |
@@ -231,7 +231,7 @@ export class BitcoinHTLC implements IBitcoinHTLC {
   }
 
   async generateInstantRefundSACP(order: Order) {
-    const outputAddress = await this.getOutputScript(order, 'instantRefund');
+    const outputAddress = this.getOutputScript(order, 'instantRefund');
     const {
       tx,
       usedUtxos,
@@ -331,7 +331,7 @@ export class BitcoinHTLC implements IBitcoinHTLC {
       }
     }
 
-    const output = await this.getOutputScript(order, 'instantRefund');
+    const output = this.getOutputScript(order, 'instantRefund');
 
     const hashType = bitcoin.Transaction.SIGHASH_DEFAULT;
     const instantRefundLeafHash = this.leafHash(Leaf.INSTANT_REFUND, order);
@@ -428,7 +428,7 @@ export class BitcoinHTLC implements IBitcoinHTLC {
     const redeemLeafHash = this.leafHash(Leaf.REDEEM, order);
     const values = utxos.map((utxo) => utxo.value);
     const outputs = generateOutputs(
-      await this.getOutputScript(order, 'redeem'),
+      this.getOutputScript(order, 'redeem'),
       utxos.length,
     );
     const hashType = bitcoin.Transaction.SIGHASH_DEFAULT;
@@ -507,7 +507,7 @@ export class BitcoinHTLC implements IBitcoinHTLC {
 
     const values = usedUtxos.map((utxo) => utxo.value);
     const outputs = generateOutputs(
-      await this.getOutputScript(order, 'refund'),
+      this.getOutputScript(order, 'refund'),
       usedUtxos.length,
     );
 

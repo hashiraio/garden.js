@@ -320,13 +320,12 @@ export class Garden extends Orderbook implements IGardenJS {
 
   override async createOrder<T extends SwapParams>(
     arg: CreateOrderRequest | SwapParams,
-    auth?: IAuth,
   ): AsyncResult<
     CreateOrderResponse | CreateOrderResponseFromParams<T>,
     string
   > {
     if (hasKeys(arg, ['source', 'destination', 'nonce'])) {
-      return super.createOrder(arg as CreateOrderRequest, auth ?? this._auth);
+      return super.createOrder(arg as CreateOrderRequest, this._auth);
     }
 
     const params = arg as SwapParams;
