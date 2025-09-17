@@ -225,10 +225,6 @@ export class Garden extends Orderbook implements IGardenJS {
     return this._quote;
   }
 
-  get orderbook() {
-    return this as unknown as IOrderbook;
-  }
-
   get secretManager() {
     if (this._redeemServiceEnabled || !this._secretManager)
       throw new Error('Secret manager is not available');

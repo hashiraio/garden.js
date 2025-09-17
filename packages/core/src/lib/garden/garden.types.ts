@@ -111,12 +111,6 @@ export interface IGardenJS extends IOrderbook {
   get htlcs(): GardenHTLCModules;
 
   /**
-   * The orderbook.
-   * @readonly
-   */
-  get orderbook(): IOrderbook;
-
-  /**
    * The secret manager.
    * @readonly
    */
