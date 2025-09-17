@@ -276,8 +276,8 @@ export const isNativeToken = (asset: ChainAsset) => {
 export const getChainsFromOrder = (
   order: CreateOrderRequest,
 ): { sourceChain: Chain; destinationChain: Chain } => {
-  const [sourceChain] = order.source.asset.chain;
-  const [destinationChain] = order.destination.asset.chain;
+  const [sourceChain] = ChainAsset.from(order.source.asset).chain;
+  const [destinationChain] = ChainAsset.from(order.destination.asset).chain;
 
   if (!(sourceChain in ChainsConfig)) {
     throw new Error(`Invalid source chain: ${sourceChain}`);
