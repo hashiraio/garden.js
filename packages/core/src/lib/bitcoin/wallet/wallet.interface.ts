@@ -17,7 +17,7 @@ export interface IBitcoinWallet extends IBaseWallet {
   /**
    * @returns {Promise<string>} Public key of the wallet
    */
-  getPublicKey(): Promise<string>;
+  getPublicKey(): string;
   /**
    * @returns {Promise<Network>} Network of the wallet provided during initialization
    */

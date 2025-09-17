@@ -14,14 +14,12 @@ import {
   ChainAsset,
   CreateOrderRequest,
   CreateOrderResponse,
-  IOrderbook,
   isBitcoin,
   Orderbook,
   isEvmOrderResponse,
   isStarknetOrderResponse,
   isSolanaOrderResponse,
   isSuiOrderResponse,
-  isBitcoinOrderResponse,
 } from '@gardenfi/orderbook';
 import {
   IAuth,

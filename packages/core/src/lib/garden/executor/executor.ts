@@ -68,21 +68,10 @@ export class Executor {
       this.htlcs.sui?.htlcActorAddress,
       this.htlcs.solana?.htlcActorAddress,
       this.htlcs.starknet?.htlcActorAddress,
+      this.htlcs.bitcoin?.htlcActorAddress,
     ].filter((addr): addr is string => !!addr && addr.length > 0);
 
     syncAddresses.forEach((addr) => addressSet.add(addr.toLowerCase()));
-
-    // Handle async Bitcoin address
-    if (this.htlcs.bitcoin) {
-      try {
-        const btcAddress = await this.htlcs.bitcoin.htlcActorAddress();
-        if (btcAddress && btcAddress.length > 0) {
-          addressSet.add(btcAddress.toLowerCase());
-        }
-      } catch {
-        // ignore missing btc
-      }
-    }
 
     return Array.from(addressSet);
   }

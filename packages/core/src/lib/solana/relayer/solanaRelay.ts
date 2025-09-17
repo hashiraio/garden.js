@@ -43,7 +43,6 @@ export class SolanaRelay implements ISolanaHTLC {
   private splProgram?: Program<SolanaSplSwaps>;
   private nativeProgram?: Program<SolanaNativeSwaps>;
   private relayer: web3.PublicKey;
-  private orderbook: IOrderbook;
   private auth: IAuth;
 
   /**
@@ -71,7 +70,6 @@ export class SolanaRelay implements ISolanaHTLC {
 
     try {
       this.relayer = new web3.PublicKey(relayer);
-      this.orderbook = new Orderbook(url);
       this.auth = auth;
     } catch (cause) {
       throw new Error(
