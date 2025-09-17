@@ -1,6 +1,7 @@
 import {
   AffiliateFee,
   Asset,
+  AssetLike,
   BitcoinOrderResponse,
   BlockchainType,
   Chain,
@@ -39,11 +40,11 @@ export type SwapParams = {
   /**
    * Asset to be sent.
    */
-  fromAsset: Asset | ChainAsset | ChainAssetString;
+  fromAsset: AssetLike;
   /**
    * Asset to be received.
    */
-  toAsset: Asset | ChainAsset | ChainAssetString;
+  toAsset: AssetLike;
   /**
    * Amount in lowest denomination of the sendAsset.
    */

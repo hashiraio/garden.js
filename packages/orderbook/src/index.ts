@@ -27,7 +27,7 @@ export {
   isStarknetOrderResponse,
 } from './lib/utils';
 export { ChainAsset } from './lib/chainAsset/chainAsset';
-export type { ChainAssetString } from './lib/chainAsset/chainAsset';
+export type { ChainAssetString, AssetLike } from './lib/chainAsset/chainAsset';
 export {
   OrderAction,
   ParseOrderStatus,

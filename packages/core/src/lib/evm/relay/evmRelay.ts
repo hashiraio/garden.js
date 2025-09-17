@@ -91,7 +91,7 @@ export class EvmRelay implements IEVMHTLC {
 
     const asset = ChainAsset.fromString(order.source_swap.asset);
 
-    if (isEvmNativeToken(asset.getChain(), asset.getSymbol())) {
+    if (isEvmNativeToken(asset.chain, asset.symbol)) {
       return this._initiateOnNativeHTLC(
         secretHash,
         timelock,

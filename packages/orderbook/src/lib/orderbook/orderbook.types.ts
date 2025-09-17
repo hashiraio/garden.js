@@ -66,13 +66,13 @@ export type GetOrderQueryParams = GetOrdersFilters & PaginationConfig;
 
 export type CreateOrderRequest = {
   source: {
-    asset: ChainAsset;
+    asset: string;
     owner: string;
     delegate: string | null;
     amount: string;
   };
   destination: {
-    asset: ChainAsset;
+    asset: string;
     owner: string;
     delegate: string | null;
     amount: string;

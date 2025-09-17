@@ -11,22 +11,31 @@ import { SupportedAssets } from '../constants';
 
 export type ChainAssetString = `${Chain}:${string}`;
 
-export class ChainAsset extends String {
-  constructor(chain: Chain, symbol: string) {
-    const formatted =
-      `${chain.toLowerCase()}:${symbol.toLowerCase()}` as ChainAssetString;
-    super(formatted);
+export type AssetLike = Asset | ChainAssetString | ChainAsset | string;
 
-    // guard for broken transpilers/bundlers that don't preserve subclassing of builtins
-    if (Object.setPrototypeOf) {
-      Object.setPrototypeOf(this, new.target.prototype);
-    }
+export class ChainAsset {
+  public chain: Chain;
+  public symbol: string;
+  public blockchainType: BlockchainType;
+  public formatted: ChainAssetString;
+  public network: Network;
+  public asset: Asset;
+
+  constructor(chain: Chain, symbol: string) {
+    this.chain = chain;
+    this.symbol = symbol;
+    this.blockchainType = getBlockchainType(chain);
+    this.formatted =
+      `${chain.toLowerCase()}:${symbol.toLowerCase()}` as ChainAssetString;
+    this.network = ChainsConfig[chain].network;
+    this.asset =
+      SupportedAssets[this.network][
+        chain as keyof (typeof SupportedAssets)[Network]
+      ][symbol];
   }
 
   /* ---------------- factories ---------------- */
-  static from(
-    asset: Asset | ChainAssetString | ChainAsset | string,
-  ): ChainAsset {
+  static from(asset: AssetLike): ChainAsset {
     if (asset instanceof ChainAsset) return asset;
     if (typeof asset === 'string') return ChainAsset.fromString(asset);
     return ChainAsset.fromAsset(asset);
@@ -48,52 +57,7 @@ export class ChainAsset extends String {
     return new ChainAsset(asset.chain, asset.symbol);
   }
 
-  /* ---------------- getters (use inherited string content) ---------------- */
-  getChain(): Chain {
-    return this.toString().split(':')[0] as Chain;
-  }
-
-  getSymbol(): string {
-    return this.toString().split(':')[1];
-  }
-
-  getNetwork(): Network {
-    return ChainsConfig[this.getChain()].network;
-  }
-
-  getBlockchainType(): BlockchainType {
-    return getBlockchainType(this.getChain());
-  }
-
-  getAsset(): Asset {
-    return SupportedAssets[this.getNetwork()][
-      this.getChain() as keyof (typeof SupportedAssets)[Network]
-    ][this.getSymbol()];
-  }
-
-  /* ---------------- ensure primitive-like behavior ---------------- */
-
-  // Return primitive string for toString()
-  override toString(): string {
-    // call String.prototype.toString so it works with boxed internals reliably
-    return String.prototype.toString.call(this);
-  }
-
-  override valueOf(): string {
-    return String.prototype.valueOf.call(this);
-  }
-
-  toJSON(): string {
-    return this.toString();
-  }
-
-  // ensure template literals / String(...) / + coercion behave like string
-  [Symbol.toPrimitive](_hint: 'string' | 'number' | 'default') {
-    if (_hint === 'number') return NaN;
-    return this.toString();
-  }
-
-  [Symbol.for('nodejs.util.inspect.custom')]() {
-    return this.toString();
+  toString(): string {
+    return this.formatted;
   }
 }

@@ -159,11 +159,11 @@ class RouteValidator {
       // Handle patterns like "starknet:*" or "*:USDC"
       if (pattern.endsWith(':*')) {
         const chainPattern = pattern.slice(0, -2);
-        return asset.startsWith(chainPattern + ':');
+        return asset.toString().startsWith(chainPattern + ':');
       }
       if (pattern.startsWith('*:')) {
         const symbolPattern = pattern.slice(2);
-        return asset.endsWith(':' + symbolPattern);
+        return asset.toString().endsWith(':' + symbolPattern);
       }
     }
 

@@ -261,8 +261,8 @@ export const isSuiNativeToken = (chain: Chain, tokenAddress: string) => {
 };
 
 export const isNativeToken = (asset: ChainAsset) => {
-  const chain = asset.getChain();
-  const tokenAddress = asset.getSymbol();
+  const chain = asset.chain;
+  const tokenAddress = asset.symbol;
   return (
     isEvmNativeToken(chain, tokenAddress) ||
     isSolanaNativeToken(chain, tokenAddress) ||
@@ -276,8 +276,8 @@ export const isNativeToken = (asset: ChainAsset) => {
 export const getChainsFromOrder = (
   order: CreateOrderRequest,
 ): { sourceChain: Chain; destinationChain: Chain } => {
-  const [sourceChain] = order.source.asset.split(':');
-  const [destinationChain] = order.destination.asset.split(':');
+  const [sourceChain] = order.source.asset.chain;
+  const [destinationChain] = order.destination.asset.chain;
 
   if (!(sourceChain in ChainsConfig)) {
     throw new Error(`Invalid source chain: ${sourceChain}`);

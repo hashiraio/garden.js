@@ -230,9 +230,7 @@ export class Garden extends Orderbook implements IGardenJS {
    * @returns AsyncResult<Order, string>
    */
   async createSwap(params: SwapParams): AsyncResult<string, string> {
-    const blockchainType = ChainAsset.from(
-      params.fromAsset,
-    ).getBlockchainType();
+    const blockchainType = ChainAsset.from(params.fromAsset).blockchainType;
     const htlcValidation = await validateHTLCForSwap(
       blockchainType,
       this._htlcs,
@@ -335,11 +333,9 @@ export class Garden extends Orderbook implements IGardenJS {
 
     const btcAddress = params.addresses?.bitcoin;
 
-    const isSourceBitcoin = isBitcoin(
-      ChainAsset.from(params.fromAsset).getChain(),
-    );
+    const isSourceBitcoin = isBitcoin(ChainAsset.from(params.fromAsset).chain);
     const isDestinationBitcoin = isBitcoin(
-      ChainAsset.from(params.toAsset).getChain(),
+      ChainAsset.from(params.toAsset).chain,
     );
 
     const shouldProvideBtcAddress =
@@ -347,14 +343,14 @@ export class Garden extends Orderbook implements IGardenJS {
 
     const orderRequest: CreateOrderRequest = {
       source: {
-        asset: ChainAsset.from(params.fromAsset),
+        asset: ChainAsset.from(params.fromAsset).toString(),
         owner: isSourceBitcoin ? btcAddress ?? sendAddress : sendAddress,
         delegate:
           shouldProvideBtcAddress && isSourceBitcoin ? sendAddress : null,
         amount: params.sendAmount,
       },
       destination: {
-        asset: ChainAsset.from(params.toAsset),
+        asset: ChainAsset.from(params.toAsset).toString(),
         owner: isDestinationBitcoin
           ? btcAddress ?? receiveAddress
           : receiveAddress,
@@ -377,7 +373,7 @@ export class Garden extends Orderbook implements IGardenJS {
     const createOrderRes = await super.createOrder(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
-    const sourceType = ChainAsset.from(params.fromAsset).getBlockchainType();
+    const sourceType = ChainAsset.from(params.fromAsset).blockchainType;
     if (createOrderRes.val.type !== sourceType) {
       return Err('Order response type does not match source blockchain type');
     }
@@ -394,7 +390,7 @@ export class Garden extends Orderbook implements IGardenJS {
     const fromAsset = ChainAsset.from(params.fromAsset);
     const toAsset = ChainAsset.from(params.toAsset);
 
-    if (fromAsset.getNetwork() !== toAsset.getNetwork())
+    if (fromAsset.network !== toAsset.network)
       return Err(
         'Both assets should be on the same network (either mainnet or testnet)',
       );
@@ -409,8 +405,8 @@ export class Garden extends Orderbook implements IGardenJS {
       return Err('Send amount should be greater than receive amount');
 
     if (
-      isBitcoin(ChainAsset.from(params.fromAsset).getChain()) ||
-      isBitcoin(ChainAsset.from(params.toAsset).getChain())
+      isBitcoin(ChainAsset.from(params.fromAsset).chain) ||
+      isBitcoin(ChainAsset.from(params.toAsset).chain)
     ) {
       if (!params.addresses?.bitcoin)
         return Err(
@@ -419,13 +415,13 @@ export class Garden extends Orderbook implements IGardenJS {
     }
 
     const sendAddress = await getAddresses(
-      fromAsset.getBlockchainType(),
+      fromAsset.blockchainType,
       this._htlcs,
     );
     if (!sendAddress.ok) return Err(sendAddress.error);
 
     const receiveAddress = await getAddresses(
-      toAsset.getBlockchainType(),
+      toAsset.blockchainType,
       this._htlcs,
     );
     if (!receiveAddress.ok) return Err(receiveAddress.error);

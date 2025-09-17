@@ -175,7 +175,7 @@ export class SolanaRelay implements ISolanaHTLC {
       const asset = ChainAsset.fromString(
         order.source_swap.asset as ChainAssetString,
       );
-      const isNative = isSolanaNativeToken(asset.getChain(), asset.getSymbol());
+      const isNative = isSolanaNativeToken(asset.chain, asset.symbol);
 
       if (isNative) {
         if (!this.nativeProgram)
