@@ -1,14 +1,14 @@
-import { BitcoinNetwork } from './provider/provider.interface';
+import { Network } from '@gardenfi/utils';
 
 //TODO: do we need to verify the APIs?
 export const verifyAPIs = (APIs: string[]): string[] => {
   return APIs.map((API) => API);
 };
 
-export const getAPIs = (network: string): string[] => {
-  if (network === BitcoinNetwork.Testnet) {
+export const getAPIs = (network: Network): string[] => {
+  if (network === Network.TESTNET) {
     return RPC_URLS_TESTNET;
-  } else if (network === BitcoinNetwork.Mainnet) {
+  } else if (network === Network.MAINNET) {
     return RPC_URLS_MAINNET;
   }
 

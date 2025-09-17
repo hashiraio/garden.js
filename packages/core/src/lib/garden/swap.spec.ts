@@ -37,11 +37,6 @@ describe('Garden swap tests', () => {
   const user = web3.Keypair.fromSecretKey(privateKeyBytes);
   const userWallet = new anchor.Wallet(user);
   const userProvider = new anchor.AnchorProvider(connection, userWallet);
-  console.log(
-    'Solana Wallet PublicKey:',
-    userProvider.wallet.publicKey.toString(),
-  );
-
   // Global variables
   const evmAccount = privateKeyToAccount(with0x(EVM_PRIVATE_KEY));
   const evmWallet = createWalletClient({
@@ -128,10 +123,12 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(SupportedAssets.testnet.sui_testnet.SUI);
+      const from = ChainAsset.from(
+        SupportedAssets.testnet.ethereum_sepolia.WBTC,
+      );
 
-      const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
-      const sendAmount = 3000000000;
+      const to = ChainAsset.from(SupportedAssets.testnet.base_sepolia.USDT);
+      const sendAmount = 50000;
       const quote = await garden.quote.getQuote(
         from,
         to,
