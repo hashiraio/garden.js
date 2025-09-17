@@ -208,6 +208,19 @@ export const getBitcoinNetworkFromEnvironment = (
   }
 };
 
+export const getBitcoinNetworkFromNetwork = (network: Network) => {
+  switch (network) {
+    case Network.MAINNET:
+      return bitcoin.networks.bitcoin;
+    case Network.TESTNET:
+      return bitcoin.networks.testnet;
+    case Network.LOCALNET:
+      return bitcoin.networks.regtest;
+    default:
+      throw new Error(`Invalid bitcoin network ${network}`);
+  }
+};
+
 export const isHexString = (value: string): boolean => {
   const hex = value.toLowerCase().replace('0x', '');
   return /^[0-9a-f]+$/.test(hex);

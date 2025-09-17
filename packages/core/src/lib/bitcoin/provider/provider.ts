@@ -1,4 +1,4 @@
-import { Fetcher } from '@gardenfi/utils';
+import { Fetcher, Network } from '@gardenfi/utils';
 import {
   BitcoinNetwork,
   BitcoinTx,
@@ -11,6 +11,7 @@ import {
 } from './provider.interface';
 import { getAPIs, verifyAPIs } from '../API';
 import { BWErrors } from '../errors';
+import { getBitcoinNetworkFromEnvironment } from '../../utils';
 
 type Vout = {
   vout: { scriptpubkey_address: string }[];
@@ -39,9 +40,9 @@ export class BitcoinProvider implements IBitcoinProvider {
     }
   >();
 
-  constructor(network: BitcoinNetwork, API?: string) {
+  constructor(network: Network, API?: string) {
     this.APIs = API ? verifyAPIs([API]) : getAPIs(network);
-    this.network = network;
+    this.network = getBitcoinNetworkFromEnvironment(network);
   }
 
   /**

@@ -11,7 +11,6 @@ import { STARKNET_CONFIG } from './../../constants';
 import * as anchor from '@coral-xyz/anchor';
 import { web3 } from '@coral-xyz/anchor';
 import { BitcoinProvider } from '../../bitcoin/provider/provider';
-import { getBitcoinNetworkFromEnvironment } from '../../utils';
 import { BitcoinWallet } from '../../bitcoin/wallet/wallet';
 import { loadTestConfig } from '../../../../../../test-config-loader';
 
@@ -58,9 +57,7 @@ describe('StarkNet Integration Tests', () => {
     '0x3',
   );
   console.log('Starknet Wallet Address:', starknetWallet.address);
-  const provider = new BitcoinProvider(
-    getBitcoinNetworkFromEnvironment(Network.TESTNET),
-  );
+  const provider = new BitcoinProvider(Network.TESTNET);
   const bitcoinWallet = BitcoinWallet.fromPrivateKey(DIGEST_KEY, provider);
   const garden = Garden.fromWallets({
     environment: {
@@ -143,7 +140,7 @@ describe('StarkNet Integration Tests', () => {
       }
 
       console.log('Order created and matched✅', result.val);
-      const res = await garden.orderbook.getOrder(result.val);
+      const res = await garden.getOrder(result.val);
       if (!res.ok) {
         console.log('Error while getting order ❌:', res.error);
         throw new Error(res.error);
@@ -193,7 +190,7 @@ describe('StarkNet Integration Tests', () => {
 
       console.log('Order created and matched✅', result.val);
       // console.log(result.val.source_swap.asset);
-      const res = await garden.orderbook.getOrder(result.val);
+      const res = await garden.getOrder(result.val);
       if (!res.ok) {
         console.log('Error while getting order ❌:', res.error);
         throw new Error(res.error);
@@ -238,7 +235,7 @@ describe('StarkNet Integration Tests', () => {
 
       console.log('Order created and matched✅', result.val);
       // console.log(result.val.source_swap.asset);
-      const res = await garden.orderbook.getOrder(result.val);
+      const res = await garden.getOrder(result.val);
       if (!res.ok) {
         console.log('Error while getting order ❌:', res.error);
         throw new Error(res.error);

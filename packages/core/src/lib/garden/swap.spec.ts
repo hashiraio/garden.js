@@ -10,7 +10,6 @@ import * as anchor from '@coral-xyz/anchor';
 import { web3 } from '@coral-xyz/anchor';
 import { STARKNET_CONFIG } from '../constants';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
-import { getBitcoinNetworkFromEnvironment } from '../utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { SwapParams } from './garden.types';
 import { loadTestConfig } from '../../../../../test-config-loader';
@@ -60,9 +59,7 @@ describe('Garden swap tests', () => {
     '1',
     '0x3',
   );
-  const provider = new BitcoinProvider(
-    getBitcoinNetworkFromEnvironment(Network.TESTNET),
-  );
+  const provider = new BitcoinProvider(Network.TESTNET);
   const bitcoinWallet = BitcoinWallet.fromPrivateKey(DIGEST_KEY, provider);
 
   const suiSigner = Ed25519Keypair.fromSecretKey(config.SUI_PRIVATE_KEY);
@@ -131,12 +128,10 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(
-        SupportedAssets.testnet.solana_testnet.cbBTC,
-      );
+      const from = ChainAsset.from(SupportedAssets.testnet.sui_testnet.SUI);
 
-      const to = ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC);
-      const sendAmount = 50000;
+      const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
+      const sendAmount = 3000000000;
       const quote = await garden.quote.getQuote(
         from,
         to,

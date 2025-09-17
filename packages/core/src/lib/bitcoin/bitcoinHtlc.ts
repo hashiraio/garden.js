@@ -3,7 +3,12 @@ import * as ecc from 'tiny-secp256k1';
 import { generateInternalkey } from './internalKey';
 import { Taptree } from 'bitcoinjs-lib/src/types';
 import { serializeTaprootSignature } from 'bitcoinjs-lib/src/psbt/bip371';
-import { assert, generateOutputs, toXOnly } from '../utils';
+import {
+  assert,
+  generateOutputs,
+  getBitcoinNetworkFromNetwork,
+  toXOnly,
+} from '../utils';
 import { serializeScript, sortLeaves } from '../utils';
 import { htlcErrors } from '../errors';
 import { BitcoinUTXO, IBitcoinProvider } from './provider/provider.interface';
@@ -16,7 +21,7 @@ import {
   isOrder,
   Order,
 } from '@gardenfi/orderbook';
-import { AsyncResult, Err, Ok, trim0x } from '@gardenfi/utils';
+import { AsyncResult, Err, Ok, trim0x, Network } from '@gardenfi/utils';
 
 export enum Leaf {
   REFUND,
@@ -48,23 +53,10 @@ export class BitcoinHTLC implements IBitcoinHTLC {
   /**
    * Note: redeemerAddress and initiatorAddress should be x-only public key without 02 or 03 prefix
    */
-  constructor(signer: IBitcoinWallet, network: bitcoin.networks.Network) {
+  constructor(signer: IBitcoinWallet, network: Network) {
     this.signer = signer;
     this.internalPubkey = generateInternalkey();
-    this.network = network;
-  }
-
-  /**
-   * Creates a BitcoinHTLC instance
-   * @param signer Bitcoin wallet of the initiator or redeemer
-   * @returns Promise<BitcoinHTLC> instance
-   *
-   * Note: When the signer is the initiator, only refund and instant refund can be done
-   * When the signer is the redeemer, only redeem can be done
-   */
-  static async from(signer: IBitcoinWallet): Promise<BitcoinHTLC> {
-    const network = await signer.getNetwork();
-    return new BitcoinHTLC(signer, network);
+    this.network = getBitcoinNetworkFromNetwork(network);
   }
 
   /**

@@ -16,7 +16,6 @@ export type {
 } from './lib/garden/garden.types';
 
 export { EvmRelay } from './lib/evm/relay/evmRelay';
-export type { IEVMRelay, EVMRelayOpts } from './lib/evm/relay/evmRelay.types';
 export type { IEVMHTLC } from './lib/evm/htlc.types';
 
 export { StarknetRelay } from './lib/starknet/relay/starknetRelay';

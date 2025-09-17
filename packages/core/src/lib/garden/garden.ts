@@ -47,13 +47,11 @@ import { Executor } from './executor/executor';
 
 import {
   getAddresses,
-  getBitcoinNetworkFromEnvironment,
   resolveApiConfig,
   validateAmount,
   validateHTLCForSwap,
   withDefaultAffiliateFees,
 } from '../utils';
-import { getBitcoinNetwork } from '../bitcoin/utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
 
@@ -130,12 +128,10 @@ export class Garden extends Orderbook implements IGardenJS {
         this._digestKey.digestKey,
       );
       if (!this._htlcs.bitcoin) {
-        const provider = new BitcoinProvider(
-          getBitcoinNetworkFromEnvironment(this.network),
-        );
+        const provider = new BitcoinProvider(this.network);
         this._htlcs.bitcoin = new BitcoinHTLC(
           BitcoinWallet.fromPrivateKey(this._digestKey.digestKey, provider),
-          getBitcoinNetwork(getBitcoinNetworkFromEnvironment(this.network)),
+          this.network,
         );
       }
       this._executor?.start(this.executeInterval, this._redeemServiceEnabled);
@@ -180,10 +176,7 @@ export class Garden extends Orderbook implements IGardenJS {
             ? new SuiRelay(api.baseurl, config.wallets.sui, network)
             : undefined,
           bitcoin: config.wallets.bitcoin
-            ? new BitcoinHTLC(
-                config.wallets.bitcoin,
-                getBitcoinNetwork(getBitcoinNetworkFromEnvironment(network)),
-              )
+            ? new BitcoinHTLC(config.wallets.bitcoin, network)
             : undefined,
         }
       : {};
