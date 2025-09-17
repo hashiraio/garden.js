@@ -153,6 +153,48 @@ export class SolanaRelay implements ISolanaHTLC {
   }
 
   /**
+   * Initiates a swap by creating a new swap account and locking funds.
+   * Automatically detects whether to use SPL or native token handling.
+   * @param {Order} order - The matched order containing swap details
+   * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
+   *   - Ok with the transaction ID on success
+   *   - Err with an error message on failure
+   */
+  async initiate(
+    order: Order | SolanaOrderResponse,
+  ): AsyncResult<string, string> {
+    if (!order) {
+      return Err('Order is required');
+    }
+
+    if (isSolanaOrderResponse(order)) {
+      return this.initiateWithCreateOrderResponse(order);
+    }
+
+    try {
+      const asset = ChainAsset.fromString(
+        order.source_swap.asset as ChainAssetString,
+      );
+      const isNative = isSolanaNativeToken(asset.getChain(), asset.getSymbol());
+
+      if (isNative) {
+        if (!this.nativeProgram)
+          return Err('Native program is not initialized');
+        return await this.initiateNativeSwap(order);
+      } else {
+        if (!this.splProgram) return Err('SPL program is not initialized');
+        return await this.initiateSplSwap(order);
+      }
+    } catch (error) {
+      return Err(
+        `Error initiating swap: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
+
+  /**
    * Sends a transaction via the relayer for SPL tokens.
    * @param {web3.Transaction} transaction - The transaction to send
    * @param {string} orderId - The order ID for tracking
@@ -332,97 +374,6 @@ export class SolanaRelay implements ISolanaHTLC {
     }
   }
 
-  /**
-   * Initiates a swap by creating a new swap account and locking funds.
-   * Automatically detects whether to use SPL or native token handling.
-   * @param {Order} order - The matched order containing swap details
-   * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
-   *   - Ok with the transaction ID on success
-   *   - Err with an error message on failure
-   */
-  async initiate(
-    order: Order | SolanaOrderResponse,
-  ): AsyncResult<string, string> {
-    if (!order) {
-      return Err('Order is required');
-    }
-
-    if (isSolanaOrderResponse(order)) {
-      return this.initiateWithCreateOrderResponse(order);
-    }
-
-    try {
-      const asset = ChainAsset.fromString(
-        order.source_swap.asset as ChainAssetString,
-      );
-      const isNative = isSolanaNativeToken(asset.getChain(), asset.getSymbol());
-
-      if (isNative) {
-        if (!this.nativeProgram)
-          return Err('Native program is not initialized');
-        return await this.initiateNativeSwap(order);
-      } else {
-        if (!this.splProgram) return Err('SPL program is not initialized');
-        return await this.initiateSplSwap(order);
-      }
-    } catch (error) {
-      return Err(
-        `Error initiating swap: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
-  }
-
-  /**
-   * Redeems a swap by providing the secret.
-   * @param {Order} order - Matched order object containing swap details
-   * @param {string} secret - Secret key in hex format
-   * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
-   *   - Ok with the transaction ID on success
-   *   - Err with an error message on failure
-   */
-  async redeem(order: Order, secret: string): AsyncResult<string, string> {
-    try {
-      const headers = await this.auth.getAuthHeaders();
-      if (!headers.ok) return Err(headers.error);
-
-      const _secret = validateSecret(secret);
-      const res: APIResponse<string> = await Fetcher.patch<APIResponse<string>>(
-        this.url
-          .endpoint('/v2/orders')
-          .endpoint(order.order_id)
-          .addSearchParams({ action: 'redeem' }),
-        {
-          body: JSON.stringify({
-            secret: Buffer.from(_secret).toString('hex'),
-          }),
-          headers: {
-            ...headers.val,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-      if (res.error || !res.result) {
-        return Err(`Redeem: Error from relayer: ${res.error}`);
-      }
-
-      const txHash = res.result;
-
-      const isConfirmed = await waitForSolanaTxConfirmation(
-        this.provider.connection,
-        txHash,
-      );
-
-      return isConfirmed
-        ? Ok(txHash)
-        : Err('Redeem: Timed out waiting for confirmation');
-    } catch (error) {
-      console.error('Redeem: Caught exception:', error);
-      return Err(`Error redeeming: ${error}`);
-    }
-  }
-
   private async initiateWithCreateOrderResponse(
     order: SolanaOrderResponse,
   ): AsyncResult<string, string> {
@@ -497,6 +448,56 @@ export class SolanaRelay implements ISolanaHTLC {
       return Err(`Error initiating with create order response: ${error}`);
     }
   }
+
+  /**
+   * Redeems a swap by providing the secret.
+   * @param {Order} order - Matched order object containing swap details
+   * @param {string} secret - Secret key in hex format
+   * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
+   *   - Ok with the transaction ID on success
+   *   - Err with an error message on failure
+   */
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
+    try {
+      const headers = await this.auth.getAuthHeaders();
+      if (!headers.ok) return Err(headers.error);
+
+      const _secret = validateSecret(secret);
+      const res: APIResponse<string> = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'redeem' }),
+        {
+          body: JSON.stringify({
+            secret: Buffer.from(_secret).toString('hex'),
+          }),
+          headers: {
+            ...headers.val,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      if (res.error || !res.result) {
+        return Err(`Redeem: Error from relayer: ${res.error}`);
+      }
+
+      const txHash = res.result;
+
+      const isConfirmed = await waitForSolanaTxConfirmation(
+        this.provider.connection,
+        txHash,
+      );
+
+      return isConfirmed
+        ? Ok(txHash)
+        : Err('Redeem: Timed out waiting for confirmation');
+    } catch (error) {
+      console.error('Redeem: Caught exception:', error);
+      return Err(`Error redeeming: ${error}`);
+    }
+  }
+
   /**
    * DO NOT CALL THIS FUNCTION. Refund is automatically taken care of by the relayer!
    * This method exists only to satisfy the ISolanaHTLC interface but is not intended for direct use.

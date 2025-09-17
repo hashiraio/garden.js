@@ -47,6 +47,7 @@ export class EvmRelay implements IEVMHTLC {
     return this.wallet.account.address;
   }
 
+  // ---------------------- INITIATE ----------------------
   async initiate(order: Order | EvmOrderResponse): AsyncResult<string, string> {
     if (isEvmOrderResponse(order)) {
       return this.initiateWithCreateOrderResponse(order);
@@ -229,7 +230,90 @@ export class EvmRelay implements IEVMHTLC {
     }
   }
 
-  async executeApprovalTransaction(
+  // ---------------------- INITIATE WITH CREATE ORDER RESPONSE ----------------------
+  private async initiateWithCreateOrderResponse(
+    order: EvmOrderResponse,
+  ): AsyncResult<string, string> {
+    const chainId = order.initiate_transaction.chain_id;
+
+    const chainName = getChainNameFromChainId(chainId);
+    if (!chainName) {
+      return Err(`Unsupported chain ID: ${chainId}`);
+    }
+
+    const _walletClient = await switchOrAddNetwork(chainName, this.wallet);
+    if (!_walletClient.ok) return Err(_walletClient.error);
+    this.wallet = _walletClient.val.walletClient;
+
+    if (!this.wallet.account) return Err('No account found');
+    try {
+      // Native Initiate
+      if (order.typed_data === null) {
+        const tx = order.initiate_transaction;
+        if (!tx)
+          return Err('No initiate_transaction found for native initiate');
+        const txHash = await this.wallet.sendTransaction({
+          account: this.wallet.account,
+          to: with0x(tx.to),
+          value: BigInt(tx.value),
+          data: with0x(tx.data),
+          gas: BigInt(tx.gas_limit),
+          chain: this.wallet.chain,
+        });
+
+        const receipt = await waitForTransactionReceipt(this.wallet, txHash);
+        if (receipt.val && receipt.val.status !== 'success') {
+          return Err('Native initiate transaction failed');
+        }
+
+        return Ok(txHash);
+      }
+
+      // Erc20 Initiate
+      if (order.approval_transaction) {
+        const approvalResult = await this.executeApprovalTransaction(order);
+        if (approvalResult.error) {
+          return Err(`Approval failed: ${approvalResult.error}`);
+        }
+        console.log('Approval transaction completed:', approvalResult.val);
+      }
+
+      // Erc20 Initiate with Approval
+      const { typed_data } = order;
+
+      const signature = await this.wallet.signTypedData({
+        account: this.wallet.account,
+        domain: typed_data.domain,
+        types: typed_data.types,
+        primaryType: typed_data.primaryType,
+        message: typed_data.message,
+      });
+      const headers: Record<string, string> = {
+        ...(await this.auth.getAuthHeaders()).val,
+        'Content-Type': 'application/json',
+      };
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'initiate' }),
+        {
+          body: JSON.stringify({
+            signature,
+          }),
+          headers,
+        },
+      );
+      if (res.error) return Err(res.error);
+      if (!res.result) return Err('Initiate failed: Result is undefined');
+      return Ok(res.result);
+    } catch (error) {
+      console.error('initiateWithCreateOrderResponse error:', error);
+      return Err('Failed to initiate: ' + String(error));
+    }
+  }
+
+  private async executeApprovalTransaction(
     order: EvmOrderResponse,
   ): AsyncResult<string, string> {
     if (!this.wallet.account) return Err('No account found');
@@ -265,85 +349,7 @@ export class EvmRelay implements IEVMHTLC {
     }
   }
 
-  private async initiateWithCreateOrderResponse(
-    order: EvmOrderResponse,
-  ): AsyncResult<string, string> {
-    const chainId = order.initiate_transaction.chain_id;
-
-    const chainName = getChainNameFromChainId(chainId);
-    if (!chainName) {
-      return Err(`Unsupported chain ID: ${chainId}`);
-    }
-
-    const _walletClient = await switchOrAddNetwork(chainName, this.wallet);
-    if (!_walletClient.ok) return Err(_walletClient.error);
-    this.wallet = _walletClient.val.walletClient;
-
-    if (!this.wallet.account) return Err('No account found');
-    try {
-      // If typed_data is null, this is a native initiate: send the initiate_transaction directly
-      if (order.typed_data === null) {
-        const tx = order.initiate_transaction;
-        if (!tx)
-          return Err('No initiate_transaction found for native initiate');
-        const txHash = await this.wallet.sendTransaction({
-          account: this.wallet.account,
-          to: with0x(tx.to),
-          value: BigInt(tx.value),
-          data: with0x(tx.data),
-          gas: BigInt(tx.gas_limit),
-          chain: this.wallet.chain,
-        });
-
-        const receipt = await waitForTransactionReceipt(this.wallet, txHash);
-        if (receipt.val && receipt.val.status !== 'success') {
-          return Err('Native initiate transaction failed');
-        }
-
-        return Ok(txHash);
-      }
-
-      if (order.approval_transaction) {
-        const approvalResult = await this.executeApprovalTransaction(order);
-        if (approvalResult.error) {
-          return Err(`Approval failed: ${approvalResult.error}`);
-        }
-        console.log('Approval transaction completed:', approvalResult.val);
-      }
-      const { typed_data } = order;
-
-      const signature = await this.wallet.signTypedData({
-        account: this.wallet.account,
-        domain: typed_data.domain,
-        types: typed_data.types,
-        primaryType: typed_data.primaryType,
-        message: typed_data.message,
-      });
-      const headers: Record<string, string> = {
-        ...(await this.auth.getAuthHeaders()).val,
-        'Content-Type': 'application/json',
-      };
-      const res = await Fetcher.patch<APIResponse<string>>(
-        this.url
-          .endpoint('/v2/orders')
-          .endpoint(order.order_id)
-          .addSearchParams({ action: 'initiate' }),
-        {
-          body: JSON.stringify({
-            signature,
-          }),
-          headers,
-        },
-      );
-      if (res.error) return Err(res.error);
-      if (!res.result) return Err('Initiate failed: Result is undefined');
-      return Ok(res.result);
-    } catch (error) {
-      console.error('initiateWithCreateOrderResponse error:', error);
-      return Err('Failed to initiate: ' + String(error));
-    }
-  }
-
+  // ---------------------- REDEEM ----------------------
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
       const headers = await this.auth.getAuthHeaders();
@@ -390,6 +396,7 @@ export class EvmRelay implements IEVMHTLC {
     }
   }
 
+  // ---------------------- REDEEM ----------------------
   async refund(): AsyncResult<string, string> {
     return Err('Refund not supported');
   }

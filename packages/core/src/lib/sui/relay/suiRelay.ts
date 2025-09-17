@@ -52,6 +52,7 @@ export class SuiRelay implements ISuiHTLC {
       : this.account.toSuiAddress();
   }
 
+  // ---------------------- INITIATE ----------------------
   async initiate(order: Order | SuiOrderResponse): AsyncResult<string, string> {
     if (!order) {
       return Err('Order is required');
@@ -150,31 +151,7 @@ export class SuiRelay implements ISuiHTLC {
     }
   }
 
-  async redeem(order: Order, secret: string): AsyncResult<string, string> {
-    try {
-      const res = await Fetcher.post<APIResponse<string>>(
-        this.url.endpoint('redeem'),
-        {
-          body: JSON.stringify({
-            order_id: order.order_id,
-            secret: secret,
-            perform_on: 'Destination',
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          retryCount: 10,
-          retryDelay: 2000,
-        },
-      );
-
-      if (res.error) return Err(res.error);
-      return res.result ? Ok(res.result) : Err('Redeem: No result found');
-    } catch (error) {
-      return Err(String(error));
-    }
-  }
-
+  // ---------------------- INITIATE WITH CREATE ORDER RESPONSE ----------------------
   private async initiateWithCreateOrderResponse(
     order: SuiOrderResponse,
   ): AsyncResult<string, string> {
@@ -231,6 +208,33 @@ export class SuiRelay implements ISuiHTLC {
     }
   }
 
+  // ---------------------- REDEEM ----------------------
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
+    try {
+      const res = await Fetcher.post<APIResponse<string>>(
+        this.url.endpoint('redeem'),
+        {
+          body: JSON.stringify({
+            order_id: order.order_id,
+            secret: secret,
+            perform_on: 'Destination',
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          retryCount: 10,
+          retryDelay: 2000,
+        },
+      );
+
+      if (res.error) return Err(res.error);
+      return res.result ? Ok(res.result) : Err('Redeem: No result found');
+    } catch (error) {
+      return Err(String(error));
+    }
+  }
+
+  // ---------------------- REFUND ----------------------
   async refund(): AsyncResult<string, string> {
     return Err('Refund is taken care of by the relayer');
   }

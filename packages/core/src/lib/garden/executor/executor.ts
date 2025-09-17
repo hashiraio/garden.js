@@ -260,6 +260,7 @@ export class Executor {
     }
   }
 
+  // ---------------------- REDEEMS ----------------------
   private async evmRedeem(order: Order, secret: string): Promise<void> {
     this.events.emit('log', order.order_id, 'executing evm redeem');
 
@@ -525,6 +526,7 @@ export class Executor {
     }
   }
 
+  // ---------------------- REFUNDS ----------------------
   private async postRefundSACP(order: Order) {
     // const cachedOrder = this.#cacheManager.getSacpCache(order.order_id);
     // if (cachedOrder?.initTxHash === order.source_swap.initiate_tx_hash) return;
