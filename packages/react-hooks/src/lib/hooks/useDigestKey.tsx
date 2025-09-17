@@ -10,12 +10,6 @@ export const useDigestKey = (setRedeemServiceEnabled: boolean = true) => {
   useEffect(() => {
     // If redeem service is enabled, generate and set in-memory digest key and skip IndexedDB
     if (setRedeemServiceEnabled) {
-      const newValue = DigestKey.generateRandom();
-      if (!newValue.ok) {
-        console.error('Error generating new digest key:', newValue.error);
-        return;
-      }
-      setDigestKey(DigestKey.from(newValue.val.digestKey).val);
       return;
     }
 
