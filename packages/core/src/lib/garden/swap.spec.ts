@@ -129,13 +129,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
 
       const to = ChainAsset.from(SupportedAssets.testnet.base_sepolia.USDT);
       const sendAmount = 50000;
-      const quote = await garden.quote.getQuote(
-        from,
-        to,
-        sendAmount,
-        false,
-        {},
-      );
+      const quote = await garden.quote.getQuote(from, to, sendAmount, false);
 
       const recieveAmount = quote.val?.[0].destination.amount;
       if (!recieveAmount) console.log('error fetching quote');

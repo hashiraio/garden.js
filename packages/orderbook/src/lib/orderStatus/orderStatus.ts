@@ -1,4 +1,5 @@
-import { isBitcoin, Order, OrderStatus } from '@gardenfi/orderbook';
+import { isBitcoin, OrderStatus } from '../asset';
+import { Order } from '../orderbook/orderbook.types';
 
 export const ParseOrderStatus = (order: Order) => {
   const { created_at, source_swap, destination_swap } = order;

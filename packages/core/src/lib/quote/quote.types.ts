@@ -1,4 +1,4 @@
-import { Asset, Chain, ChainAsset } from '@gardenfi/orderbook';
+import { Asset, AssetLike, Chain, ChainAsset } from '@gardenfi/orderbook';
 import { APIResponse, AsyncResult, Request } from '@gardenfi/utils';
 
 export interface IQuote {
@@ -28,8 +28,8 @@ export interface IQuote {
    * @param options { affiliateFee?: number; request?: Request } - The options for the quote request, affiliate fee in bps and request object
    */
   getQuote(
-    from: ChainAsset,
-    to: ChainAsset,
+    from: AssetLike,
+    to: AssetLike,
     amount: number,
     isExactOut: boolean,
     options?: QuoteOptions,

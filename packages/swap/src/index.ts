@@ -1,1 +1,1 @@
-export { GardenComponent, useGarden } from './lib/GardenComponent';
+export { GardenComponent } from './lib/GardenComponent';

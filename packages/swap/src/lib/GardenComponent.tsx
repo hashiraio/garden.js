@@ -1,15 +1,16 @@
 import React from 'react';
-import { GardenProvider, useGarden } from '@gardenfi/react-hooks';
-import SwapWidget from './SwapWidget';
+import { GardenProvider } from '@gardenfi/react-hooks';
+import SwapWidget from './components/SwapWidget';
+import '@gardenfi/garden-book/style.css';
 
-type Props = React.ComponentProps<typeof GardenProvider>;
+type Props = Omit<React.ComponentProps<typeof GardenProvider>, 'children'>;
 
 const GardenComponent: React.FC<Props> = ({ ...providerProps }) => {
   return (
-    <GardenProvider {...providerProps}>
+    <GardenProvider {...providerProps} setRedeemServiceEnabled={true}>
       <SwapWidget />
     </GardenProvider>
   );
 };
 
-export { useGarden, GardenComponent };
+export { GardenComponent };

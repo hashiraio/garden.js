@@ -3,6 +3,7 @@
   "compilerOptions": {
     "baseUrl": "./",
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "checkJs": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

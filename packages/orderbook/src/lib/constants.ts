@@ -1,8 +1,147 @@
-import { Chain } from 'viem';
-// import { Assets } from './asset';
-import { Asset, Chains } from './asset';
+import { Network } from '@gardenfi/utils';
+import { Chain as ViemChain } from 'viem';
+import { Asset } from './asset';
 
-export const StarknetLocalnet: Chain = {
+export enum BlockchainType {
+  bitcoin = 'bitcoin',
+  evm = 'evm',
+  solana = 'solana',
+  starknet = 'starknet',
+  sui = 'sui',
+}
+
+export const ChainsConfig = {
+  bitcoin: {
+    type: BlockchainType.bitcoin,
+    network: Network.MAINNET,
+  },
+  bitcoin_testnet: {
+    type: BlockchainType.bitcoin,
+    network: Network.TESTNET,
+  },
+  bitcoin_regtest: {
+    type: BlockchainType.bitcoin,
+    network: Network.LOCALNET,
+  },
+  ethereum: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  base: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  arbitrum: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  ethereum_sepolia: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  arbitrum_localnet: {
+    type: BlockchainType.evm,
+    network: Network.LOCALNET,
+  },
+  arbitrum_sepolia: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  ethereum_localnet: {
+    type: BlockchainType.evm,
+    network: Network.LOCALNET,
+  },
+  base_sepolia: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  solana: {
+    type: BlockchainType.solana,
+    network: Network.MAINNET,
+  },
+  solana_testnet: {
+    type: BlockchainType.solana,
+    network: Network.TESTNET,
+  },
+  solana_localnet: {
+    type: BlockchainType.solana,
+    network: Network.LOCALNET,
+  },
+  bera_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  citrea_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  bera: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  monad_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  starknet: {
+    type: BlockchainType.starknet,
+    network: Network.MAINNET,
+  },
+  starknet_sepolia: {
+    type: BlockchainType.starknet,
+    network: Network.TESTNET,
+  },
+  starknet_devnet: {
+    type: BlockchainType.starknet,
+    network: Network.LOCALNET,
+  },
+  hyperliquid_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  hyperliquid: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  unichain: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  corn: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  botanix: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  bnbchain: { type: BlockchainType.evm, network: Network.MAINNET },
+  bnbchain_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
+  sui: {
+    type: BlockchainType.sui,
+    network: Network.MAINNET,
+  },
+  sui_testnet: {
+    type: BlockchainType.sui,
+    network: Network.TESTNET,
+  },
+  core: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+} as const;
+
+export const Chains = Object.keys(ChainsConfig).reduce((acc, key) => {
+  acc[key as Chain] = key as Chain;
+  return acc;
+}, {} as Record<Chain, Chain>);
+
+export type Chain = keyof typeof ChainsConfig;
+
+export const StarknetLocalnet: ViemChain = {
   id: 1001,
   name: 'Starknet Localnet',
   nativeCurrency: {
@@ -18,7 +157,7 @@ export const StarknetLocalnet: Chain = {
   testnet: true,
 };
 
-export const ArbitrumLocalnet: Chain = {
+export const ArbitrumLocalnet: ViemChain = {
   id: 31338,
   name: 'Arbitrum Localnet',
   nativeCurrency: {
@@ -33,7 +172,7 @@ export const ArbitrumLocalnet: Chain = {
   },
   testnet: true,
 };
-export const EthereumLocalnet: Chain = {
+export const EthereumLocalnet: ViemChain = {
   id: 31337,
   name: 'Ethereum Localnet',
   nativeCurrency: {
