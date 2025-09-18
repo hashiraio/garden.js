@@ -7,7 +7,6 @@ import {
   GardenHTLCModules,
   GardenEventEmitter,
   GardenEvents,
-  CreateOrderResponseFromParams,
 } from './garden.types';
 import {
   BlockchainType,
@@ -306,12 +305,9 @@ export class Garden extends Orderbook implements IGardenJS {
     return Ok(createOrderResponse.order_id);
   }
 
-  override async createOrder<T extends SwapParams>(
+  override async createOrder<T extends BlockchainType>(
     arg: CreateOrderRequest | SwapParams,
-  ): AsyncResult<
-    CreateOrderResponse | CreateOrderResponseFromParams<T>,
-    string
-  > {
+  ): AsyncResult<CreateOrderResponse<T>, string> {
     if (hasKeys(arg, ['source', 'destination', 'nonce'])) {
       return super.createOrder(arg as CreateOrderRequest, this._auth);
     }
@@ -320,7 +316,7 @@ export class Garden extends Orderbook implements IGardenJS {
     const validation = await this.validateAndFillParams(params);
     if (!validation.ok) return Err(validation.error);
 
-    const { sendAddress, receiveAddress } = validation.val;
+    const { sendAddress, receiveAddress, fromAsset, toAsset } = validation.val;
 
     const nonce = Date.now().toString();
     let secretHash: string | undefined;
@@ -343,14 +339,14 @@ export class Garden extends Orderbook implements IGardenJS {
 
     const orderRequest: CreateOrderRequest = {
       source: {
-        asset: ChainAsset.from(params.fromAsset).toString(),
+        asset: fromAsset.toString(),
         owner: isSourceBitcoin ? btcAddress ?? sendAddress : sendAddress,
         delegate:
           shouldProvideBtcAddress && isSourceBitcoin ? sendAddress : null,
         amount: params.sendAmount,
       },
       destination: {
-        asset: ChainAsset.from(params.toAsset).toString(),
+        asset: toAsset.toString(),
         owner: isDestinationBitcoin
           ? btcAddress ?? receiveAddress
           : receiveAddress,
@@ -370,7 +366,7 @@ export class Garden extends Orderbook implements IGardenJS {
       slippage: 50,
     };
 
-    const createOrderRes = await super.createOrder(orderRequest, this._auth);
+    const createOrderRes = await super.createOrder<T>(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 
     const sourceType = ChainAsset.from(params.fromAsset).blockchainType;
@@ -378,9 +374,7 @@ export class Garden extends Orderbook implements IGardenJS {
       return Err('Order response type does not match source blockchain type');
     }
 
-    return Ok(
-      createOrderRes.val as unknown as CreateOrderResponseFromParams<T>,
-    );
+    return Ok(createOrderRes.val);
   }
 
   private async validateAndFillParams(params: SwapParams) {
@@ -429,6 +423,8 @@ export class Garden extends Orderbook implements IGardenJS {
     return Ok({
       sendAddress: sendAddress.val,
       receiveAddress: receiveAddress.val,
+      fromAsset: fromAsset,
+      toAsset: toAsset,
     });
   }
 

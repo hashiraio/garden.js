@@ -56,7 +56,7 @@ describe('checking garden initialisation', async () => {
   });
 
   console.log('garden :', garden);
-  const order = await garden.orderbook.getOrder(
+  const order = await garden.getOrder(
     'df4d18a3f4d8754d17c831b491b375f8b925625fa8b389b4b671325a66bdc176',
   );
   console.log('this is an order fetched', order.val);
@@ -137,7 +137,7 @@ describe('swap and execute using garden', () => {
     }
     const orderId = result.val;
 
-    const res = (await garden.orderbook.getOrder(orderId)).val;
+    const res = (await garden.getOrder(orderId)).val;
     if (!res) throw new Error('error getting order');
     order = res;
     console.log('orderCreated and matched ✅ ', order.order_id);
@@ -233,7 +233,7 @@ describe.only('switch network with http transport', () => {
         continue;
       }
       const matchedOrder = order.val;
-      const res = await garden.orderbook.getOrder(matchedOrder);
+      const res = await garden.getOrder(matchedOrder);
       if (!res.val) {
         throw new Error('order not found');
       }
