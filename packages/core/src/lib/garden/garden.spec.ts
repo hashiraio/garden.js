@@ -4,12 +4,7 @@ import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { describe, expect, it } from 'vitest';
 import { loadTestConfig } from '../../../../../test-config-loader';
-import {
-  ChainAsset,
-  isBitcoin,
-  Order,
-  SupportedAssets,
-} from '@gardenfi/orderbook';
+import { ChainAsset, isBitcoin, Order, Assets } from '@gardenfi/orderbook';
 import { arbitrumSepolia, sepolia } from 'viem/chains';
 import { DigestKey } from '@gardenfi/utils';
 import { switchOrAddNetwork } from '../switchOrAddNetwork';
@@ -120,8 +115,8 @@ describe('swap and execute using garden', () => {
 
   it('should create an order', async () => {
     const orderObj = {
-      fromAsset: SupportedAssets.testnet.arbitrum_sepolia.WBTC,
-      toAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
+      fromAsset: Assets.arbitrum_sepolia.WBTC,
+      toAsset: Assets.bitcoin_testnet.BTC,
       sendAmount: '10000'.toString(),
       receiveAmount: '9970'.toString(),
       additionalData: {
@@ -209,8 +204,8 @@ describe.only('switch network with http transport', () => {
   const trade = async (garden: Garden) => {
     for (let i = 0; i < 10; i++) {
       const quote = await garden.quote.getQuote(
-        ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC),
-        ChainAsset.from(SupportedAssets.testnet.base_sepolia.WBTC),
+        ChainAsset.from(Assets.arbitrum_sepolia.WBTC),
+        ChainAsset.from(Assets.base_sepolia.WBTC),
         Number('50000'),
         false,
       );

@@ -79,8 +79,6 @@ export const GardenProvider: FC<GardenProviderProps> = ({
   };
 
   useEffect(() => {
-    if (!!setRedeemServiceEnabled && !digestKey) return;
-
     if (!('wallets' in config) && !('htlc' in config)) return;
 
     let garden: Garden;

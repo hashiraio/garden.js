@@ -9,6 +9,7 @@ import {
   ETHStarknetLocalnetAsset,
 } from './localnetConstants';
 import { buildAssetsWithChain } from './utils';
+import { ChainAsset } from '../chainAsset/chainAsset';
 
 export enum OrderStatus {
   Created = 'Created',
@@ -619,3 +620,43 @@ export const isStarknet = is(BlockchainType.starknet);
 export const isSui = is(BlockchainType.sui);
 
 export const getBlockchainType = (chain: Chain) => Config[chain].type;
+
+export const NATIVE_TOKENS = {
+  [BlockchainType.evm]: 'eth',
+  [BlockchainType.solana]: 'sol',
+  [BlockchainType.sui]: 'sui',
+};
+
+export const isEvmNativeToken = (chain: Chain, tokenAddress: string) => {
+  return (
+    isEVM(chain) &&
+    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.evm]
+  );
+};
+
+export const isSolanaNativeToken = (chain: Chain, tokenAddress: string) => {
+  return (
+    isSolana(chain) &&
+    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.solana]
+  );
+};
+
+export const isSuiNativeToken = (chain: Chain, tokenAddress: string) => {
+  return (
+    isSui(chain) &&
+    tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.sui]
+  );
+};
+
+export const isNativeToken = (asset: ChainAsset) => {
+  const chain = asset.chain;
+  const tokenAddress = asset.symbol;
+  return (
+    isEvmNativeToken(chain, tokenAddress) ||
+    isSolanaNativeToken(chain, tokenAddress) ||
+    isBitcoin(chain) ||
+    isSuiNativeToken(chain, tokenAddress) ||
+    // Starknet doesn't have a native token
+    !isStarknet(chain)
+  );
+};

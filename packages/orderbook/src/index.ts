@@ -1,7 +1,23 @@
 export { Orderbook } from './lib/orderbook/orderbook';
 export type * from './lib/orderbook/orderbook.types';
 
-export type * from './lib/constants/asset.types';
+export { BlockchainType } from './lib/constants/asset.types';
+export type {
+  Asset,
+  AssetCommon,
+  AssetToken,
+  BitcoinChains,
+  Chain,
+  ChainsByBlockchainType,
+  ChainsByNetwork,
+  EVMChains,
+  LocalnetOnlyChains,
+  MainnetOnlyChains,
+  SolanaChains,
+  SuiChains,
+  StarknetChains,
+  TestnetOnlyChains,
+} from './lib/constants/asset.types';
 export * from './lib/constants/asset';
 export * from './lib/constants/localnetConstants';
 export * from './lib/constants/utils';

@@ -1,5 +1,5 @@
 import { Garden } from '../garden';
-import { AssetToken, Order, SupportedAssets } from '@gardenfi/orderbook';
+import { AssetToken, Order, Assets } from '@gardenfi/orderbook';
 import { with0x, Network, sleep } from '@gardenfi/utils';
 import { RpcProvider, Account } from 'starknet';
 import { describe, expect, it } from 'vitest';
@@ -126,8 +126,8 @@ describe('StarkNet Integration Tests', () => {
   describe('evm-strk swap', async () => {
     it('should create order and match', async () => {
       const order = {
-        fromAsset: SupportedAssets.testnet.arbitrum_sepolia.WBTC,
-        toAsset: SupportedAssets.testnet.starknet_sepolia.WBTC,
+        fromAsset: Assets.arbitrum_sepolia.WBTC,
+        toAsset: Assets.starknet_sepolia.WBTC,
         sendAmount: '500000',
         receiveAmount: '214821925172042749',
         additionalData: {},
@@ -175,8 +175,8 @@ describe('StarkNet Integration Tests', () => {
     it('should create order and match', async () => {
       console.log('\n------ CREATING SWAP ORDER ------');
       const order = {
-        fromAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
-        toAsset: SupportedAssets.testnet.starknet_sepolia.WBTC,
+        fromAsset: Assets.bitcoin_testnet.BTC,
+        toAsset: Assets.starknet_sepolia.WBTC,
         sendAmount: '10000',
         receiveAmount: '4292202826399481',
         btcAddress: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
@@ -217,8 +217,8 @@ describe('StarkNet Integration Tests', () => {
     it.skip('should create order and match', async () => {
       console.log('\n------ CREATING SWAP ORDER ------');
       const order = {
-        fromAsset: SupportedAssets.testnet.starknet_sepolia.WBTC,
-        toAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
+        fromAsset: Assets.starknet_sepolia.WBTC,
+        toAsset: Assets.bitcoin_testnet.BTC,
         sendAmount: '10000000000000000',
         receiveAmount: '23159',
         additionalData: {
