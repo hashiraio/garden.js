@@ -17,7 +17,6 @@ const CreateSwap = () => {
     toAmount,
     setFromAmount,
     setToAmount,
-    fetchQuote,
     setAmountInputSide,
     amountInputSide,
     swapAssets,
@@ -95,7 +94,7 @@ const CreateSwap = () => {
   return (
     <div className="flex flex-col gap-3">
       <div className="relative flex flex-col gap-3">
-        <div onBlur={() => fetchQuote('from')} className="w-full">
+        <div className="w-full">
           <SwapInput
             type={IOType.input}
             amount={fromAmount}
@@ -116,13 +115,13 @@ const CreateSwap = () => {
           />
         </div>
         <div
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+          className="absolute left-1/2 top-1/2 -translate-x-1/4 -translate-y-1/4 cursor-pointer"
           onClick={swapAssets}
         >
           <div className="h-8 w-8 origin-center rounded-full border border-light-grey bg-white p-1.5 transition-transform hover:scale-[1.1]"></div>
           <ExchangeIcon className="pointer-events-none absolute bottom-1.5 left-1.5" />
         </div>
-        <div onBlur={() => fetchQuote('to')} className="w-full">
+        <div className="w-full">
           <SwapInput
             type={IOType.output}
             amount={toAmount}
@@ -155,15 +154,6 @@ const CreateSwap = () => {
       >
         {isSwapping ? 'Creating swap…' : isQuoting ? 'Quoting…' : 'Swap'}
       </Button>
-      {/* <Button
-        className={`mt-3 transition-colors duration-500`}
-        variant={buttonVariant}
-        size="lg"
-        disabled={buttonDisabled || loadingDisabled}
-        onClick={needsWalletConnection ? handleConnectWallet : handleSwapClick}
-      >
-        {buttonLabel}
-      </Button> */}
     </div>
   );
 };

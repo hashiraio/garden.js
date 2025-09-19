@@ -8,7 +8,7 @@ type Props = Omit<React.ComponentProps<typeof GardenProvider>, 'children'>;
 const GardenComponent: React.FC<Props> = ({ ...providerProps }) => {
   return (
     <GardenProvider {...providerProps}>
-      <SwapWidget />
+      <SwapWidget network={providerProps.config.environment} />
     </GardenProvider>
   );
 };

@@ -7,16 +7,20 @@ import {
   ParsedAsset,
 } from '../types/assetTypes';
 import { ChainAsset } from '@gardenfi/orderbook';
+import { getApiEndpoint } from '../constants/network';
+import { Network } from '@gardenfi/utils';
 
 type AssetStoreState = {
   chains: ParsedChainInfo[];
   allAssets: ParsedAsset[];
   isLoading: boolean;
   error: string | null;
-  fetchAssets: () => Promise<void>;
+  currentNetwork: Network;
+  fetchAssets: (network?: Network) => Promise<void>;
   getAssetsByChain: (chainKey: string) => ParsedAsset[];
   getChainByKey: (chainKey: string) => ParsedChainInfo | undefined;
   getAssetById: (assetId: string) => ParsedAsset | undefined;
+  setCurrentNetwork: (network: Network) => void;
 };
 
 // Helper function to parse chain info
@@ -87,12 +91,14 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
   allAssets: [],
   isLoading: false,
   error: null,
+  currentNetwork: Network.TESTNET,
 
-  fetchAssets: async () => {
+  fetchAssets: async (network?: Network) => {
+    const targetNetwork = network || get().currentNetwork;
     set({ isLoading: true, error: null });
     try {
       const response = await fetch(
-        'https://testnet.api.garden.finance/v2/chains',
+        `${getApiEndpoint(targetNetwork)}/v2/chains`,
       );
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -106,13 +112,13 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
 
       const parsedChains = data.result.map(parseChainInfo);
       const allAssets = parsedChains.flatMap((chain) => chain.assets);
-      console.log('allAssets', allAssets);
-      console.log('parsedChains', parsedChains);
+
       set({
         chains: parsedChains,
         allAssets,
         isLoading: false,
         error: null,
+        currentNetwork: targetNetwork,
       });
     } catch (error: any) {
       set({
@@ -136,5 +142,9 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
   getAssetById: (assetId: string) => {
     const { allAssets } = get();
     return allAssets.find((asset) => asset.asset.toString() === assetId);
+  },
+
+  setCurrentNetwork: (network: Network) => {
+    set({ currentNetwork: network });
   },
 }));

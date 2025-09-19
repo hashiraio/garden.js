@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { ParsedAsset } from '../types/types';
 import { Quote } from '@gardenfi/core';
+import { Network } from '@gardenfi/utils';
+import { getApiEndpoint, DEFAULT_NETWORK } from '../constants/network';
 
 type SelectionSide = 'from' | 'to';
 
@@ -34,6 +36,10 @@ type SwapState = {
   setAmountInputSide: (side: SelectionSide) => void;
   fetchQuote: (side: SelectionSide) => Promise<void>;
   swapAssets: () => void;
+  currentNetwork: Network;
+  setCurrentNetwork: (network: Network) => void;
+  setDefaultBTC: (assets: ParsedAsset[]) => void;
+  debouncedFetchQuote: (side: SelectionSide) => void;
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
@@ -48,6 +54,8 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   isQuoting: false,
   quoteError: null,
   lastQuote: undefined,
+  currentNetwork: DEFAULT_NETWORK,
+  setCurrentNetwork: (network) => set({ currentNetwork: network }),
   setFilter: (filter) => set({ filter }),
   openModal: (side) => set({ modalOpenFor: side }),
   closeModal: () => set({ modalOpenFor: null, filter: '' }),
@@ -91,16 +99,26 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         });
       }
     }
+    // Trigger quote fetch when assets change
+    setTimeout(() => get().debouncedFetchQuote(side), 100);
   },
 
-  setFromAmount: (val) => set({ fromAmount: val, amountInputSide: 'from' }),
-  setToAmount: (val) => set({ toAmount: val, amountInputSide: 'to' }),
+  setFromAmount: (val) => {
+    set({ fromAmount: val, amountInputSide: 'from' });
+    // Trigger debounced quote fetch
+    get().debouncedFetchQuote('from');
+  },
+  setToAmount: (val) => {
+    set({ toAmount: val, amountInputSide: 'to' });
+    // Trigger debounced quote fetch
+    get().debouncedFetchQuote('to');
+  },
   setAmountInputSide: (side) => set({ amountInputSide: side }),
   fetchQuote: async (side) => {
     const { selectedFrom, selectedTo, fromAmount, toAmount, isQuoting } = get();
     if (isQuoting) return; // Avoid overlapping quote requests
     if (!selectedFrom || !selectedTo) return;
-    const quote = new Quote('https://testnet.api.garden.finance');
+    const quote = new Quote(getApiEndpoint(get().currentNetwork));
     const isExactOut = side === 'to';
     const amountStr = side === 'from' ? fromAmount : toAmount;
     const amountNum = toBaseUnitsSafe(
@@ -151,7 +169,34 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       selectedFrom: selectedTo,
       selectedTo: selectedFrom,
     });
+    // Trigger quote fetch after swapping assets
+    setTimeout(() => get().debouncedFetchQuote('from'), 100);
   },
+
+  setDefaultBTC: (assets: ParsedAsset[]) => {
+    const { selectedFrom } = get();
+    // Only set BTC as default if no asset is currently selected
+    if (!selectedFrom) {
+      const btcAsset = assets.find(
+        (asset) =>
+          asset.symbol === 'BTC' &&
+          asset.chainDisplayName.toLowerCase().includes('bitcoin'),
+      );
+      if (btcAsset) {
+        set({ selectedFrom: btcAsset });
+      }
+    }
+  },
+
+  debouncedFetchQuote: (() => {
+    let timeoutId: NodeJS.Timeout;
+    return (side: SelectionSide) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        get().fetchQuote(side);
+      }, 500); // 500ms debounce
+    };
+  })(),
 }));
 
 function toBaseUnitsSafe(humanAmount: string, decimals: number): number {

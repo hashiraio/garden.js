@@ -7,17 +7,27 @@ import TransactionHistory from './TransactionHistory';
 import CreateSwap from './CreateSwap';
 import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
 import { Modal } from './ModalComponent';
+import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
 
-const SwapWidget = () => {
+const SwapWidget = ({ network }: { network: ApiConfig }) => {
+  const { network: networkType } = resolveApiConfig(network);
   const [activeTab, setActiveTab] = useState<TabKey>('swap');
 
-  const { quoteError } = useSwapStore();
+  const { quoteError, setCurrentNetwork, setDefaultBTC } = useSwapStore();
 
-  const { fetchAssets, isLoading, error } = useAssetStore();
+  const { fetchAssets, isLoading, error, allAssets } = useAssetStore();
 
   useEffect(() => {
     fetchAssets();
-  }, [fetchAssets]);
+    setCurrentNetwork(networkType);
+  }, [fetchAssets, setCurrentNetwork, networkType]);
+
+  // Set BTC as default when assets are loaded
+  useEffect(() => {
+    if (allAssets.length > 0) {
+      setDefaultBTC(allAssets);
+    }
+  }, [allAssets, setDefaultBTC]);
 
   return (
     <>
