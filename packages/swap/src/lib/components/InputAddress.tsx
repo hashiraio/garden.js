@@ -58,6 +58,7 @@ export const InputAddress = () => {
             hidden: {
               opacity: 0,
               height: 0,
+              marginBottom: '0',
               pointerEvents: 'none' as const,
               transition: {
                 duration: 0.3,
@@ -68,6 +69,7 @@ export const InputAddress = () => {
             visible: {
               opacity: 1,
               height: 'auto',
+              marginBottom: '12px',
               pointerEvents: 'auto' as const,
               transition: {
                 duration: 0.3,
@@ -78,6 +80,7 @@ export const InputAddress = () => {
             exit: {
               opacity: 0,
               height: 0,
+              marginBottom: '0',
               pointerEvents: 'none' as const,
               transition: {
                 duration: 0.3,
