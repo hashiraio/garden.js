@@ -13,7 +13,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
-// Removed modal wrapper from here; parent controls modal rendering
+import { formatAmount } from '../utils/utils';
 
 type Props = {
   onSelect: (asset: ParsedAsset) => void;
@@ -134,10 +134,17 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     });
   }, [filteredAssets, chains, orderedChains]);
 
-  // Visible chains for the chain selector
+  // Visible chains for the chain selector (ensure selected chain is included)
   const visibleChains = useMemo(() => {
-    return orderedChains.slice(0, visibleChainsCount);
-  }, [orderedChains, visibleChainsCount]);
+    const base = orderedChains.slice(0, visibleChainsCount);
+    if (
+      selectedChain &&
+      !base.find((c) => c.chainId === selectedChain.chainId)
+    ) {
+      return [selectedChain, ...base.slice(0, visibleChainsCount - 1)];
+    }
+    return base;
+  }, [orderedChains, visibleChainsCount, selectedChain]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -148,21 +155,21 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const hideSidebar = () => setShowAllChains(false);
 
   const handleChainClick = (chain: ParsedChainInfo) => {
-    if (selectedChain?.chainId === chain.chainId) {
-      setSelectedChain(undefined);
-    } else {
-      setSelectedChain(chain);
-    }
+    if (selectedChain?.chainId === chain.chainId) setSelectedChain(undefined);
+    else setSelectedChain(chain);
+    setShowAllChains(false);
   };
 
   const handleAssetSelect = (asset: ParsedAsset) => {
     onSelect(asset);
     closeAssetModal();
+    setShowAllChains(false);
   };
 
   const handleClose = () => {
     closeAssetModal();
     // onClose();
+    setShowAllChains(false);
   };
 
   // Reset state when modal closes
@@ -216,28 +223,29 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
           </div>
 
           {/* Chain Filter */}
-          <div className="p-4 border-b border-gray-100">
-            <div className="flex flex-wrap gap-2">
+          <div className="flex w-full flex-wrap gap-3">
+            <div className={`flex w-full ${isMobile ? 'gap-2' : 'gap-3'}`}>
               {visibleChains.map((chain, index) => (
                 <button
                   key={chain.chainId}
-                  className={`relative flex h-10 flex-1 min-w-0 items-center justify-center gap-2 rounded-xl border transition-all duration-200 ${
-                    selectedChain?.chainId === chain.chainId
-                      ? 'bg-blue-50 border-blue-200 text-blue-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  className={`relative flex h-12 flex-1 items-center justify-center gap-2 overflow-visible rounded-xl outline-none duration-300 ease-in-out ${
+                    !selectedChain || chain.chainId !== selectedChain.chainId
+                      ? '!bg-white/50'
+                      : '!bg-white'
                   }`}
                   onMouseEnter={() => setHoveredChain(chain.chainDisplayName)}
                   onMouseLeave={() => setHoveredChain('')}
-                  onClick={() => handleChainClick(chain)}
+                  onClick={() =>
+                    selectedChain && chain.chainId === selectedChain.chainId
+                      ? setSelectedChain(undefined)
+                      : setSelectedChain(chain)
+                  }
                 >
                   <img
                     src={chain.iconUrl}
                     alt={chain.chainDisplayName}
-                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    className="h-5 w-5 rounded-full"
                   />
-                  <span className="text-xs font-medium truncate">
-                    {chain.chainDisplayName.split(' ')[0]}
-                  </span>
                   {hoveredChain === chain.chainDisplayName && (
                     <ChainsTooltip
                       chain={chain.chainDisplayName}
@@ -258,10 +266,14 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
               ))}
               {orderedChains.length > visibleChainsCount && (
                 <button
-                  className="h-10 w-10 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
+                  className={`h-12 w-12 cursor-pointer flex items-center justify-center rounded-xl !bg-white/50 p-4 duration-300 ease-in-out`}
                   onClick={() => setShowAllChains(true)}
                 >
-                  <Typography size="h5" weight="regular">
+                  <Typography
+                    size="h4"
+                    weight="regular"
+                    className="!flex !cursor-pointer !items-center !text-mid-grey !text-center"
+                  >
                     +{orderedChains.length - visibleChainsCount}
                   </Typography>
                 </button>
@@ -286,99 +298,84 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             <SearchIcon />
           </div>
           {/* Asset List */}
-          <div className="max-h-80 overflow-hidden">
-            <GradientScroll height={272} gradientHeight={42}>
-              <div className="p-2">
-                <div className="mb-2 px-2">
-                  <Typography
-                    size="h5"
-                    weight="medium"
-                    className="text-gray-700"
-                  >
-                    {selectedChain
-                      ? `Assets on ${selectedChain.chainDisplayName}`
-                      : 'All Assets'}
+          <div className="flex h-[316px] flex-col overflow-auto rounded-2xl !bg-white">
+            <div className="px-4 pb-2 pt-2">
+              <Typography size="h5" weight="medium">
+                {selectedChain
+                  ? `Assets on ${selectedChain.chainDisplayName}`
+                  : 'Assets'}
+              </Typography>
+            </div>
+            <GradientScroll
+              height={272}
+              gradientHeight={42}
+              onClose={!isAssetModalOpen}
+            >
+              {sortedAssets.length > 0 ? (
+                <div className="space-y-1">
+                  {sortedAssets.map((asset) => (
+                    <button
+                      key={asset.asset.toString()}
+                      onClick={() => handleAssetSelect(asset)}
+                      className="flex w-full cursor-pointer items-center justify-between !gap-2 !px-4 !py-1.5 hover:bg-[#f4f0fc]"
+                    >
+                      <div className="flex w-full items-center justify-start gap-2">
+                        <div className={`w-10`}>
+                          <TokenNetworkLogos
+                            tokenLogo={asset.iconUrl}
+                            chainLogo={
+                              chains?.find((c) => c.chainId === asset.chainId)
+                                ?.iconUrl
+                            }
+                          />
+                        </div>
+                        <Typography
+                          className={`w-2/3 !text-start`}
+                          size={'h5'}
+                          breakpoints={{ sm: 'h4' }}
+                          weight="regular"
+                        >
+                          {asset.symbol}
+                        </Typography>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {asset.priceUsd && (
+                          <Typography
+                            size={'h5'}
+                            breakpoints={{
+                              sm: 'h4',
+                            }}
+                            weight="regular"
+                            className={`!text-mid-grey`}
+                          >
+                            {formatAmount(
+                              Number(asset.priceUsd),
+                              0,
+                              Math.min(asset.decimals, 8),
+                            )}
+                          </Typography>
+                        )}
+                        <Typography
+                          size={'h5'}
+                          breakpoints={{
+                            sm: 'h4',
+                          }}
+                          weight="regular"
+                          className={`!text-mid-grey`}
+                        >
+                          {asset.symbol}
+                        </Typography>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-[274px] w-full items-center justify-center">
+                  <Typography size="h4" weight="regular">
+                    No assets found.
                   </Typography>
                 </div>
-
-                {sortedAssets.length > 0 ? (
-                  <div className="space-y-1">
-                    {sortedAssets.map((asset) => (
-                      <button
-                        key={asset.asset.toString()}
-                        onClick={() => handleAssetSelect(asset)}
-                        className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors group"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 flex-shrink-0">
-                            <TokenNetworkLogos
-                              tokenLogo={asset.iconUrl}
-                              chainLogo={
-                                chains?.find((c) => c.chainId === asset.chainId)
-                                  ?.iconUrl
-                              }
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <Typography
-                              size="h5"
-                              weight="medium"
-                              className="text-gray-900 truncate"
-                            >
-                              {asset.symbol}
-                            </Typography>
-                            <Typography
-                              size="h6"
-                              weight="regular"
-                              className="text-gray-500 truncate"
-                            >
-                              {asset.chainDisplayName}
-                            </Typography>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col items-end flex-shrink-0">
-                          {asset.priceUsd > 0 && (
-                            <Typography
-                              size="h6"
-                              weight="regular"
-                              className="text-gray-500"
-                            >
-                              ${asset.priceUsd.toFixed(2)}
-                            </Typography>
-                          )}
-                          <Typography
-                            size="h6"
-                            weight="regular"
-                            className="text-gray-400"
-                          >
-                            {asset.decimals} decimals
-                          </Typography>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-center">
-                      <Typography
-                        size="h5"
-                        weight="regular"
-                        className="text-gray-500 mb-2"
-                      >
-                        No assets found
-                      </Typography>
-                      <Typography
-                        size="h6"
-                        weight="regular"
-                        className="text-gray-400"
-                      >
-                        Try adjusting your search or chain filter
-                      </Typography>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </GradientScroll>
           </div>
         </motion.div>

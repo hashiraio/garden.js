@@ -24,7 +24,7 @@ const CreateSwap = () => {
   const { swap } = useGarden();
   const [isSwapping, setIsSwapping] = useState(false);
   const [swapError, setSwapError] = useState<string | null>(null);
-  console.log(swapError);
+
   const canSwap = useMemo(() => {
     return (
       typeof swap === 'function' &&
@@ -92,7 +92,7 @@ const CreateSwap = () => {
     }
   }
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-3">
       <div className="relative flex flex-col gap-3">
         <div onBlur={() => fetchQuote('from')} className="w-full">
           <SwapInput
@@ -144,8 +144,10 @@ const CreateSwap = () => {
       </div>
 
       <Button
-        className="w-full disabled:opacity-60"
+        className="w-full  transition-colors duration-500"
         disabled={!canSwap}
+        variant={!canSwap ? 'disabled' : 'primary'}
+        size="lg"
         onClick={handleSwapClick}
       >
         {isSwapping ? 'Creating swap…' : isQuoting ? 'Quoting…' : 'Swap'}

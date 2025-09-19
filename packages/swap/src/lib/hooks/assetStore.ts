@@ -21,7 +21,7 @@ type AssetStoreState = {
 
 // Helper function to parse chain info
 const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
-  const { chainKey, chainDisplayName } = parseChainId(chainInfo.id);
+  const { chainKey, chainDisplayName } = parseChainId(chainInfo.chain);
 
   return {
     chainKey,
@@ -34,19 +34,19 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
     destinationTimelock: parseInt(chainInfo.destination_timelock),
     supportedHtlcSchemas: chainInfo.supported_htlc_schemas,
     supportedTokenSchemas: chainInfo.supported_token_schemas,
-    assets: chainInfo.assets.map((asset) => parseAsset(asset)),
+    assets: chainInfo.assets.map((asset) => parseAsset(asset, chainInfo)),
   };
 };
 
-// Helper function to parse asset
-const parseAsset = (asset: Asset): ParsedAsset => {
-  const { chainDisplayName } = parseChainId(asset.chain);
+// Helper function to parse asset, inheriting chain display name and id from parent
+const parseAsset = (asset: Asset, parent: ChainInfo): ParsedAsset => {
+  const { chainDisplayName } = parseChainId(parent.chain);
   const { symbol } = parseAssetId(asset.id);
 
   return {
     asset: ChainAsset.from(asset.id),
     chainDisplayName,
-    chainId: asset.chain,
+    chainId: parent.id,
     symbol,
     iconUrl: asset.icon,
     decimals: asset.decimals,
@@ -64,33 +64,6 @@ const parseAsset = (asset: Asset): ParsedAsset => {
 const parseChainId = (
   chainId: string,
 ): { chainKey: string; chainDisplayName: string } => {
-  // Handle different chain ID formats
-  if (chainId.startsWith('evm:')) {
-    const chainNumber = chainId.split(':')[1];
-    const chainMap: Record<string, string> = {
-      '11155111': 'Ethereum Sepolia',
-      '97': 'BNB Chain Testnet',
-      '5115': 'Citrea Testnet',
-      '10143': 'Monad Testnet',
-      '421614': 'Arbitrum Sepolia',
-      '84532': 'Base Sepolia',
-    };
-    return {
-      chainKey: `evm:${chainNumber}`,
-      chainDisplayName: chainMap[chainNumber] || `EVM Chain ${chainNumber}`,
-    };
-  } else if (chainId.startsWith('solana:')) {
-    return {
-      chainKey: 'solana:103',
-      chainDisplayName: 'Solana Testnet',
-    };
-  } else if (chainId === 'bitcoin') {
-    return {
-      chainKey: 'bitcoin',
-      chainDisplayName: 'Bitcoin Testnet',
-    };
-  }
-
   return {
     chainKey: chainId,
     chainDisplayName: chainId
