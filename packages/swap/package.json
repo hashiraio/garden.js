@@ -30,8 +30,8 @@
   },
   "dependencies": {
     "@gardenfi/core": "workspace:*",
-    "@gardenfi/orderbook": "workspace:*",
     "@gardenfi/garden-book": "0.2.2",
+    "@gardenfi/orderbook": "workspace:*",
     "@gardenfi/react-hooks": "workspace:*",
     "@gardenfi/utils": "workspace:*",
     "@number-flow/react": "^0.5.9",
