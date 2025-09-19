@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { ParsedAsset } from '../types/types';
 import { useSwapStore } from '../hooks/store';
+import { useAssetStore } from '../hooks/assetStore';
 import { GradientScroll } from '@gardenfi/garden-book';
 
 type Props = {
@@ -10,18 +11,19 @@ type Props = {
 };
 
 const AssetModal: React.FC<Props> = ({ open, onClose, onSelect }) => {
-  const { assets, filter, setFilter, selectedFrom, selectedTo, modalOpenFor } =
+  const { filter, setFilter, selectedFrom, selectedTo, modalOpenFor } =
     useSwapStore();
+  const { allAssets } = useAssetStore();
 
   const filtered = useMemo(() => {
     const f = filter.trim().toLowerCase();
-    if (!f) return assets;
-    return assets.filter(
+    if (!f) return allAssets;
+    return allAssets.filter(
       (a) =>
         a.chainDisplayName.toLowerCase().includes(f) ||
         a.symbol.toLowerCase().includes(f),
     );
-  }, [assets, filter]);
+  }, [allAssets, filter]);
 
   const options = useMemo(() => {
     const other = modalOpenFor === 'from' ? selectedTo : selectedFrom;

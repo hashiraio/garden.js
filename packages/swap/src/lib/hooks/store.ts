@@ -1,13 +1,10 @@
 import { create } from 'zustand';
-import { ApiAsset, ParsedAsset, toParsedAsset } from '../types/types';
+import { ParsedAsset } from '../types/types';
 import { Quote } from '@gardenfi/core';
 
 type SelectionSide = 'from' | 'to';
 
 type SwapState = {
-  assets: ParsedAsset[];
-  isLoading: boolean;
-  error: string | null;
   filter: string;
   modalOpenFor: SelectionSide | null;
   selectedFrom: ParsedAsset | null;
@@ -29,7 +26,6 @@ type SwapState = {
   openModal: (side: SelectionSide) => void;
   closeModal: () => void;
   selectAsset: (side: SelectionSide, asset: ParsedAsset) => void;
-  fetchAssets: () => Promise<void>;
   setFromAmount: (val: string) => void;
   setToAmount: (val: string) => void;
   setAmountInputSide: (side: SelectionSide) => void;
@@ -37,9 +33,6 @@ type SwapState = {
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
-  assets: [],
-  isLoading: false,
-  error: null,
   filter: '',
   modalOpenFor: null,
   selectedFrom: null,
@@ -78,22 +71,6 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       } else {
         set({ selectedTo: asset, modalOpenFor: null, filter: '' });
       }
-    }
-  },
-  fetchAssets: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const res = await fetch('https://testnet.api.garden.finance/v2/assets');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: { status: string; result: ApiAsset[] } = await res.json();
-      const parsed = data.result.map(toParsedAsset);
-      set({ assets: parsed, isLoading: false });
-      // Initialize defaults if empty
-      const s = parsed[0] ?? null;
-      const t = parsed.find((a) => a.id !== s?.id) ?? null;
-      set({ selectedFrom: s, selectedTo: t });
-    } catch (e: any) {
-      set({ error: e?.message ?? 'Failed to load assets', isLoading: false });
     }
   },
 

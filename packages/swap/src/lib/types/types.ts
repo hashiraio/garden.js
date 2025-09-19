@@ -10,19 +10,17 @@ export type ApiAsset = {
   price: number;
 };
 
+// Re-export new asset types
+export type {
+  ParsedAsset,
+  ParsedChainInfo,
+  ChainInfo,
+  ChainAsset,
+} from './assetTypes';
+
 export type TabKey = 'swap' | 'history';
 
-export type ParsedAsset = {
-  id: string;
-  chainKey: string; // e.g., "bitcoin_testnet" or "evm:11155111"
-  chainDisplayName: string; // e.g., "Bitcoin Testnet"
-  symbol: string; // e.g., "BTC"
-  iconUrl: string | null;
-  decimals: number;
-  priceUsd: number;
-  minAmountRaw: string;
-  maxAmountRaw: string;
-};
+// ParsedAsset is now imported from assetTypes.ts
 
 export function parseAssetId(assetId: string): {
   chainKey: string;
@@ -55,20 +53,7 @@ export function formatChainName(chainKey: string): string {
   return hasTestnet ? `${prettyBase} Testnet` : prettyBase;
 }
 
-export function toParsedAsset(a: ApiAsset): ParsedAsset {
-  const { chainKey, symbol } = parseAssetId(a.id);
-  return {
-    id: a.id,
-    chainKey,
-    chainDisplayName: formatChainName(chainKey),
-    symbol,
-    iconUrl: a.icon ?? null,
-    decimals: a.decimals,
-    priceUsd: a.price,
-    minAmountRaw: a.min_amount,
-    maxAmountRaw: a.max_amount,
-  };
-}
+// toParsedAsset function removed - now using new asset structure from assetTypes.ts
 
 function capitalizeWords(input: string): string {
   return input
