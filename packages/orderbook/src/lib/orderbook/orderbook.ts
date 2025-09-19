@@ -19,7 +19,7 @@ import {
 } from '@gardenfi/utils';
 import { ConstructUrl, discriminateOrderResponse } from '../utils';
 import { ParseOrderStatus } from '../orderStatus/orderStatus';
-import { BlockchainType } from '../asset';
+import { BlockchainType } from '../constants/asset.types';
 
 /**
  * A class that allows you to create and manage orders with the orderbook url.

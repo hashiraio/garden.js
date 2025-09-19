@@ -1,4 +1,4 @@
-import { isBitcoin, OrderStatus } from '../asset';
+import { isBitcoin, OrderStatus } from '../constants/asset';
 import { Order } from '../orderbook/orderbook.types';
 
 export const ParseOrderStatus = (order: Order) => {

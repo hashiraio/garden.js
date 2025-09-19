@@ -9,7 +9,7 @@ import {
   SolanaOrderResponse,
   SuiOrderResponse,
 } from './orderbook/orderbook.types';
-import { BlockchainType } from './asset';
+import { BlockchainType } from './constants/asset.types';
 
 /**
  * Constructs a URL with the given base URL, endpoint and parameters (query params)
