@@ -4,6 +4,7 @@ import { useSwapStore } from '../hooks/store';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
 import { InputAddress } from './InputAddress';
+import { FeesAndRateDetails } from './FeeAndRateDetails';
 
 export const InputAddressAndFeeRateDetails = () => {
   const { selectedFrom, selectedTo, fromAmount, toAmount } = useSwapStore();
@@ -58,7 +59,7 @@ export const InputAddressAndFeeRateDetails = () => {
           className="flex flex-col overflow-hidden"
         >
           <InputAddress />
-          {/* <FeesAndRateDetails /> */}
+          <FeesAndRateDetails />
         </motion.div>
       )}
     </AnimatePresence>

@@ -31,7 +31,11 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
 
   return (
     <>
-      <div className="mx-auto flex h-full w-[424px] rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-start gap-4 sm:max-w-[424px]">
+      <div
+        className={`mx-auto flex h-full w-[424px] rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-start gap-4 sm:max-w-[424px] ${
+          activeTab === 'history' ? 'max-h-[496px]' : ''
+        }`}
+      >
         <Navbar active={activeTab} onChange={setActiveTab} />
         <div className="flex-1 flex flex-col min-h-0 w-full">
           {activeTab === 'swap' && <CreateSwap />}

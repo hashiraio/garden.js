@@ -1,0 +1,227 @@
+import React, { useState, useRef, useMemo } from 'react';
+import {
+  GasStationIcon,
+  InfoIcon,
+  KeyboardDownIcon,
+  Typography,
+} from '@gardenfi/garden-book';
+
+// import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
+// import { Asset, isBitcoin, isSolana } from '@gardenfi/orderbook';
+import { motion, AnimatePresence } from 'framer-motion';
+// import { useSwapStore } from '../hooks/store';
+import { formatAmount } from '../utils/utils';
+import { delayedFadeAnimation } from '../constants/animations';
+import { ParsedAsset } from '../types/assetTypes';
+import { useSwapStore } from '../hooks/store';
+import { SwapSavingsAndAddresses } from './SwapSavingsAndAddresses';
+
+const RateDisplay = ({
+  selectedFrom,
+  selectedTo,
+  formattedRate,
+  formattedTokenPrice,
+  className = '',
+}: {
+  selectedFrom?: ParsedAsset | null;
+  selectedTo?: ParsedAsset | null;
+  formattedRate?: number;
+  formattedTokenPrice?: number;
+  className?: string;
+}) => (
+  <div className={`flex min-w-fit items-center gap-1`}>
+    <Typography
+      size="h5"
+      weight="regular"
+      className={`!text-nowrap ${className}`}
+    >
+      1 {selectedFrom?.symbol} ≈
+    </Typography>
+    <Typography
+      size="h5"
+      weight="regular"
+      className={`!text-nowrap ${className}`}
+    >
+      {formattedRate && `${formattedRate} ${selectedTo?.symbol}`}
+      {formattedTokenPrice && `$${formattedTokenPrice}`}
+    </Typography>
+  </div>
+);
+
+export const FeesAndRateDetails = () => {
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+  const [, setIsHovered] = useState(false);
+  const targetRef = useRef<HTMLDivElement>(null);
+
+  const formattedTokenPrice = useMemo(() => formatAmount(2000, 0, 2), []);
+
+  const {
+    selectedFrom,
+    selectedTo,
+    // rate,
+    // networkFees,
+    // showComparisonHandler,
+    // fiatTokenPrices,
+  } = useSwapStore();
+  //   //   const { account: btcAddress } = useBitcoinWallet();
+  //   //   const { solanaAddress } = useSolanaWallet();
+  //   //   const { address } = useEVMWallet();
+
+  //   const isBitcoinChains = selectedTo?.symbol.includes(BTC.symbol);
+  //   const formattedRate = useMemo(
+  //     () => formatAmount(rate, 0, isBitcoinChains ? 7 : 3),
+  //     [isBitcoinChains, rate],
+  //   );
+
+  //   const formattedTokenPrice = useMemo(
+  //     () => formatAmount(fiatTokenPrices.input, 0, 2),
+  //     [fiatTokenPrices.input],
+  //   );
+
+  //   const refundAddress = useMemo(
+  //     () =>
+  //       selectedFrom
+  //         ? isBitcoin(selectedFrom.chain)
+  //           ? btcAddress
+  //           : isSolana(selectedFrom.chain)
+  //           ? solanaAddress
+  //           : address
+  //         : undefined,
+  //     [selectedFrom, btcAddress, solanaAddress, address],
+  //   );
+
+  //   const receiveAddress = useMemo(
+  //     () =>
+  //       selectedTo
+  //         ? isBitcoin(selectedTo.chain)
+  //           ? btcAddress
+  //           : isSolana(selectedTo.chain)
+  //           ? solanaAddress
+  //           : address
+  //         : undefined,
+  //     [selectedTo, btcAddress, solanaAddress, address],
+  //   );
+
+  return (
+    <div className="flex flex-col rounded-2xl bg-white/50 pb-4 transition-all duration-200">
+      <div className="flex w-full items-center justify-between rounded-2xl px-4 pt-4">
+        <div className="relative flex w-full items-center justify-start gap-1">
+          <AnimatePresence mode="wait">
+            {isDetailsExpanded ? (
+              <motion.div
+                key="expanded"
+                className="w-fit"
+                {...delayedFadeAnimation}
+              >
+                <div className="flex items-center gap-1">
+                  <Typography
+                    size="h5"
+                    weight="regular"
+                    className="!text-mid-grey"
+                  >
+                    Rate
+                  </Typography>
+                  <span
+                    ref={targetRef}
+                    className="inline-block cursor-pointer"
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                  >
+                    <InfoIcon className="h-3 w-3 !fill-mid-grey" />
+                    {/* {isHovered && selectedFrom && selectedTo && (
+                      <TooltipWrapper targetRef={targetRef}>
+                        <RateDisplay
+                          selectedFrom={selectedFrom}
+                          selectedTo={selectedTo}
+                          formattedRate={formattedRate}
+                        />
+                      </TooltipWrapper>
+                    )} */}
+                  </span>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="collapsed"
+                className="w-fit"
+                {...delayedFadeAnimation}
+              >
+                <RateDisplay
+                  selectedFrom={selectedFrom}
+                  selectedTo={selectedTo}
+                  formattedTokenPrice={formattedTokenPrice}
+                  className="!text-mid-grey"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        <div className="flex w-full items-center justify-end gap-1">
+          <AnimatePresence mode="wait">
+            {isDetailsExpanded ? (
+              <motion.div
+                key="expanded"
+                className="w-fit"
+                {...delayedFadeAnimation}
+              >
+                <RateDisplay
+                  selectedFrom={selectedFrom}
+                  selectedTo={selectedTo}
+                  formattedTokenPrice={formattedTokenPrice}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="collapsed"
+                className="w-fit"
+                {...delayedFadeAnimation}
+              >
+                <div className="flex min-w-fit items-center gap-1">
+                  <GasStationIcon className="h-3 w-3" />
+                  <Typography
+                    size="h5"
+                    weight="regular"
+                    className="!text-nowrap"
+                  >
+                    {/* {networkFees === 0 ? ( */}
+                    Free
+                    {/* ) : (
+                      <span className="flex items-center">
+                        ${formatAmount(200, 0, 2)}
+                      </span>
+                    )} */}
+                  </Typography>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <motion.div
+          initial={{ width: 0, scale: 0, opacity: 0 }}
+          animate={{ width: 'auto', scale: 1, opacity: 1 }}
+          exit={{ width: 0, scale: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="pl-1"
+        >
+          <KeyboardDownIcon
+            className={`h-4 w-4 cursor-pointer px-1 transition-transform duration-300 ${
+              isDetailsExpanded ? 'rotate-180' : ''
+            }`}
+            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+          />
+        </motion.div>
+      </div>
+      <AnimatePresence>
+        {isDetailsExpanded && (
+          <SwapSavingsAndAddresses
+            refundAddress={'jhgvfb'}
+            receiveAddress={'nbvcx'}
+            showComparison={() => {}}
+            networkFeesValue={formatAmount(2000, 0, 2)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
