@@ -14,7 +14,6 @@ type TransactionProps = {
   status?: OrderStatus;
   isLast: boolean;
   isFirst: boolean;
-  onClick?: () => void;
 };
 
 enum StatusLabel {
@@ -52,7 +51,6 @@ export const TransactionRow: FC<TransactionProps> = ({
   order,
   status,
   isLast,
-  onClick,
   isFirst,
 }) => {
   const { source_swap, destination_swap } = order;
@@ -96,18 +94,13 @@ export const TransactionRow: FC<TransactionProps> = ({
     [order.created_at],
   );
 
-  const handleTransactionClick = async () => {
-    if (statusLabel !== StatusLabel.Expired && status) {
-      onClick?.();
+  const handleTransactionClick = () => {
+    if (statusLabel !== StatusLabel.Expired && status && order.order_id) {
+      window.open(
+        `https://testnet-explorer.garden.finance/orders/${order.order_id}`,
+        '_blank',
+      );
     }
-
-    // if (!isBitcoin(order.source_swap.chain) && status === OrderStatus.Matched) {
-    //   if (!evmInitiate) return;
-    //   const res = await evmInitiate(order);
-    //   if (res.error) {
-    //     console.error("failed to initiate swap ❌", res.error);
-    //   }
-    // }
   };
 
   if (!sendAsset || !receiveAsset) return null;
@@ -126,8 +119,8 @@ export const TransactionRow: FC<TransactionProps> = ({
         <div className={`flex flex-col gap-1`}>
           {sendAmount && receiveAmount && (
             <SwapInfo
-              sendAsset={sendAsset as any}
-              receiveAsset={receiveAsset as any}
+              sendAsset={sendAsset}
+              receiveAsset={receiveAsset}
               sendAmount={sendAmount}
               receiveAmount={receiveAmount}
             />

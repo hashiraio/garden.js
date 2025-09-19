@@ -4,13 +4,13 @@ import {
   TokenNetworkLogos,
   Typography,
 } from '@gardenfi/garden-book';
-import { Asset } from '@gardenfi/orderbook';
 import { FC } from 'react';
 import { useAssetStore } from '../../hooks/assetStore';
+import { ParsedAsset } from '../../types/assetTypes';
 
 type SwapInfoProps = {
-  sendAsset: Asset;
-  receiveAsset: Asset;
+  sendAsset: ParsedAsset;
+  receiveAsset: ParsedAsset;
   sendAmount: string | number;
   receiveAmount: string | number;
   equalSplit?: boolean;
@@ -25,10 +25,10 @@ export const SwapInfo: FC<SwapInfoProps> = ({
 }) => {
   const { chains } = useAssetStore();
   const sendChain = chains.find(
-    (chain) => chain.chainDisplayName === sendAsset.chain,
+    (chain) => chain.chainDisplayName === sendAsset.chainDisplayName,
   );
   const receiveChain = chains.find(
-    (chain) => chain.chainDisplayName === receiveAsset.chain,
+    (chain) => chain.chainDisplayName === receiveAsset.chainDisplayName,
   );
 
   return (
@@ -42,9 +42,9 @@ export const SwapInfo: FC<SwapInfoProps> = ({
           {sendAmount}
         </Typography>
         <TokenNetworkLogos
-          tokenLogo={sendAsset.logo}
+          tokenLogo={sendAsset.iconUrl}
           chainLogo={
-            sendChain?.iconUrl === sendAsset.logo
+            sendChain?.iconUrl === sendAsset.iconUrl
               ? ''
               : sendChain?.iconUrl ?? ''
           }
@@ -60,7 +60,7 @@ export const SwapInfo: FC<SwapInfoProps> = ({
           {receiveAmount}
         </Typography>
         <TokenNetworkLogos
-          tokenLogo={receiveAsset.logo}
+          tokenLogo={receiveAsset.iconUrl}
           chainLogo={receiveChain?.iconUrl ?? ''}
         />
       </div>

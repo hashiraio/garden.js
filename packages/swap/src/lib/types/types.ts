@@ -1,3 +1,5 @@
+import { ChainAsset } from '@gardenfi/orderbook';
+
 export type ApiAsset = {
   id: string;
   chain: string;
@@ -11,12 +13,7 @@ export type ApiAsset = {
 };
 
 // Re-export new asset types
-export type {
-  ParsedAsset,
-  ParsedChainInfo,
-  ChainInfo,
-  ChainAsset,
-} from './assetTypes';
+export type { ParsedAsset, ParsedChainInfo, ChainInfo } from './assetTypes';
 
 export type TabKey = 'swap' | 'history';
 
