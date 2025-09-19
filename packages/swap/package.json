@@ -30,8 +30,8 @@
   },
   "dependencies": {
     "@gardenfi/core": "workspace:*",
-    "@gardenfi/orderbook": "workspace:*",
     "@gardenfi/garden-book": "0.2.2",
+    "@gardenfi/orderbook": "workspace:*",
     "@gardenfi/react-hooks": "workspace:*",
     "@gardenfi/utils": "workspace:*",
     "@number-flow/react": "^0.5.9",
@@ -42,13 +42,16 @@
   },
   "devDependencies": {
     "@types/react": "^18",
+    "@vitejs/plugin-react": "^5.0.3",
     "autoprefixer": "^10.4.16",
+    "motion": "^12.23.15",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
     "vite-plugin-dts": "^3.7.3",
     "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-wasm": "^3.5.0",
     "vitest": "^1.6.0"
   },
   "sideEffects": [

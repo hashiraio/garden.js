@@ -20,7 +20,9 @@ export const getDayDifference = (date: string) => {
 };
 
 export const getAssetFromSwap = (swap: Swap, assets: ParsedAsset[] | null) => {
-  return assets && assets.find((asset) => asset.id === swap.asset);
+  return (
+    assets && assets.find((asset) => asset.asset.toString() === swap.asset)
+  );
 };
 
 export const formatAmount = (

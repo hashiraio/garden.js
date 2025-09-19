@@ -21,7 +21,7 @@ const tabs: Array<{
   { key: 'history', label: 'History', Icon: BlogIcon },
 ];
 
-const Navbar: React.FC<NavbarProps> = ({
+export const Navbar: React.FC<NavbarProps> = ({
   active = 'swap',
   onChange,
   className,
@@ -42,8 +42,8 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <div className={`w-full flex items-center px-2 ${className ?? ''}`}>
-      <div className="flex items-center gap-2 text-lg font-semibold">
-        <Typography color="#473C75">
+      <div className="flex items-center gap-2">
+        <Typography size="h4" color="#473C75" weight="medium">
           {activeTab && <>{activeTab.label}</>}
         </Typography>
       </div>
@@ -65,15 +65,13 @@ const Navbar: React.FC<NavbarProps> = ({
             return (
               <button
                 key={key}
-                className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-[#473C75] h-full`}
+                className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-dark-grey h-full`}
                 onClick={() => handleSelect(key)}
                 disabled={isActive}
                 type="button"
                 style={{ position: 'relative' }}
               >
-                <span className="flex items-center gap-2 text-sm font-medium relative z-10 text-[#473C75]">
-                  <Icon className="h-4 w-4 text-[#473C75] " color="#473C75" />
-                </span>
+                <Icon className="h-4 w-4 " />
               </button>
             );
           })}
@@ -82,5 +80,3 @@ const Navbar: React.FC<NavbarProps> = ({
     </div>
   );
 };
-
-export default Navbar;

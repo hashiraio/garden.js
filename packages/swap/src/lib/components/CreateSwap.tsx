@@ -5,6 +5,7 @@ import { Button, ExchangeIcon } from '@gardenfi/garden-book';
 import { useSwapStore } from '../hooks/store';
 import { SwapInput } from './SwapInput';
 import { IOType } from '../constants/constants';
+import { InputAddressAndFeeRateDetails } from './InputAddressAndFeeRateDetails';
 
 const CreateSwap = () => {
   const {
@@ -142,6 +143,8 @@ const CreateSwap = () => {
           />
         </div>
       </div>
+
+      <InputAddressAndFeeRateDetails />
 
       <Button
         className="w-full  transition-colors duration-500"
