@@ -9,7 +9,7 @@ import {
 import { FC, useMemo, useRef, ChangeEvent, useState, useEffect } from 'react';
 import { useSwapStore } from '../hooks/store';
 import { useAssetStore } from '../hooks/assetStore';
-import { Asset } from '@gardenfi/orderbook';
+import { ParsedAsset } from '../types/assetTypes';
 import NumberFlow from '@number-flow/react';
 import clsx from 'clsx';
 import { formatAmount } from '../utils/utils';
@@ -19,7 +19,7 @@ type SwapInputProps = {
   type: IOType;
   amount: string;
   onChange: (amount: string) => void;
-  asset?: Asset;
+  asset?: ParsedAsset;
   loading: boolean;
   price: string;
   error?: ErrorFormat;
@@ -43,15 +43,15 @@ export const SwapInput: FC<SwapInputProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [showLoadingOpacity, setShowLoadingOpacity] = useState(false);
 
-  const { openModal } = useSwapStore();
-  const { getChainByKey } = useAssetStore();
+  const { openAssetModal, openModal } = useSwapStore();
+  const { chains } = useAssetStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   const network = useMemo(() => {
     if (!asset) return;
-    return getChainByKey(asset.chain);
-  }, [asset, getChainByKey]);
+    return chains?.find((chain) => chain.chainId === asset.chainId);
+  }, [asset, chains]);
 
   const label = type === IOType.input ? 'Send' : 'Receive';
 
@@ -103,6 +103,7 @@ export const SwapInput: FC<SwapInputProps> = ({
 
   const handleOpenAssetSelector = () => {
     openModal(type === IOType.input ? 'from' : 'to');
+    openAssetModal();
   };
 
   useEffect(() => {
@@ -260,7 +261,7 @@ export const SwapInput: FC<SwapInputProps> = ({
           {asset ? (
             <TokenInfo
               symbol={asset.symbol}
-              tokenLogo={asset.logo || ''}
+              tokenLogo={asset.iconUrl || ''}
               chainLogo={network?.iconUrl}
               onClick={handleOpenAssetSelector}
             />

@@ -2,10 +2,11 @@ import { create } from 'zustand';
 import {
   ChainsApiResponse,
   ChainInfo,
-  ChainAsset,
+  Asset,
   ParsedChainInfo,
   ParsedAsset,
 } from '../types/assetTypes';
+import { ChainAsset } from '@gardenfi/orderbook';
 
 type AssetStoreState = {
   chains: ParsedChainInfo[];
@@ -38,13 +39,12 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
 };
 
 // Helper function to parse asset
-const parseAsset = (asset: ChainAsset): ParsedAsset => {
-  const { chainKey, chainDisplayName } = parseChainId(asset.chain);
+const parseAsset = (asset: Asset): ParsedAsset => {
+  const { chainDisplayName } = parseChainId(asset.chain);
   const { symbol } = parseAssetId(asset.id);
 
   return {
-    id: asset.id,
-    chainKey,
+    asset: ChainAsset.from(asset.id),
     chainDisplayName,
     chainId: asset.chain,
     symbol,
@@ -133,7 +133,8 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
 
       const parsedChains = data.result.map(parseChainInfo);
       const allAssets = parsedChains.flatMap((chain) => chain.assets);
-
+      console.log('allAssets', allAssets);
+      console.log('parsedChains', parsedChains);
       set({
         chains: parsedChains,
         allAssets,
@@ -161,6 +162,6 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
 
   getAssetById: (assetId: string) => {
     const { allAssets } = get();
-    return allAssets.find((asset) => asset.id === assetId);
+    return allAssets.find((asset) => asset.asset.toString() === assetId);
   },
 }));

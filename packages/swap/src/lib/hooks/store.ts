@@ -7,6 +7,7 @@ type SelectionSide = 'from' | 'to';
 type SwapState = {
   filter: string;
   modalOpenFor: SelectionSide | null;
+  isAssetModalOpen: boolean;
   selectedFrom: ParsedAsset | null;
   selectedTo: ParsedAsset | null;
   fromAmount: string;
@@ -25,16 +26,20 @@ type SwapState = {
   setFilter: (filter: string) => void;
   openModal: (side: SelectionSide) => void;
   closeModal: () => void;
+  openAssetModal: () => void;
+  closeAssetModal: () => void;
   selectAsset: (side: SelectionSide, asset: ParsedAsset) => void;
   setFromAmount: (val: string) => void;
   setToAmount: (val: string) => void;
   setAmountInputSide: (side: SelectionSide) => void;
   fetchQuote: (side: SelectionSide) => Promise<void>;
+  swapAssets: () => void;
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
   filter: '',
   modalOpenFor: null,
+  isAssetModalOpen: false,
   selectedFrom: null,
   selectedTo: null,
   fromAmount: '',
@@ -46,30 +51,44 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   setFilter: (filter) => set({ filter }),
   openModal: (side) => set({ modalOpenFor: side }),
   closeModal: () => set({ modalOpenFor: null, filter: '' }),
+  openAssetModal: () => set({ isAssetModalOpen: true }),
+  closeAssetModal: () => set({ isAssetModalOpen: false, filter: '' }),
   selectAsset: (side, asset) => {
     const { selectedFrom, selectedTo } = get();
     if (side === 'from') {
       // If same as to, swap them
-      if (selectedTo && selectedTo.id === asset.id) {
+      if (selectedTo && selectedTo.asset === asset.asset) {
         set({
           selectedFrom: selectedTo,
           selectedTo: asset,
           modalOpenFor: null,
+          isAssetModalOpen: false,
           filter: '',
         });
       } else {
-        set({ selectedFrom: asset, modalOpenFor: null, filter: '' });
+        set({
+          selectedFrom: asset,
+          modalOpenFor: null,
+          isAssetModalOpen: false,
+          filter: '',
+        });
       }
     } else {
-      if (selectedFrom && selectedFrom.id === asset.id) {
+      if (selectedFrom && selectedFrom.asset === asset.asset) {
         set({
           selectedTo: selectedFrom,
           selectedFrom: asset,
           modalOpenFor: null,
+          isAssetModalOpen: false,
           filter: '',
         });
       } else {
-        set({ selectedTo: asset, modalOpenFor: null, filter: '' });
+        set({
+          selectedTo: asset,
+          modalOpenFor: null,
+          isAssetModalOpen: false,
+          filter: '',
+        });
       }
     }
   },
@@ -92,8 +111,8 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     set({ isQuoting: true, quoteError: null });
     try {
       const res = await quote.getQuote(
-        selectedFrom.id,
-        selectedTo.id,
+        selectedFrom.asset.toString(),
+        selectedTo.asset.toString(),
         amountNum,
         isExactOut,
       );
@@ -125,6 +144,13 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     } finally {
       set({ isQuoting: false });
     }
+  },
+  swapAssets: () => {
+    const { selectedFrom, selectedTo } = get();
+    set({
+      selectedFrom: selectedTo,
+      selectedTo: selectedFrom,
+    });
   },
 }));
 
