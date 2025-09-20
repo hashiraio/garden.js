@@ -2,18 +2,17 @@ import { create } from 'zustand';
 import {
   ChainsApiResponse,
   ChainInfo,
-  Asset,
+  AssetFromResponse,
   ParsedChainInfo,
-  ParsedAsset,
 } from '../types/assetTypes';
-import { ChainAsset } from '@gardenfi/orderbook';
+import { Asset, Chain } from '@gardenfi/orderbook';
 import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
 
 type AssetStoreState = {
   filter: string;
   chains: ParsedChainInfo[];
-  allAssets: ParsedAsset[];
+  allAssets: Asset[];
   isLoading: boolean;
   error: string | null;
   currentNetwork: Network;
@@ -25,20 +24,17 @@ type AssetStoreState = {
   closeModal: () => void;
   setFilter: (filter: string) => void;
   fetchAssets: (network?: Network) => Promise<void>;
-  getAssetsByChain: (chainKey: string) => ParsedAsset[];
-  getChainByKey: (chainKey: string) => ParsedChainInfo | undefined;
-  getAssetById: (assetId: string) => ParsedAsset | undefined;
   setCurrentNetwork: (network: Network) => void;
 };
 
 // Helper function to parse chain info
 const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
-  const { chainName } = parseChainName(chainInfo.chain);
+  const { chain, chainName } = parseChainName(chainInfo.chain);
 
   return {
     chainName,
     chainKey: chainInfo.chain,
-    chainId: chainInfo.id,
+    chain: chain,
     iconUrl: chainInfo.icon,
     explorerUrl: chainInfo.explorer_url,
     confirmationTarget: chainInfo.confirmation_target,
@@ -51,39 +47,32 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
 };
 
 // Helper function to parse asset, inheriting chain display name and id from parent
-const parseAsset = (asset: Asset, parent: ChainInfo): ParsedAsset => {
-  const { chainName } = parseChainName(parent.chain);
+const parseAsset = (asset: AssetFromResponse, parent: ChainInfo): Asset => {
+  const { chain } = parseChainName(parent.chain);
   const { symbol, name } = parseAssetId(asset.id);
 
   return {
-    asset: ChainAsset.from(asset.id),
-    assetName: name,
-    chainName,
-    chainId: parent.id,
-    symbol,
-    iconUrl: asset.icon,
+    name: name,
+    symbol: symbol,
+    chain: chain,
     decimals: asset.decimals,
-    priceUsd: asset.price,
-    minAmountRaw: asset.min_amount,
-    maxAmountRaw: asset.max_amount,
-    htlcAddress: asset.htlc?.address || null,
-    htlcSchema: asset.htlc?.schema || null,
-    tokenAddress: asset.token?.address || null,
-    tokenSchema: asset.token?.schema || null,
+    tokenAddress: asset.token?.address || '',
+    atomicSwapAddress: asset.htlc?.address || '',
+    logo: asset.icon,
   };
 };
 
-// Helper function to parse chain ID
-const parseChainName = (chainId: string): { chainName: string } => {
+const parseChainName = (
+  chainId: string,
+): { chain: Chain; chainName: string } => {
   return {
+    chain: chainId.split(':')[0] as Chain,
     chainName: chainId
       .replace(/[_-]/g, ' ')
       .replace(/\b\w/g, (l) => l.toUpperCase()),
   };
 };
 
-// Helper function to parse asset ID
-// Symbol to name mapping
 const SYMBOL_NAME_MAP: Record<string, string> = {
   wbtc: 'Wrapped Bitcoin',
   sol: 'Solana',
@@ -150,22 +139,6 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
         isLoading: false,
       });
     }
-  },
-
-  getAssetsByChain: (chainKey: string) => {
-    const { chains } = get();
-    const chain = chains.find((c) => c.chainKey === chainKey);
-    return chain?.assets || [];
-  },
-
-  getChainByKey: (chainKey: string) => {
-    const { chains } = get();
-    return chains.find((c) => c.chainKey === chainKey);
-  },
-
-  getAssetById: (assetId: string) => {
-    const { allAssets } = get();
-    return allAssets.find((asset) => asset.asset.toString() === assetId);
   },
 
   setCurrentNetwork: (network: Network) => {

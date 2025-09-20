@@ -157,7 +157,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       const btcAsset = assets.find(
         (asset) =>
           asset.symbol === 'BTC' &&
-          asset.chainName.toLowerCase().includes('bitcoin'),
+          asset.assetName.toLowerCase().includes('bitcoin'),
       );
       if (btcAsset) {
         set({ inputAsset: btcAsset });

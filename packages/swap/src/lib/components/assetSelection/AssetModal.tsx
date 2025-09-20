@@ -76,9 +76,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
 
     // Filter by chain if selected
     if (selectedChain) {
-      assets = assets.filter(
-        (asset) => asset.chainId === selectedChain.chainId,
-      );
+      assets = assets.filter((asset) => asset.chain === selectedChain.chain);
     }
 
     // Filter by search input
@@ -87,7 +85,8 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
       assets = assets.filter(
         (asset) =>
           asset.symbol.toLowerCase().includes(searchLower) ||
-          asset.chainName.toLowerCase().includes(searchLower),
+          asset.chain.toLowerCase().includes(searchLower) ||
+          asset.name.toLowerCase().includes(searchLower),
       );
     }
 
@@ -95,7 +94,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     const otherAsset = IOType.input ? outputAsset : inputAsset;
     if (otherAsset) {
       assets = assets.filter(
-        (asset) => asset.asset.toString() !== otherAsset.asset.toString(),
+        (asset) => asset.toString() !== otherAsset.toString(),
       );
     }
 

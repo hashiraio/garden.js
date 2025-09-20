@@ -1,6 +1,6 @@
-import { ChainAsset } from '@gardenfi/orderbook';
+import { Asset, Chain, ChainAsset } from '@gardenfi/orderbook';
 
-export interface Asset {
+export interface AssetFromResponse {
   id: string;
   chain: string;
   icon: string;
@@ -28,7 +28,7 @@ export interface ChainInfo {
   destination_timelock: string;
   supported_htlc_schemas: string[];
   supported_token_schemas: string[];
-  assets: Asset[];
+  assets: AssetFromResponse[];
 }
 
 export interface ChainsApiResponse {
@@ -40,7 +40,7 @@ export interface ChainsApiResponse {
 export interface ParsedChainInfo {
   chainKey: string;
   chainName: string;
-  chainId: string;
+  chain: Chain;
   iconUrl: string;
   explorerUrl: string;
   confirmationTarget: number;
@@ -48,7 +48,7 @@ export interface ParsedChainInfo {
   destinationTimelock: number;
   supportedHtlcSchemas: string[];
   supportedTokenSchemas: string[];
-  assets: ParsedAsset[];
+  assets: Asset[];
 }
 
 export interface ParsedAsset {
