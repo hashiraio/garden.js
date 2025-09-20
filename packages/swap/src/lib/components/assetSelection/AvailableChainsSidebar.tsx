@@ -61,14 +61,10 @@ export const AvailableChainsSidebar = ({
 
   const filteredChains = useMemo(() => {
     if (!input)
-      return chains.sort((a, b) =>
-        a.chainDisplayName.localeCompare(b.chainDisplayName),
-      );
+      return chains.sort((a, b) => a.chainName.localeCompare(b.chainName));
     return chains
-      .filter((c) =>
-        c.chainDisplayName.toLowerCase().includes(input.toLowerCase()),
-      )
-      .sort((a, b) => a.chainDisplayName.localeCompare(b.chainDisplayName));
+      .filter((c) => c.chainName.toLowerCase().includes(input.toLowerCase()))
+      .sort((a, b) => a.chainName.localeCompare(b.chainName));
   }, [chains, input]);
 
   const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
@@ -125,7 +121,7 @@ export const AvailableChainsSidebar = ({
                         <div className="flex w-full items-center gap-4 px-[14px] py-2">
                           <img
                             src={c.iconUrl}
-                            alt={c.chainDisplayName}
+                            alt={c.chainName}
                             className={`h-5 w-5 rounded-full`}
                           />
                           <Typography
@@ -133,7 +129,7 @@ export const AvailableChainsSidebar = ({
                             breakpoints={{ sm: 'h4' }}
                             weight="regular"
                           >
-                            {c.chainDisplayName}
+                            {c.chainName}
                           </Typography>
                         </div>
                       </div>

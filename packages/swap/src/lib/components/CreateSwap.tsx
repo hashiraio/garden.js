@@ -13,8 +13,8 @@ const CreateSwap = () => {
   const {
     isQuoting,
     lastQuote,
-    selectedFrom,
-    selectedTo,
+    inputAsset,
+    outputAsset,
     fromAmount,
     toAmount,
     setFromAmount,
@@ -31,11 +31,11 @@ const CreateSwap = () => {
 
   const isBitcoinSwap = useMemo(() => {
     return !!(
-      selectedTo &&
-      selectedFrom &&
-      (isBitcoin(selectedTo.asset.chain) || isBitcoin(selectedFrom.asset.chain))
+      outputAsset &&
+      inputAsset &&
+      (isBitcoin(outputAsset.asset.chain) || isBitcoin(inputAsset.asset.chain))
     );
-  }, [selectedTo, selectedFrom]);
+  }, [outputAsset, inputAsset]);
 
   const isValidBitcoinAddress = useMemo(() => {
     if (!isBitcoinSwap) return true;
@@ -47,9 +47,9 @@ const CreateSwap = () => {
   const canSwap = useMemo(() => {
     return (
       typeof swap === 'function' &&
-      !!selectedFrom &&
-      !!selectedTo &&
-      selectedFrom.asset.toString() !== selectedTo.asset.toString() &&
+      !!inputAsset &&
+      !!outputAsset &&
+      inputAsset.asset.toString() !== outputAsset.asset.toString() &&
       !isQuoting &&
       !isSwapping &&
       ((amountInputSide === IOType.input && !!fromAmount) ||
@@ -58,8 +58,8 @@ const CreateSwap = () => {
     );
   }, [
     swap,
-    selectedFrom,
-    selectedTo,
+    inputAsset,
+    outputAsset,
     isQuoting,
     isSwapping,
     amountInputSide,
@@ -82,8 +82,8 @@ const CreateSwap = () => {
     setSwapError(null);
     if (typeof swap !== 'function')
       return setSwapError('Garden context unavailable');
-    if (!selectedFrom || !selectedTo) return setSwapError('Select both assets');
-    if (selectedFrom.asset.toString() === selectedTo.asset.toString())
+    if (!inputAsset || !outputAsset) return setSwapError('Select both assets');
+    if (inputAsset.asset.toString() === outputAsset.asset.toString())
       return setSwapError('Assets must be different');
     if (isQuoting) return setSwapError('Please wait, fetching quote…');
     const sendAmount = fromAmount;
@@ -94,8 +94,8 @@ const CreateSwap = () => {
     try {
       setIsSwapping(true);
       const payload: SwapParams = {
-        fromAsset: selectedFrom.asset.toString(),
-        toAsset: selectedTo.asset.toString(),
+        fromAsset: inputAsset.asset.toString(),
+        toAsset: outputAsset.asset.toString(),
         receiveAmount: lastQuote?.isExactOut
           ? lastQuote?.sourceAmount
           : lastQuote?.destinationAmount ?? '',
@@ -126,11 +126,11 @@ const CreateSwap = () => {
               setAmountInputSide(IOType.input);
               setFromAmount(amount);
             }}
-            asset={selectedFrom || undefined}
+            asset={inputAsset || undefined}
             loading={isQuoting}
             price={
-              selectedFrom
-                ? (Number(fromAmount) * selectedFrom.priceUsd).toString()
+              inputAsset
+                ? (Number(fromAmount) * inputAsset.priceUsd).toString()
                 : '0'
             }
             error={swapError as any}
@@ -153,11 +153,11 @@ const CreateSwap = () => {
               setAmountInputSide(IOType.output);
               setToAmount(amount);
             }}
-            asset={selectedTo || undefined}
+            asset={outputAsset || undefined}
             loading={isQuoting}
             price={
-              selectedTo
-                ? (Number(toAmount) * selectedTo.priceUsd).toString()
+              outputAsset
+                ? (Number(toAmount) * outputAsset.priceUsd).toString()
                 : '0'
             }
             error={undefined}

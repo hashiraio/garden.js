@@ -33,11 +33,11 @@ type AssetStoreState = {
 
 // Helper function to parse chain info
 const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
-  const { chainKey, chainDisplayName } = parseChainId(chainInfo.chain);
+  const { chainName } = parseChainName(chainInfo.chain);
 
   return {
-    chainKey,
-    chainDisplayName,
+    chainName,
+    chainKey: chainInfo.chain,
     chainId: chainInfo.id,
     iconUrl: chainInfo.icon,
     explorerUrl: chainInfo.explorer_url,
@@ -52,12 +52,13 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
 
 // Helper function to parse asset, inheriting chain display name and id from parent
 const parseAsset = (asset: Asset, parent: ChainInfo): ParsedAsset => {
-  const { chainDisplayName } = parseChainId(parent.chain);
-  const { symbol } = parseAssetId(asset.id);
+  const { chainName } = parseChainName(parent.chain);
+  const { symbol, name } = parseAssetId(asset.id);
 
   return {
     asset: ChainAsset.from(asset.id),
-    chainDisplayName,
+    assetName: name,
+    chainName,
     chainId: parent.id,
     symbol,
     iconUrl: asset.icon,
@@ -73,25 +74,37 @@ const parseAsset = (asset: Asset, parent: ChainInfo): ParsedAsset => {
 };
 
 // Helper function to parse chain ID
-const parseChainId = (
-  chainId: string,
-): { chainKey: string; chainDisplayName: string } => {
+const parseChainName = (chainId: string): { chainName: string } => {
   return {
-    chainKey: chainId,
-    chainDisplayName: chainId
+    chainName: chainId
       .replace(/[_-]/g, ' ')
       .replace(/\b\w/g, (l) => l.toUpperCase()),
   };
 };
 
 // Helper function to parse asset ID
-const parseAssetId = (assetId: string): { symbol: string } => {
+// Symbol to name mapping
+const SYMBOL_NAME_MAP: Record<string, string> = {
+  wbtc: 'Wrapped Bitcoin',
+  sol: 'Solana',
+  usdc: 'USD Coin',
+  usdt: 'Tether USD',
+  btc: 'Bitcoin',
+  cbbtc: 'Coinbase Wrapped Bitcoin',
+  wcbtc: 'Wrapped Citrea Bitcoin',
+};
+
+const parseAssetId = (assetId: string): { symbol: string; name: string } => {
   const parts = assetId.split(':');
+  let symbol: string;
   if (parts.length < 2) {
-    return { symbol: assetId.toUpperCase() };
+    symbol = assetId.toUpperCase();
+  } else {
+    symbol = parts[parts.length - 1].toUpperCase();
   }
-  const symbol = parts[parts.length - 1].toUpperCase();
-  return { symbol };
+  // Lookup in map (case-insensitive)
+  const name = SYMBOL_NAME_MAP[symbol.toLowerCase()] ?? symbol;
+  return { symbol, name };
 };
 
 export const useAssetStore = create<AssetStoreState>((set, get) => ({

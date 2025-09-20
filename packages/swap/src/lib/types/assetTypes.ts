@@ -39,7 +39,7 @@ export interface ChainsApiResponse {
 // Parsed types for internal use
 export interface ParsedChainInfo {
   chainKey: string;
-  chainDisplayName: string;
+  chainName: string;
   chainId: string;
   iconUrl: string;
   explorerUrl: string;
@@ -53,7 +53,8 @@ export interface ParsedChainInfo {
 
 export interface ParsedAsset {
   asset: ChainAsset;
-  chainDisplayName: string;
+  assetName: string;
+  chainName: string;
   chainId: string;
   symbol: string;
   iconUrl: string;

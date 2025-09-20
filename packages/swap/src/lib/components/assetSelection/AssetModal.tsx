@@ -14,13 +14,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
 import { formatAmount } from '../../utils/utils';
+import { IOType } from '../../constants/constants';
 
 type Props = {
   onSelect: (asset: ParsedAsset) => void;
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
-  const { selectedFrom, selectedTo, currentNetwork } = useSwapStore();
+  const { inputAsset, outputAsset, currentNetwork } = useSwapStore();
   const {
     allAssets,
     chains,
@@ -57,10 +58,10 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
 
     const sortedChainsByOrder = [...chains].sort((a, b) => {
       const indexA = order.findIndex((name) =>
-        a.chainDisplayName.toLowerCase().includes(name),
+        a.chainName.toLowerCase().includes(name),
       );
       const indexB = order.findIndex((name) =>
-        b.chainDisplayName.toLowerCase().includes(name),
+        b.chainName.toLowerCase().includes(name),
       );
       if (indexA === -1) return 1;
       if (indexB === -1) return -1;
@@ -86,12 +87,12 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
       assets = assets.filter(
         (asset) =>
           asset.symbol.toLowerCase().includes(searchLower) ||
-          asset.chainDisplayName.toLowerCase().includes(searchLower),
+          asset.chainName.toLowerCase().includes(searchLower),
       );
     }
 
     // Exclude the other selected asset
-    const otherAsset = modalOpenFor === 'from' ? selectedTo : selectedFrom;
+    const otherAsset = IOType.input ? outputAsset : inputAsset;
     if (otherAsset) {
       assets = assets.filter(
         (asset) => asset.asset.toString() !== otherAsset.asset.toString(),
@@ -104,8 +105,8 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     selectedChain,
     searchInput,
     modalOpenFor,
-    selectedFrom,
-    selectedTo,
+    inputAsset,
+    outputAsset,
   ]);
 
   // Sort assets by chain order and then by symbol
@@ -231,7 +232,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                       ? '!bg-white/50'
                       : '!bg-white'
                   }`}
-                  onMouseEnter={() => setHoveredChain(chain.chainDisplayName)}
+                  onMouseEnter={() => setHoveredChain(chain.chainName)}
                   onMouseLeave={() => setHoveredChain('')}
                   onClick={() =>
                     selectedChain && chain.chainId === selectedChain.chainId
@@ -241,12 +242,12 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                 >
                   <img
                     src={chain.iconUrl}
-                    alt={chain.chainDisplayName}
+                    alt={chain.chainName}
                     className="h-5 w-5 rounded-full"
                   />
-                  {hoveredChain === chain.chainDisplayName && (
+                  {hoveredChain === chain.chainName && (
                     <ChainsTooltip
-                      chain={chain.chainDisplayName}
+                      chain={chain.chainName}
                       className={`${
                         currentNetwork === Network.TESTNET
                           ? index === 0
@@ -300,7 +301,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             <div className="px-4 pb-2 pt-2">
               <Typography size="h5" weight="medium">
                 {selectedChain
-                  ? `Assets on ${selectedChain.chainDisplayName}`
+                  ? `Assets on ${selectedChain.chainName}`
                   : 'Assets'}
               </Typography>
             </div>
@@ -333,7 +334,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                           breakpoints={{ sm: 'h4' }}
                           weight="regular"
                         >
-                          {asset.symbol}
+                          {asset.assetName}
                         </Typography>
                       </div>
                       <div className="flex items-center gap-1">

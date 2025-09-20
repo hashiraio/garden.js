@@ -22,7 +22,7 @@ export const SwapSavingsAndAddresses = ({
   showComparison,
   networkFeesValue,
 }: SwapSavingsProps) => {
-  const { selectedTo, toAmount } = useSwapStore();
+  const { outputAsset, toAmount } = useSwapStore();
 
   return (
     <motion.div className="flex flex-col" {...expandWithDelayAnimation}>
@@ -71,7 +71,7 @@ export const SwapSavingsAndAddresses = ({
           </div>
           <div className="flex gap-5 py-1">
             <Typography size="h5" weight="regular">
-              {toAmount} {selectedTo?.symbol}
+              {toAmount} {outputAsset?.symbol}
             </Typography>
           </div>
         </div>

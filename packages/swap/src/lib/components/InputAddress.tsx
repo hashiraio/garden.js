@@ -14,8 +14,8 @@ export const InputAddress = () => {
 
   const tooltipId = useId();
   const {
-    selectedFrom,
-    selectedTo,
+    inputAsset,
+    outputAsset,
     btcAddress: storedBtcAddress,
     setBtcAddress,
     currentNetwork,
@@ -27,17 +27,17 @@ export const InputAddress = () => {
   const walletBtcAddress = '';
 
   const isRecoveryAddress = useMemo(
-    () => !!(selectedFrom && isBitcoin(selectedFrom.asset.chain)),
-    [selectedFrom],
+    () => !!(inputAsset && isBitcoin(inputAsset.asset.chain)),
+    [inputAsset],
   );
 
   const shouldShowAddress = useMemo(() => {
     return (
       (isEditBTCAddress || !walletBtcAddress) &&
-      ((selectedFrom?.asset.chain && isBitcoin(selectedFrom.asset.chain)) ||
-        (selectedTo?.asset.chain && isBitcoin(selectedTo.asset.chain)))
+      ((inputAsset?.asset.chain && isBitcoin(inputAsset.asset.chain)) ||
+        (outputAsset?.asset.chain && isBitcoin(outputAsset.asset.chain)))
     );
-  }, [isEditBTCAddress, walletBtcAddress, selectedFrom, selectedTo]);
+  }, [isEditBTCAddress, walletBtcAddress, inputAsset, outputAsset]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     let input = e.target.value;

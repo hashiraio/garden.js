@@ -25,10 +25,10 @@ export const SwapInfo: FC<SwapInfoProps> = ({
 }) => {
   const { chains } = useAssetStore();
   const sendChain = chains.find(
-    (chain) => chain.chainDisplayName === sendAsset.chainDisplayName,
+    (chain) => chain.chainName === sendAsset.chainName,
   );
   const receiveChain = chains.find(
-    (chain) => chain.chainDisplayName === receiveAsset.chainDisplayName,
+    (chain) => chain.chainName === receiveAsset.chainName,
   );
 
   return (

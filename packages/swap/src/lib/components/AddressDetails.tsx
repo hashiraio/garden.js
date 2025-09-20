@@ -18,14 +18,14 @@ export const AddressDetails: FC<AddressDetailsProps> = ({
 }) => {
   //   const { allChains } = useAssetInfoStore();
   const tooltipId = useId();
-  const { selectedFrom, selectedTo } = useSwapStore();
+  const { inputAsset, outputAsset } = useSwapStore();
   //   const { setIsEditBTCAddress } = useSwapStore();
 
   const chain = useMemo(() => {
     return isRefund
-      ? selectedFrom && selectedFrom.asset.chain
-      : selectedTo && selectedTo.asset.chain;
-  }, [selectedFrom, selectedTo, isRefund]);
+      ? inputAsset && inputAsset.asset.chain
+      : outputAsset && outputAsset.asset.chain;
+  }, [inputAsset, outputAsset, isRefund]);
 
   //   const redirect = useMemo(() => {
   //     return allChains && chain ? allChains[chain] : null;

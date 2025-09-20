@@ -9,8 +9,8 @@ import {
 } from '../constants/constants';
 
 type SwapState = {
-  selectedFrom: ParsedAsset | null;
-  selectedTo: ParsedAsset | null;
+  inputAsset: ParsedAsset | null;
+  outputAsset: ParsedAsset | null;
   fromAmount: string;
   toAmount: string;
   amountInputSide: IOType;
@@ -39,8 +39,8 @@ type SwapState = {
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
-  selectedFrom: null,
-  selectedTo: null,
+  inputAsset: null,
+  outputAsset: null,
   fromAmount: '',
   toAmount: '',
   amountInputSide: IOType.input,
@@ -51,28 +51,28 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   currentNetwork: DEFAULT_NETWORK,
   setCurrentNetwork: (network) => set({ currentNetwork: network }),
   selectAsset: (side, asset) => {
-    const { selectedFrom, selectedTo } = get();
+    const { inputAsset, outputAsset } = get();
     if (side === IOType.input) {
       // If same as to, swap them
-      if (selectedTo && selectedTo.asset === asset.asset) {
+      if (outputAsset && outputAsset.asset === asset.asset) {
         set({
-          selectedFrom: selectedTo,
-          selectedTo: asset,
+          inputAsset: outputAsset,
+          outputAsset: asset,
         });
       } else {
         set({
-          selectedFrom: asset,
+          inputAsset: asset,
         });
       }
     } else {
-      if (selectedFrom && selectedFrom.asset === asset.asset) {
+      if (inputAsset && inputAsset.asset === asset.asset) {
         set({
-          selectedTo: selectedFrom,
-          selectedFrom: asset,
+          outputAsset: inputAsset,
+          inputAsset: asset,
         });
       } else {
         set({
-          selectedTo: asset,
+          outputAsset: asset,
         });
       }
     }
@@ -92,22 +92,22 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   },
   setAmountInputSide: (side) => set({ amountInputSide: side }),
   fetchQuote: async (side) => {
-    const { selectedFrom, selectedTo, fromAmount, toAmount, isQuoting } = get();
+    const { inputAsset, outputAsset, fromAmount, toAmount, isQuoting } = get();
     if (isQuoting) return; // Avoid overlapping quote requests
-    if (!selectedFrom || !selectedTo) return;
+    if (!inputAsset || !outputAsset) return;
     const quote = new Quote(getApiEndpoint(get().currentNetwork).api);
     const isExactOut = side === IOType.output;
     const amountStr = side === IOType.input ? fromAmount : toAmount;
     const amountNum = toBaseUnitsSafe(
       amountStr,
-      side === IOType.input ? selectedFrom.decimals : selectedTo.decimals,
+      side === IOType.input ? inputAsset.decimals : outputAsset.decimals,
     );
     if (amountNum <= 0) return;
     set({ isQuoting: true, quoteError: null });
     try {
       const res = await quote.getQuote(
-        selectedFrom.asset.toString(),
-        selectedTo.asset.toString(),
+        inputAsset.asset.toString(),
+        outputAsset.asset.toString(),
         amountNum,
         isExactOut,
       );
@@ -120,10 +120,10 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       if (!best) return;
       if (isExactOut) {
         const srcAmount = Number(best.source?.amount ?? 0);
-        set({ fromAmount: fromBaseUnits(srcAmount, selectedFrom.decimals) });
+        set({ fromAmount: fromBaseUnits(srcAmount, inputAsset.decimals) });
       } else {
         const dstAmount = Number(best.destination?.amount ?? 0);
-        set({ toAmount: fromBaseUnits(dstAmount, selectedTo.decimals) });
+        set({ toAmount: fromBaseUnits(dstAmount, outputAsset.decimals) });
       }
       set({
         lastQuote: {
@@ -141,26 +141,26 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     }
   },
   swapAssets: () => {
-    const { selectedFrom, selectedTo } = get();
+    const { inputAsset, outputAsset } = get();
     set({
-      selectedFrom: selectedTo,
-      selectedTo: selectedFrom,
+      inputAsset: outputAsset,
+      outputAsset: inputAsset,
     });
     // Trigger quote fetch after swapping assets
     setTimeout(() => get().debouncedFetchQuote(IOType.input), 100);
   },
 
   setDefaultBTC: (assets: ParsedAsset[]) => {
-    const { selectedFrom } = get();
+    const { inputAsset } = get();
     // Only set BTC as default if no asset is currently selected
-    if (!selectedFrom) {
+    if (!inputAsset) {
       const btcAsset = assets.find(
         (asset) =>
           asset.symbol === 'BTC' &&
-          asset.chainDisplayName.toLowerCase().includes('bitcoin'),
+          asset.chainName.toLowerCase().includes('bitcoin'),
       );
       if (btcAsset) {
-        set({ selectedFrom: btcAsset });
+        set({ inputAsset: btcAsset });
       }
     }
   },

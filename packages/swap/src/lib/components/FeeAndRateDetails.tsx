@@ -17,14 +17,14 @@ import { useSwapStore } from '../hooks/store';
 import { SwapSavingsAndAddresses } from './SwapSavingsAndAddresses';
 
 const RateDisplay = ({
-  selectedFrom,
-  selectedTo,
+  inputAsset,
+  outputAsset,
   formattedRate,
   formattedTokenPrice,
   className = '',
 }: {
-  selectedFrom?: ParsedAsset | null;
-  selectedTo?: ParsedAsset | null;
+  inputAsset?: ParsedAsset | null;
+  outputAsset?: ParsedAsset | null;
   formattedRate?: number;
   formattedTokenPrice?: number;
   className?: string;
@@ -35,14 +35,14 @@ const RateDisplay = ({
       weight="regular"
       className={`!text-nowrap ${className}`}
     >
-      1 {selectedFrom?.symbol} ≈
+      1 {inputAsset?.symbol} ≈
     </Typography>
     <Typography
       size="h5"
       weight="regular"
       className={`!text-nowrap ${className}`}
     >
-      {formattedRate && `${formattedRate} ${selectedTo?.symbol}`}
+      {formattedRate && `${formattedRate} ${outputAsset?.symbol}`}
       {formattedTokenPrice && `$${formattedTokenPrice}`}
     </Typography>
   </div>
@@ -56,8 +56,8 @@ export const FeesAndRateDetails = () => {
   const formattedTokenPrice = useMemo(() => formatAmount(2000, 0, 2), []);
 
   const {
-    selectedFrom,
-    selectedTo,
+    inputAsset,
+    outputAsset,
     // rate,
     // networkFees,
     // showComparisonHandler,
@@ -67,7 +67,7 @@ export const FeesAndRateDetails = () => {
   //   //   const { solanaAddress } = useSolanaWallet();
   //   //   const { address } = useEVMWallet();
 
-  //   const isBitcoinChains = selectedTo?.symbol.includes(BTC.symbol);
+  //   const isBitcoinChains = outputAsset?.symbol.includes(BTC.symbol);
   //   const formattedRate = useMemo(
   //     () => formatAmount(rate, 0, isBitcoinChains ? 7 : 3),
   //     [isBitcoinChains, rate],
@@ -80,26 +80,26 @@ export const FeesAndRateDetails = () => {
 
   //   const refundAddress = useMemo(
   //     () =>
-  //       selectedFrom
-  //         ? isBitcoin(selectedFrom.chain)
+  //       inputAsset
+  //         ? isBitcoin(inputAsset.chain)
   //           ? btcAddress
-  //           : isSolana(selectedFrom.chain)
+  //           : isSolana(inputAsset.chain)
   //           ? solanaAddress
   //           : address
   //         : undefined,
-  //     [selectedFrom, btcAddress, solanaAddress, address],
+  //     [inputAsset, btcAddress, solanaAddress, address],
   //   );
 
   //   const receiveAddress = useMemo(
   //     () =>
-  //       selectedTo
-  //         ? isBitcoin(selectedTo.chain)
+  //       outputAsset
+  //         ? isBitcoin(outputAsset.chain)
   //           ? btcAddress
-  //           : isSolana(selectedTo.chain)
+  //           : isSolana(outputAsset.chain)
   //           ? solanaAddress
   //           : address
   //         : undefined,
-  //     [selectedTo, btcAddress, solanaAddress, address],
+  //     [outputAsset, btcAddress, solanaAddress, address],
   //   );
 
   return (
@@ -128,11 +128,11 @@ export const FeesAndRateDetails = () => {
                     onMouseLeave={() => setIsHovered(false)}
                   >
                     <InfoIcon className="h-3 w-3 !fill-mid-grey" />
-                    {/* {isHovered && selectedFrom && selectedTo && (
+                    {/* {isHovered && inputAsset && outputAsset && (
                       <TooltipWrapper targetRef={targetRef}>
                         <RateDisplay
-                          selectedFrom={selectedFrom}
-                          selectedTo={selectedTo}
+                          inputAsset={inputAsset}
+                          outputAsset={outputAsset}
                           formattedRate={formattedRate}
                         />
                       </TooltipWrapper>
@@ -147,8 +147,8 @@ export const FeesAndRateDetails = () => {
                 {...delayedFadeAnimation}
               >
                 <RateDisplay
-                  selectedFrom={selectedFrom}
-                  selectedTo={selectedTo}
+                  inputAsset={inputAsset}
+                  outputAsset={outputAsset}
                   formattedTokenPrice={formattedTokenPrice}
                   className="!text-mid-grey"
                 />
@@ -165,8 +165,8 @@ export const FeesAndRateDetails = () => {
                 {...delayedFadeAnimation}
               >
                 <RateDisplay
-                  selectedFrom={selectedFrom}
-                  selectedTo={selectedTo}
+                  inputAsset={inputAsset}
+                  outputAsset={outputAsset}
                   formattedTokenPrice={formattedTokenPrice}
                 />
               </motion.div>

@@ -7,12 +7,12 @@ import { InputAddress } from './InputAddress';
 import { FeesAndRateDetails } from './FeeAndRateDetails';
 
 export const InputAddressAndFeeRateDetails = () => {
-  const { selectedFrom, selectedTo, fromAmount, toAmount } = useSwapStore();
+  const { inputAsset, outputAsset, fromAmount, toAmount } = useSwapStore();
 
   const shouldShowDetails = useMemo(() => {
     return !!(
-      selectedFrom &&
-      selectedTo &&
+      inputAsset &&
+      outputAsset &&
       //   !error.inputError &&
       //   !error.outputError &&
       //   !error.liquidityError &&
@@ -22,8 +22,8 @@ export const InputAddressAndFeeRateDetails = () => {
       Number(toAmount) !== 0
     );
   }, [
-    selectedFrom,
-    selectedTo,
+    inputAsset,
+    outputAsset,
     // error.inputError,
     // error.outputError,
     // error.liquidityError,
