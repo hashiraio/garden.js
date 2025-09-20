@@ -17,6 +17,7 @@ type SwapState = {
   amountInputSide: SelectionSide;
   isQuoting: boolean;
   quoteError: string | null;
+  btcAddress: string;
   // last successful quote snapshot
   lastQuote?: {
     isExactOut: boolean;
@@ -40,6 +41,7 @@ type SwapState = {
   setCurrentNetwork: (network: Network) => void;
   setDefaultBTC: (assets: ParsedAsset[]) => void;
   debouncedFetchQuote: (side: SelectionSide) => void;
+  setBtcAddress: (address: string) => void;
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
@@ -53,6 +55,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   amountInputSide: 'from',
   isQuoting: false,
   quoteError: null,
+  btcAddress: '',
   lastQuote: undefined,
   currentNetwork: DEFAULT_NETWORK,
   setCurrentNetwork: (network) => set({ currentNetwork: network }),
@@ -197,6 +200,8 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       }, 500); // 500ms debounce
     };
   })(),
+
+  setBtcAddress: (address: string) => set({ btcAddress: address }),
 }));
 
 function toBaseUnitsSafe(humanAmount: string, decimals: number): number {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Typography, Button } from '@gardenfi/garden-book';
+import { Button } from '@gardenfi/garden-book';
 import { useGarden } from '@gardenfi/react-hooks';
 import { BlockchainType } from '@gardenfi/orderbook';
 import transactionHistoryStore from '../hooks/transactionHistoryStore';
@@ -68,9 +68,6 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     <div className="flex flex-col h-full w-full gap-3">
       <div className="scrollbar-hide flex flex-1 flex-col gap-5 overflow-y-auto items-center rounded-2xl pb-6 min-h-0">
         <div className="flex flex-col rounded-2xl w-full bg-white/50">
-          <Typography size="h5" weight="medium" className="p-4">
-            Transactions
-          </Typography>
           <Transactions />
         </div>
 

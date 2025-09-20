@@ -417,12 +417,14 @@ export class Garden extends Orderbook implements IGardenJS {
     const sendAddress = await getAddresses(
       fromAsset.blockchainType,
       this._htlcs,
+      params.addresses,
     );
     if (!sendAddress.ok) return Err(sendAddress.error);
 
     const receiveAddress = await getAddresses(
       toAsset.blockchainType,
       this._htlcs,
+      params.addresses,
     );
     if (!receiveAddress.ok) return Err(receiveAddress.error);
 

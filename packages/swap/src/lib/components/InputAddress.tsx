@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import { useId, useRef, ChangeEvent, useMemo } from 'react';
 import { Typography } from '@gardenfi/garden-book';
 import { isBitcoin } from '@gardenfi/orderbook';
 import { AnimatePresence, motion } from 'motion/react';
+import { validateBTCAddress } from '@gardenfi/core';
+import { Environment } from '@gardenfi/utils';
 // import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
 import { useSwapStore } from '../hooks/store';
 
@@ -13,15 +15,13 @@ export const InputAddress = () => {
   const tooltipId = useId();
   const {
     selectedFrom,
-    // isEditBTCAddress,
     selectedTo,
-    // setBtcAddress,
-    // btcAddress: storedBtcAddress,
-    // isValidBitcoinAddress,
+    btcAddress: storedBtcAddress,
+    setBtcAddress,
+    currentNetwork,
   } = useSwapStore();
 
   const isEditBTCAddress = true;
-  const [storedBtcAddress, setBtcAddress] = useState('');
 
   // const { account: walletBtcAddress } = useBitcoinWallet();
   const walletBtcAddress = '';
@@ -41,7 +41,8 @@ export const InputAddress = () => {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     let input = e.target.value;
-    if (!/^[a-zA-Z0-9]$/.test(input.at(-1)!)) {
+    // Allow alphanumeric characters and common Bitcoin address characters
+    if (!/^[a-zA-Z0-9]$/.test(input.at(-1) || '')) {
       input = input.slice(0, -1);
     }
     setBtcAddress(input);
@@ -49,6 +50,15 @@ export const InputAddress = () => {
 
   // Use stored address if available, otherwise use wallet address
   const displayAddress = storedBtcAddress || walletBtcAddress || '';
+
+  // Validate Bitcoin address
+  const isValidAddress = useMemo(() => {
+    if (!storedBtcAddress) return true; // Empty is valid (not required yet)
+    return validateBTCAddress(
+      storedBtcAddress,
+      currentNetwork as unknown as Environment,
+    );
+  }, [storedBtcAddress, currentNetwork]);
 
   return (
     <AnimatePresence mode="wait">
@@ -104,10 +114,11 @@ export const InputAddress = () => {
               {isRecoveryAddress ? 'Refund' : 'Receive'} address
             </Typography>
             <Typography size="h3" weight="regular">
-              {/* TODO: Add validation (red) */}
               <input
                 ref={inputRef}
-                className={`w-full outline-none placeholder:text-mid-grey`}
+                className={`w-full outline-none placeholder:text-mid-grey ${
+                  !isValidAddress && storedBtcAddress ? 'text-red-500' : ''
+                }`}
                 type="text"
                 value={displayAddress}
                 placeholder="Your Bitcoin address"
