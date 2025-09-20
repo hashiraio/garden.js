@@ -1,40 +1,25 @@
-import { BlockchainType, Order, PaginatedData } from '@gardenfi/orderbook';
+import {
+  BlockchainType,
+  OrderLifecycle,
+  OrderWithStatus,
+} from '@gardenfi/orderbook';
 import { create } from 'zustand';
-import { APIResponse, Fetcher, Url } from '@gardenfi/utils';
-
-export const ConstructMatchedOrdersUrl = (
-  baseUrl: string,
-  params?: {
-    [key: string]: string | number | boolean | undefined;
-  },
-): URL => {
-  const url = new Url(baseUrl).endpoint('orders').addSearchParams({
-    from_address: params?.['address'] ? params['address']?.toString() : '',
-  });
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        url.searchParams.append(key, value.toString());
-      }
-    });
-  }
-  return url;
-};
+import { IGardenJS } from '@gardenfi/core';
 
 type TransactionHistoryStoreState = {
-  transactions: Order[];
+  transactions: OrderWithStatus[];
   isLoading: boolean;
   perPage: number;
   totalItems: number;
   fetchTransactions: (
-    orderbookUrl: string,
+    garden: IGardenJS,
     connectedWallets: {
       [key in BlockchainType]: string;
     },
     append?: boolean,
   ) => Promise<void>;
   loadMore: (
-    orderbookUrl: string,
+    garden: IGardenJS,
     connectedWallets: {
       [key in BlockchainType]: string;
     },
@@ -49,7 +34,7 @@ const transactionHistoryStore = create<TransactionHistoryStoreState>(
     totalItems: 0,
 
     fetchTransactions: async (
-      orderbookUrl: string,
+      garden: IGardenJS,
       connectedWallets: {
         [key in BlockchainType]: string;
       },
@@ -60,30 +45,50 @@ const transactionHistoryStore = create<TransactionHistoryStoreState>(
         const addresses = Object.values(connectedWallets).filter(
           (addr) => addr !== '',
         );
-        const urls = addresses.map((address) =>
-          ConstructMatchedOrdersUrl(orderbookUrl, {
-            address,
-            per_page: perPage,
-            status: 'fulfilled',
-          }),
-        );
-        const fetchPromises = urls.map((url) =>
-          Fetcher.get<APIResponse<PaginatedData<Order>>>(url),
-        );
 
-        const results = await Promise.all(fetchPromises);
+        // Use Promise.all to fetch all orders for each address in parallel
+        const orderPromises = addresses.map(async (address) => {
+          try {
+            // getOrders returns an AsyncResult, so we await it directly
+            const result = await garden.getOrders({
+              from_owner: address,
+              per_page: perPage,
+              status: OrderLifecycle.fulfilled,
+            });
 
-        const newTransactions: Order[] = [];
+            if (result.ok) {
+              // result.val.data is the array of orders
+              return {
+                orders: result.val.data,
+                totalItems: result.val.total_items ?? 0,
+              };
+            } else {
+              console.error(
+                `Failed to fetch transactions for address ${address}: ${result.error}`,
+              );
+              return { orders: [], totalItems: 0 };
+            }
+          } catch (error) {
+            console.error(
+              `Failed to fetch transactions for address ${address}: ${error}`,
+            );
+            return { orders: [], totalItems: 0 };
+          }
+        });
+
+        const results = await Promise.all(orderPromises);
+
+        const newTransactions: OrderWithStatus[] = [];
         let totalItems = 0;
         const seenOrderIds = new Set<string>();
 
         for (const txns of results) {
-          if (txns.error) {
-            console.error('failed to fetch transactions ❌', txns.error);
+          if (txns.orders.length === 0) {
+            console.error('failed to fetch transactions ❌', txns.orders);
             continue;
           }
-          totalItems += txns.result?.total_items ?? 0;
-          for (const order of txns.result?.data ?? []) {
+          totalItems += txns.totalItems;
+          for (const order of txns.orders ?? []) {
             const uniqueId =
               order.order_id ?? order.order_id ?? JSON.stringify(order);
             if (!seenOrderIds.has(uniqueId)) {
@@ -110,13 +115,13 @@ const transactionHistoryStore = create<TransactionHistoryStoreState>(
     },
 
     loadMore: async (
-      orderbookUrl: string,
+      garden: IGardenJS,
       connectedWallets: {
         [key in BlockchainType]: string;
       },
     ) => {
       set((state) => ({ perPage: state.perPage + 4 }));
-      await get().fetchTransactions(orderbookUrl, connectedWallets);
+      await get().fetchTransactions(garden, connectedWallets);
     },
   }),
 );

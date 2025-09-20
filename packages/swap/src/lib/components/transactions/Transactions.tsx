@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useAssetStore } from '../../hooks/assetStore';
-import transactionHistoryStore from '../../hooks/transactionHistoryStore';
+import transactionHistoryStore from '../../store/transactionHistoryStore';
 import { getAssetFromSwap } from '../../utils/utils';
 import { useGarden } from '@gardenfi/react-hooks';
 import { OrderStatus } from '@gardenfi/orderbook';
@@ -54,7 +54,7 @@ const Transactions = () => {
       {isLoading ? (
         <TransactionsSkeleton />
       ) : allTransactions.length === 0 ? (
-        <Typography size="h5" className="pb-4 text-center">
+        <Typography size="h5" className="py-4 text-center">
           No transactions found.
         </Typography>
       ) : (

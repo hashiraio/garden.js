@@ -1,7 +1,7 @@
 import React from 'react';
 import { BottomSheet, Modal, OpacityVariants } from '@gardenfi/garden-book';
 import { FC, ReactNode } from 'react';
-import { viewPortStore } from '../hooks/viewPortStore';
+import { viewPortStore } from '../store/viewPortStore';
 
 export const ResponsiveModal: FC<{
   open: boolean;

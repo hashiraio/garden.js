@@ -98,7 +98,7 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await fetch(
-        `${getApiEndpoint(targetNetwork)}/v2/chains`,
+        `${getApiEndpoint(targetNetwork).api}/v2/chains`,
       );
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);

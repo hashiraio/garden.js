@@ -8,6 +8,8 @@ import {
   getAssetFromSwap,
   getDayDifference,
 } from '../../utils/utils';
+import { useSwapStore } from '../../hooks/store';
+import { getApiEndpoint } from '../../constants/constants';
 
 type TransactionProps = {
   order: Order;
@@ -55,6 +57,7 @@ export const TransactionRow: FC<TransactionProps> = ({
 }) => {
   const { source_swap, destination_swap } = order;
   const { allAssets } = useAssetStore();
+  const { currentNetwork } = useSwapStore();
   // const { evmInitiate } = useGarden();
 
   const sendAsset = useMemo(
@@ -95,11 +98,9 @@ export const TransactionRow: FC<TransactionProps> = ({
   );
 
   const handleTransactionClick = () => {
-    if (statusLabel !== StatusLabel.Expired && status && order.order_id) {
-      window.open(
-        `https://testnet-explorer.garden.finance/orders/${order.order_id}`,
-        '_blank',
-      );
+    if (order.order_id) {
+      const endpoint = getApiEndpoint(currentNetwork).explorer;
+      window.open(`${endpoint}/order/${order.order_id}`, '_blank');
     }
   };
 

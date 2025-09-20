@@ -8,7 +8,7 @@ import {
 } from '@gardenfi/garden-book';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
-import { viewPortStore } from '../../hooks/viewPortStore';
+import { viewPortStore } from '../../store/viewPortStore';
 
 type SidebarProps = {
   show: boolean;

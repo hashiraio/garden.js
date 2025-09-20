@@ -2,8 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@gardenfi/garden-book';
 import { useGarden } from '@gardenfi/react-hooks';
 import { BlockchainType } from '@gardenfi/orderbook';
-import transactionHistoryStore from '../hooks/transactionHistoryStore';
-import Transactions from './transactions/Transactions';
+import transactionHistoryStore from '../../store/transactionHistoryStore';
+import Transactions from './Transactions';
 
 type TransactionHistoryProps = {
   isOpen?: boolean;
@@ -32,13 +32,11 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     [transactions.length, totalItems],
   );
 
-  const orderbookUrl = 'https://testnet.api.garden.finance/v2';
-
   const handleLoadMore = async () => {
     if (!garden) return;
     setIsLoadingMore(true);
     try {
-      await loadMore(orderbookUrl, connectedWallets);
+      await loadMore(garden, connectedWallets);
     } finally {
       setIsLoadingMore(false);
     }
@@ -47,19 +45,18 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   useEffect(() => {
     if (!garden || !isOpen) return;
 
-    // Set connected wallets based on garden state
     const wallets: Record<BlockchainType, string> = {
-      bitcoin: '',
+      bitcoin: garden?.htlcs?.bitcoin?.htlcActorAddress || '',
       evm: garden?.htlcs.evm?.htlcActorAddress || '',
-      starknet: '',
-      solana: '',
-      sui: '',
+      starknet: garden?.htlcs?.starknet?.htlcActorAddress || '',
+      solana: garden?.htlcs?.solana?.htlcActorAddress || '',
+      sui: garden?.htlcs?.sui?.htlcActorAddress || '',
     };
 
     setConnectedWallets(wallets);
 
     // Fetch completed transactions
-    fetchTransactions(orderbookUrl, wallets);
+    fetchTransactions(garden, wallets);
   }, [garden, isOpen, fetchTransactions]);
 
   if (!isOpen) return null;

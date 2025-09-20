@@ -1,6 +1,5 @@
 import {
   Asset,
-  Chain,
   isBitcoin,
   isEVM,
   isSolana,
@@ -34,15 +33,27 @@ export enum IOType {
   output = 'output',
 }
 
-export const API_ENDPOINTS: Record<Network, string> = {
-  [Network.MAINNET]: 'https://api.garden.finance',
-  [Network.TESTNET]: 'https://testnet.api.garden.finance',
-  [Network.LOCALNET]: '',
-};
+export const API_ENDPOINTS: Record<Network, { api: string; explorer: string }> =
+  {
+    [Network.MAINNET]: {
+      api: 'https://api.garden.finance',
+      explorer: 'https://explorer.garden.finance',
+    },
+    [Network.TESTNET]: {
+      api: 'https://testnet.api.garden.finance',
+      explorer: 'https://testnet-explorer.garden.finance',
+    },
+    [Network.LOCALNET]: {
+      api: '',
+      explorer: '',
+    },
+  };
 
 export const DEFAULT_NETWORK = Network.TESTNET;
 
-export const getApiEndpoint = (network: Network): string => {
+export const getApiEndpoint = (
+  network: Network,
+): { api: string; explorer: string } => {
   return API_ENDPOINTS[network];
 };
 

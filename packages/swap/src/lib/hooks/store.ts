@@ -121,7 +121,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     const { selectedFrom, selectedTo, fromAmount, toAmount, isQuoting } = get();
     if (isQuoting) return; // Avoid overlapping quote requests
     if (!selectedFrom || !selectedTo) return;
-    const quote = new Quote(getApiEndpoint(get().currentNetwork));
+    const quote = new Quote(getApiEndpoint(get().currentNetwork).api);
     const isExactOut = side === 'to';
     const amountStr = side === 'from' ? fromAmount : toAmount;
     const amountNum = toBaseUnitsSafe(
