@@ -1,5 +1,5 @@
 import React from 'react';
-import { ParsedChainInfo } from '../../types/assetTypes';
+import { ParsedChainInfo } from '../../types/types';
 import {
   ArrowLeftIcon,
   GradientScroll,

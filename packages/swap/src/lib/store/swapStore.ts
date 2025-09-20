@@ -7,7 +7,7 @@ import {
 } from '../constants/constants';
 import { Chains } from '@gardenfi/orderbook';
 import { Network } from '@gardenfi/utils';
-import { ParsedAsset } from '../types/assetTypes';
+import { ParsedAsset } from '../types/types';
 
 export type TokenPrices = {
   input: string;
@@ -36,7 +36,6 @@ type SwapState = {
   btcAddress: string;
   isSwapping: boolean;
   isApproving: boolean;
-  strategy: string;
   tokenPrices: TokenPrices;
   error: SwapErrors;
   isNetworkFeesLoading: boolean;
@@ -55,7 +54,6 @@ type SwapState = {
   setTokenPrices: (tokenPrices: TokenPrices) => void;
   setIsSwapping: (isSwapping: boolean) => void;
   setIsApproving: (isApproving: boolean) => void;
-  setStrategy: (strategy: string) => void;
   setAsset: (ioType: IOType, asset: ParsedAsset | undefined) => void;
   setAmount: (ioType: IOType, amount: string) => void;
   setRate: (rate: number) => void;
@@ -84,7 +82,9 @@ export const BTC = {
   tokenAddress: 'primary',
   atomicSwapAddress: 'primary',
   chain:
-    Network.MAINNET === 'mainnet' ? Chains.bitcoin : Chains.bitcoin_testnet,
+    DEFAULT_NETWORK === Network.TESTNET
+      ? Chains.bitcoin_testnet
+      : Chains.bitcoin,
   price: 115767.9,
   min_amount: '50000',
   max_amount: '10000000000',
@@ -104,7 +104,6 @@ export const swapStore = create<SwapState>((set) => ({
     order: null,
   },
   isSwapping: false,
-  strategy: '',
   tokenPrices: {
     input: '0',
     output: '0',
@@ -129,7 +128,15 @@ export const swapStore = create<SwapState>((set) => ({
   maxTimeSaved: 0,
   maxCostSaved: 0,
   currentNetwork: DEFAULT_NETWORK,
-  setCurrentNetwork: (network) => set({ currentNetwork: network }),
+  setCurrentNetwork: (network) =>
+    set({
+      currentNetwork: network,
+      inputAsset: {
+        ...BTC,
+        chain:
+          network === Network.MAINNET ? Chains.bitcoin : Chains.bitcoin_testnet,
+      },
+    }),
   setAsset: (ioType, asset) => {
     set((state) => ({
       ...state,
@@ -196,9 +203,6 @@ export const swapStore = create<SwapState>((set) => ({
   setIsEditBTCAddress: (isEditBTCAddress) => {
     set({ isEditBTCAddress });
   },
-  setStrategy: (strategy) => {
-    set({ strategy });
-  },
   setTokenPrices: (tokenPrices) => {
     set({ tokenPrices });
   },
@@ -251,7 +255,6 @@ export const swapStore = create<SwapState>((set) => ({
       inputAsset: BTC,
       isApproving: false,
       isSwapping: false,
-      strategy: '',
       tokenPrices: {
         input: '0',
         output: '0',
@@ -286,7 +289,7 @@ export const swapStore = create<SwapState>((set) => ({
       inputAsset: BTC,
       isSwapping: false,
       isApproving: false,
-      strategy: '',
+
       tokenPrices: {
         input: '0',
         output: '0',

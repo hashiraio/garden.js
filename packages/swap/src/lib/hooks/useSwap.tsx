@@ -23,7 +23,6 @@ export const useSwap = () => {
     outputAsset,
     isSwapping,
     isApproving,
-    strategy,
     rate,
     error,
     btcAddress,
@@ -31,7 +30,6 @@ export const useSwap = () => {
     isFetchingQuote,
     isEditBTCAddress,
     networkFees,
-    setStrategy,
     setIsSwapping,
     setAmount,
     setRate,
@@ -99,7 +97,6 @@ export const useSwap = () => {
       outputAmount &&
       inputAmount &&
       outputAsset &&
-      strategy &&
       isValidBitcoinAddress &&
       !error.inputError &&
       !error.outputError &&
@@ -111,7 +108,6 @@ export const useSwap = () => {
     outputAmount,
     inputAmount,
     outputAsset,
-    strategy,
     error,
     isValidBitcoinAddress,
   ]);
@@ -177,7 +173,6 @@ export const useSwap = () => {
             if (quote?.error?.includes('AbortError')) {
               setError({ liquidityError: Errors.none });
               setIsFetchingQuote({ input: false, output: false });
-              setStrategy('');
               return;
             } else if (quote?.error?.includes('insufficient liquidity')) {
               setError({ liquidityError: Errors.insufficientLiquidity });
@@ -188,11 +183,25 @@ export const useSwap = () => {
             } else if (quote?.error?.includes('output amount too high')) {
               setError({ outputError: Errors.outHigh });
               setAmount(IOType.input, '');
+            } else if (quote?.error?.includes('invalid from_asset')) {
+              setError({ outputError: Errors.invalidFomAssset });
+              setAmount(IOType.input, '');
+            } else if (
+              quote?.error?.includes(
+                'expected amount to be within the range of',
+              )
+            ) {
+              setError({
+                outputError: Errors.maxError(
+                  maxAmount.toString(),
+                  inputAsset?.symbol ?? '',
+                ),
+              });
+              setAmount(IOType.input, '');
             } else {
               setAmount(isExactOut ? IOType.input : IOType.output, '');
             }
             setIsFetchingQuote({ input: false, output: false });
-            setStrategy('');
             setTokenPrices({ input: '0', output: '0' });
             return;
           }
@@ -223,7 +232,6 @@ export const useSwap = () => {
     [
       getQuote,
       setIsFetchingQuote,
-      setStrategy,
       setRate,
       setAmount,
       setTokenPrices,
@@ -371,7 +379,8 @@ export const useSwap = () => {
     if (needsWalletConnection) {
       return;
     }
-    if (!validSwap || !swap || !inputAsset || !outputAsset || !strategy) return;
+    if (!validSwap || !swap || !inputAsset || !outputAsset) return;
+
     setIsSwapping(true);
 
     const inputAmountInDecimals = new BigNumber(inputAmount)
@@ -546,7 +555,6 @@ export const useSwap = () => {
     inputAsset,
     outputAsset,
     tokenPrices,
-    strategy,
     rate,
     error,
     isEditBTCAddress,

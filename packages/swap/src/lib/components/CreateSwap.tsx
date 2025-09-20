@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, ExchangeIcon } from '@gardenfi/garden-book';
-import { SwapInput } from './SwapInput';
+import { SwapInput } from '../common/SwapInput';
 import { getTimeEstimates, IOType } from '../constants/constants';
-import { InputAddressAndFeeRateDetails } from './InputAddressAndFeeRateDetails';
+import { InputAddressAndFeeRateDetails } from './feesAndRateDetails/InputAddressAndFeeRateDetails';
 import {
   isBitcoin,
   isEVM,
@@ -162,10 +162,6 @@ const CreateSwap = () => {
     };
   }, [clearSwapState, controller]);
 
-  console.log('buttonDisabled', buttonDisabled);
-  console.log('buttonVariant', buttonVariant);
-  console.log('buttonLabel', buttonLabel);
-  console.log('loading', loadingDisabled);
   return (
     <div className="flex flex-col gap-3">
       <div className="relative flex flex-col gap-3">
@@ -208,7 +204,7 @@ const CreateSwap = () => {
         className="w-full transition-colors duration-500"
         variant={buttonVariant}
         size="lg"
-        // disabled={buttonDisabled || loadingDisabled}
+        disabled={buttonDisabled || loadingDisabled}
         onClick={handleSwapClick}
       >
         {buttonLabel}

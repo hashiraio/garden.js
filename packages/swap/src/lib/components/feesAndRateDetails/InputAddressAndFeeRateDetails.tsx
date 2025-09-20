@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMemo } from 'react';
-import { swapStore } from '../store/swapStore';
+import { swapStore } from '../../store/swapStore';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
 import { InputAddress } from './InputAddress';

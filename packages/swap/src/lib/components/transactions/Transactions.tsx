@@ -3,7 +3,6 @@ import { assetInfoStore } from '../../store/assetStore';
 import transactionHistoryStore from '../../store/transactionHistoryStore';
 import { getAssetFromSwap } from '../../utils/utils';
 import { useGarden } from '@gardenfi/react-hooks';
-import { OrderStatus } from '@gardenfi/orderbook';
 import { Typography } from '@gardenfi/garden-book';
 import { TransactionRow } from './TransactionRow';
 import { TransactionsSkeleton } from './TransactionSkeleton';
@@ -35,18 +34,8 @@ const Transactions = () => {
     [pendingOrders, allAssets],
   );
 
-  // Combine both lists, pending first, then completed
   const allTransactions = useMemo(() => {
-    // Mark each transaction with its status
-    const pending = filteredPendingOrders.map((order) => ({
-      order,
-      status: OrderStatus.Created,
-    }));
-    const completed = filteredTransactions.map((order) => ({
-      order,
-      status: OrderStatus.Redeemed,
-    }));
-    return [...pending, ...completed];
+    return [...filteredPendingOrders, ...filteredTransactions];
   }, [filteredPendingOrders, filteredTransactions]);
 
   return (
@@ -58,11 +47,11 @@ const Transactions = () => {
           No transactions found.
         </Typography>
       ) : (
-        allTransactions.map(({ order, status }, index) => (
+        allTransactions.map((order, index) => (
           <div key={order.order_id || index} className="w-full">
             <TransactionRow
               order={order}
-              status={status}
+              status={order.status}
               isLast={index === allTransactions.length - 1}
               isFirst={index === 0}
             />

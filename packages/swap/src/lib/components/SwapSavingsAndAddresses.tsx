@@ -6,7 +6,7 @@ import {
   expandWithDelayAnimation,
 } from '../constants/animations';
 import { swapStore } from '../store/swapStore';
-import { AddressDetails } from './AddressDetails';
+import { AddressDetails } from '../common/AddressDetails';
 import { formatAmount, formatTime } from '../utils/utils';
 
 type SwapSavingsProps = {

@@ -5,7 +5,7 @@ import {
   AssetFromResponse,
   ParsedChainInfo,
   ParsedAsset,
-} from '../types/assetTypes';
+} from '../types/types';
 import { Chain } from '@gardenfi/orderbook';
 import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';

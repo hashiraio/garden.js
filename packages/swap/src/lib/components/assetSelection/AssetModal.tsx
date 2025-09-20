@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ParsedAsset, ParsedChainInfo } from '../../types/assetTypes';
+import { ParsedAsset, ParsedChainInfo } from '../../types/types';
 import { swapStore } from '../../store/swapStore';
 import { assetInfoStore } from '../../store/assetStore';
 import { ChainsTooltip } from '../../common/ChainsToolTip';

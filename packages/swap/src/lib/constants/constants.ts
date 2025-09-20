@@ -13,6 +13,8 @@ export type ErrorFormat =
   | `Maximum amount is ${string} ${string}`
   | 'Output amount too high'
   | 'Output amount too less'
+  | 'Invalid From Asset'
+  | 'Invalid To Asset'
   | true
   | '';
 
@@ -26,6 +28,8 @@ export const Errors = {
   insufficientLiquidity: true,
   insufficientBalance: true,
   none: '' as const,
+  invalidFomAssset: 'Invalid From Asset' as const,
+  invalidToAsset: 'Invalid To Asset' as const,
 } as const;
 
 export enum IOType {

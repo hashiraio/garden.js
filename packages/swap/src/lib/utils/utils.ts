@@ -1,5 +1,6 @@
-import { Asset, Swap } from '@gardenfi/orderbook';
+import { Swap } from '@gardenfi/orderbook';
 import BigNumber from 'bignumber.js';
+import { ParsedAsset } from '../types/types';
 
 export const getDayDifference = (date: string) => {
   const now = new Date();
@@ -18,8 +19,13 @@ export const getDayDifference = (date: string) => {
   return 'Just now';
 };
 
-export const getAssetFromSwap = (swap: Swap, assets: Asset[] | null) => {
-  return assets && assets.find((asset) => asset.toString() === swap.asset);
+export const getAssetFromSwap = (swap: Swap, assets: ParsedAsset[] | null) => {
+  return (
+    assets &&
+    assets.find(
+      (asset) => `${asset.chain}:${asset.symbol.toLowerCase()}` === swap.asset,
+    )
+  );
 };
 
 export const formatAmount = (
@@ -66,3 +72,39 @@ export const capitalizeChain = (chainKey: string) => {
   if (chainKey === 'evm') return 'EVM';
   return chainKey.charAt(0).toUpperCase() + chainKey.slice(1);
 };
+
+export function parseAssetId(assetId: string): {
+  chainKey: string;
+  symbol: string;
+} {
+  const parts = assetId.split(':');
+  if (parts.length < 2) {
+    return { chainKey: assetId, symbol: assetId.toUpperCase() };
+  }
+  const symbol = parts[parts.length - 1].toUpperCase();
+  const chainKey = parts.slice(0, parts.length - 1).join(':');
+  return { chainKey, symbol };
+}
+
+export function formatChainName(chainKey: string): string {
+  if (chainKey.includes(':')) {
+    const [name, tag] = chainKey.split(':');
+    const prettyName = capitalizeWords(name.replace(/[_-]/g, ' '));
+    if (!tag || /^[0-9]+$/.test(tag)) {
+      return prettyName;
+    }
+    return `${prettyName} ${capitalizeWords(tag.replace(/[_-]/g, ' '))}`;
+  }
+
+  const hasTestnet = /_testnet$/i.test(chainKey);
+  const base = chainKey.replace(/[_-]/g, ' ').replace(/_testnet$/i, '');
+  const prettyBase = capitalizeWords(base);
+  return hasTestnet ? `${prettyBase} Testnet` : prettyBase;
+}
+function capitalizeWords(input: string): string {
+  return input
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}

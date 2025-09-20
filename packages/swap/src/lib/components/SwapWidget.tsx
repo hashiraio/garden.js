@@ -2,19 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { swapStore } from '../store/swapStore';
 import { assetInfoStore } from '../store/assetStore';
 import { Navbar } from '../common/Navbar';
-import { TabKey } from '../types/types';
 import TransactionHistory from './transactions/TransactionHistory';
 import CreateSwap from './CreateSwap';
 import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
 import { Modal } from '../common/ModalComponent';
 import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
+import { TabKey } from '../types/types';
 
 const SwapWidget = ({ network }: { network: ApiConfig }) => {
   const { network: networkType } = resolveApiConfig(network);
   const [activeTab, setActiveTab] = useState<TabKey>('swap');
 
   const { setCurrentNetwork } = swapStore();
-
   const { fetchAssets } = assetInfoStore();
 
   useEffect(() => {

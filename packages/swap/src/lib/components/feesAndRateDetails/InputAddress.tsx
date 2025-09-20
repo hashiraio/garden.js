@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { validateBTCAddress } from '@gardenfi/core';
 import { Environment } from '@gardenfi/utils';
 // import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
-import { swapStore } from '../store/swapStore';
+import { swapStore } from '../../store/swapStore';
 
 export const InputAddress = () => {
   const inputRef = useRef<HTMLInputElement>(null);

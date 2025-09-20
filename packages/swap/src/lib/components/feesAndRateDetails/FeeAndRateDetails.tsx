@@ -10,10 +10,10 @@ import {
 import { Asset } from '@gardenfi/orderbook';
 import { motion, AnimatePresence } from 'framer-motion';
 // import { swapStore } from '../store/dum';
-import { formatAmount } from '../utils/utils';
-import { delayedFadeAnimation } from '../constants/animations';
-import { swapStore } from '../store/swapStore';
-import { SwapSavingsAndAddresses } from './SwapSavingsAndAddresses';
+import { formatAmount } from '../../utils/utils';
+import { delayedFadeAnimation } from '../../constants/animations';
+import { swapStore } from '../../store/swapStore';
+import { SwapSavingsAndAddresses } from './../SwapSavingsAndAddresses';
 
 const RateDisplay = ({
   inputAsset,
