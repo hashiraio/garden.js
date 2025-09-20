@@ -163,7 +163,7 @@ const CreateSwap = () => {
   }, [clearSwapState, controller]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       <div className="relative flex flex-col gap-3">
         <div className="w-full">
           <SwapInput
@@ -201,7 +201,7 @@ const CreateSwap = () => {
       <InputAddressAndFeeRateDetails />
 
       <Button
-        className="w-full transition-colors duration-500"
+        className="w-full mt-3 transition-colors duration-500"
         variant={buttonVariant}
         size="lg"
         disabled={buttonDisabled || loadingDisabled}

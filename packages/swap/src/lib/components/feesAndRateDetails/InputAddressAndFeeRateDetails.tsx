@@ -56,7 +56,7 @@ export const InputAddressAndFeeRateDetails = () => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="flex flex-col overflow-hidden"
+          className="flex flex-col mt-3 overflow-hidden"
         >
           <InputAddress />
           <FeesAndRateDetails />

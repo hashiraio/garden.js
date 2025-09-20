@@ -186,18 +186,6 @@ export const useSwap = () => {
             } else if (quote?.error?.includes('invalid from_asset')) {
               setError({ outputError: Errors.invalidFomAssset });
               setAmount(IOType.input, '');
-            } else if (
-              quote?.error?.includes(
-                'expected amount to be within the range of',
-              )
-            ) {
-              setError({
-                outputError: Errors.maxError(
-                  maxAmount.toString(),
-                  inputAsset?.symbol ?? '',
-                ),
-              });
-              setAmount(IOType.input, '');
             } else {
               setAmount(isExactOut ? IOType.input : IOType.output, '');
             }
