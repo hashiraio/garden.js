@@ -9,10 +9,10 @@ import {
 // import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
 import { Asset } from '@gardenfi/orderbook';
 import { motion, AnimatePresence } from 'framer-motion';
-// import { useSwapStore } from '../hooks/store';
+// import { swapStore } from '../store/dum';
 import { formatAmount } from '../utils/utils';
 import { delayedFadeAnimation } from '../constants/animations';
-import { useSwapStore } from '../hooks/store';
+import { swapStore } from '../store/swapStore';
 import { SwapSavingsAndAddresses } from './SwapSavingsAndAddresses';
 
 const RateDisplay = ({
@@ -61,7 +61,7 @@ export const FeesAndRateDetails = () => {
     // networkFees,
     // showComparisonHandler,
     // fiatTokenPrices,
-  } = useSwapStore();
+  } = swapStore();
   //   //   const { account: btcAddress } = useBitcoinWallet();
   //   //   const { solanaAddress } = useSolanaWallet();
   //   //   const { address } = useEVMWallet();

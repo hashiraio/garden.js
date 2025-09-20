@@ -2,13 +2,13 @@ import React, { FC, useMemo } from 'react';
 import { Typography } from '@gardenfi/garden-book';
 import { SwapInfo } from './SwapInfo';
 import { Order, OrderStatus } from '@gardenfi/orderbook';
-import { useAssetStore } from '../../store/assetStore';
+import { assetInfoStore } from '../../store/assetStore';
 import {
   formatAmount,
   getAssetFromSwap,
   getDayDifference,
 } from '../../utils/utils';
-import { useSwapStore } from '../../hooks/store';
+import { swapStore } from '../../store/swapStore';
 import { getApiEndpoint } from '../../constants/constants';
 
 type TransactionProps = {
@@ -56,8 +56,8 @@ export const TransactionRow: FC<TransactionProps> = ({
   isFirst,
 }) => {
   const { source_swap, destination_swap } = order;
-  const { allAssets } = useAssetStore();
-  const { currentNetwork } = useSwapStore();
+  const { allAssets } = assetInfoStore();
+  const { currentNetwork } = swapStore();
   // const { evmInitiate } = useGarden();
 
   const sendAsset = useMemo(

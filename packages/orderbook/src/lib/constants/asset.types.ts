@@ -20,7 +20,6 @@ export type AssetCommon = {
 
 export type AssetToken = AssetCommon & {
   tokenAddress: string;
-  price?: number;
 };
 
 export type Asset = AssetToken;

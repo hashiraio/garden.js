@@ -42,8 +42,8 @@ export class Quote implements IQuote {
   ) {
     try {
       const params: Record<string, string> = {
-        from: from.toString(),
-        to: to.toString(),
+        from: ChainAsset.from(from).toString(),
+        to: ChainAsset.from(to).toString(),
         ...(isExactOut
           ? { to_amount: amount.toString() }
           : { from_amount: amount.toString() }),

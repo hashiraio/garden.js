@@ -7,7 +7,7 @@ import {
   WalletIcon,
 } from '@gardenfi/garden-book';
 import { FC, useMemo, useRef, ChangeEvent, useState, useEffect } from 'react';
-import { useAssetStore } from '../store/assetStore';
+import { assetInfoStore } from '../store/assetStore';
 import NumberFlow from '@number-flow/react';
 import clsx from 'clsx';
 import { formatAmount } from '../utils/utils';
@@ -42,8 +42,7 @@ export const SwapInput: FC<SwapInputProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [showLoadingOpacity, setShowLoadingOpacity] = useState(false);
 
-  const { openAssetModal, openModal } = useAssetStore();
-  const { chains } = useAssetStore();
+  const { openAssetModal, openModal, chains } = assetInfoStore();
 
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { validateBTCAddress } from '@gardenfi/core';
 import { Environment } from '@gardenfi/utils';
 // import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
-import { useSwapStore } from '../hooks/store';
+import { swapStore } from '../store/swapStore';
 
 export const InputAddress = () => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +19,7 @@ export const InputAddress = () => {
     btcAddress: storedBtcAddress,
     setBtcAddress,
     currentNetwork,
-  } = useSwapStore();
+  } = swapStore();
 
   const isEditBTCAddress = true;
 

@@ -5,7 +5,7 @@ import {
   Typography,
 } from '@gardenfi/garden-book';
 import { FC } from 'react';
-import { useAssetStore } from '../../store/assetStore';
+import { assetInfoStore } from '../../store/assetStore';
 import { Asset } from '@gardenfi/orderbook';
 
 type SwapInfoProps = {
@@ -23,7 +23,7 @@ export const SwapInfo: FC<SwapInfoProps> = ({
   receiveAmount,
   equalSplit = false,
 }) => {
-  const { chains } = useAssetStore();
+  const { chains } = assetInfoStore();
   const sendChain = chains.find((chain) => chain.chain === sendAsset.chain);
   const receiveChain = chains.find(
     (chain) => chain.chain === receiveAsset.chain,

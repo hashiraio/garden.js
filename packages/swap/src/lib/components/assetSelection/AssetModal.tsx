@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ParsedChainInfo } from '../../types/assetTypes';
-import { useSwapStore } from '../../hooks/store';
-import { useAssetStore } from '../../store/assetStore';
+import { ParsedAsset, ParsedChainInfo } from '../../types/assetTypes';
+import { swapStore } from '../../store/swapStore';
+import { assetInfoStore } from '../../store/assetStore';
 import { ChainsTooltip } from '../../common/ChainsToolTip';
 import {
   GradientScroll,
@@ -15,14 +15,13 @@ import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
 import { formatAmount } from '../../utils/utils';
 import { IOType } from '../../constants/constants';
-import { Asset } from '@gardenfi/orderbook';
 
 type Props = {
-  onSelect: (asset: Asset) => void;
+  onSelect: (asset: ParsedAsset) => void;
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
-  const { inputAsset, outputAsset, currentNetwork } = useSwapStore();
+  const { inputAsset, outputAsset, currentNetwork } = swapStore();
   const {
     allAssets,
     chains,
@@ -30,7 +29,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     isAssetModalOpen,
     closeAssetModal,
     setFilter,
-  } = useAssetStore();
+  } = assetInfoStore();
 
   const [selectedChain, setSelectedChain] = useState<
     ParsedChainInfo | undefined
@@ -154,7 +153,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     setShowAllChains(false);
   };
 
-  const handleAssetSelect = (asset: Asset) => {
+  const handleAssetSelect = (asset: ParsedAsset) => {
     onSelect(asset);
     closeAssetModal();
     setShowAllChains(false);

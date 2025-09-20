@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useAssetStore } from '../../store/assetStore';
+import { assetInfoStore } from '../../store/assetStore';
 import transactionHistoryStore from '../../store/transactionHistoryStore';
 import { getAssetFromSwap } from '../../utils/utils';
 import { useGarden } from '@gardenfi/react-hooks';
@@ -10,7 +10,7 @@ import { TransactionsSkeleton } from './TransactionSkeleton';
 
 const Transactions = () => {
   const { transactions, isLoading } = transactionHistoryStore();
-  const { allAssets } = useAssetStore();
+  const { allAssets } = assetInfoStore();
   const { pendingOrders } = useGarden();
 
   // Filter completed transactions

@@ -48,5 +48,11 @@ export interface ParsedChainInfo {
   destinationTimelock: number;
   supportedHtlcSchemas: string[];
   supportedTokenSchemas: string[];
-  assets: Asset[];
+  assets: ParsedAsset[];
+}
+
+export interface ParsedAsset extends Asset {
+  price: number;
+  min_amount: string;
+  max_amount: string;
 }

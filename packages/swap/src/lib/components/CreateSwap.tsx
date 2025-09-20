@@ -1,141 +1,184 @@
-import React, { useMemo, useState } from 'react';
-import { useGarden } from '@gardenfi/react-hooks';
-import { SwapParams, validateBTCAddress } from '@gardenfi/core';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, ExchangeIcon } from '@gardenfi/garden-book';
-import { useSwapStore } from '../hooks/store';
 import { SwapInput } from './SwapInput';
-import { IOType } from '../constants/constants';
+import { getTimeEstimates, IOType } from '../constants/constants';
 import { InputAddressAndFeeRateDetails } from './InputAddressAndFeeRateDetails';
-import { Environment } from '@gardenfi/utils';
-import { isBitcoin } from '@gardenfi/orderbook';
+import {
+  isBitcoin,
+  isEVM,
+  isSolana,
+  isStarknet,
+  isSui,
+} from '@gardenfi/orderbook';
+import { useSwap } from '../hooks/useSwap';
+import { capitalizeChain } from '../utils/utils';
 
 const CreateSwap = () => {
+  const [loadingDisabled, setLoadingDisabled] = useState(false);
+
   const {
-    isQuoting,
-    lastQuote,
+    outputAmount,
+    inputAmount,
     inputAsset,
     outputAsset,
-    fromAmount,
-    toAmount,
-    setFromAmount,
-    setToAmount,
-    setAmountInputSide,
-    amountInputSide,
-    swapAssets,
-    btcAddress,
-    currentNetwork,
-  } = useSwapStore();
-  const { swap } = useGarden();
-  const [isSwapping, setIsSwapping] = useState(false);
-  const [swapError, setSwapError] = useState<string | null>(null);
-
-  const isBitcoinSwap = useMemo(() => {
-    return !!(
-      outputAsset &&
-      inputAsset &&
-      (isBitcoin(outputAsset.chain) || isBitcoin(inputAsset.chain))
-    );
-  }, [outputAsset, inputAsset]);
-
-  const isValidBitcoinAddress = useMemo(() => {
-    if (!isBitcoinSwap) return true;
-    return btcAddress
-      ? validateBTCAddress(btcAddress, currentNetwork as unknown as Environment)
-      : false;
-  }, [btcAddress, isBitcoinSwap, currentNetwork]);
-
-  const canSwap = useMemo(() => {
-    return (
-      typeof swap === 'function' &&
-      !!inputAsset &&
-      !!outputAsset &&
-      inputAsset.toString() !== outputAsset.toString() &&
-      !isQuoting &&
-      !isSwapping &&
-      ((amountInputSide === IOType.input && !!fromAmount) ||
-        (amountInputSide === IOType.output && !!toAmount)) &&
-      isValidBitcoinAddress
-    );
-  }, [
-    swap,
-    inputAsset,
-    outputAsset,
-    isQuoting,
+    handleInputAmountChange,
+    handleOutputAmountChange,
+    loading,
+    error,
+    validSwap,
+    // inputTokenBalance,
+    tokenPrices,
+    isApproving,
     isSwapping,
-    amountInputSide,
-    fromAmount,
-    toAmount,
-    isValidBitcoinAddress,
+    handleSwapClick,
+    needsWalletConnection,
+    controller,
+    clearSwapState,
+    swapAssets,
+  } = useSwap();
+
+  const isChainSupported = useMemo(() => {
+    if (!inputAsset || !outputAsset) return true;
+    if (
+      isBitcoin(inputAsset.chain) ||
+      isStarknet(inputAsset.chain) ||
+      isSolana(inputAsset.chain) ||
+      isEVM(inputAsset.chain) ||
+      isSui(inputAsset.chain)
+    )
+      return true;
+    return true;
+  }, [inputAsset, outputAsset]);
+
+  const buttonLabel = useMemo(() => {
+    if (needsWalletConnection)
+      return `Connect ${capitalizeChain(needsWalletConnection)} Wallet`;
+
+    return error.liquidityError
+      ? 'Insufficient liquidity'
+      : !isChainSupported
+      ? 'Wallet does not support the chain'
+      : error.insufficientBalanceError
+      ? 'Insufficient balance'
+      : needsWalletConnection
+      ? `Connect ${capitalizeChain(needsWalletConnection)} Wallet`
+      : isApproving
+      ? 'Approving...'
+      : isSwapping
+      ? 'Signing'
+      : 'Swap';
+  }, [
+    isChainSupported,
+    error.liquidityError,
+    isApproving,
+    isSwapping,
+    needsWalletConnection,
+    error.insufficientBalanceError,
   ]);
 
-  // const buttonVariant = useMemo(() => {
-  //   return buttonDisabled
-  //     ? "disabled"
-  //     : isSwapping
-  //       ? "ternary"
-  //       : garden?.htlcs.evm || validSwap
-  //         ? "primary"
-  //         : "disabled";
-  // }, [buttonDisabled, isSwapping, validSwap, needsWalletConnection]);
+  const buttonDisabled = useMemo(() => {
+    return error.liquidityError
+      ? true
+      : needsWalletConnection
+      ? false
+      : !isChainSupported || isSwapping
+      ? true
+      : validSwap
+      ? false
+      : true;
+  }, [
+    isChainSupported,
+    isSwapping,
+    validSwap,
+    error.liquidityError,
+    needsWalletConnection,
+  ]);
 
-  async function handleSwapClick() {
-    setSwapError(null);
-    if (typeof swap !== 'function')
-      return setSwapError('Garden context unavailable');
-    if (!inputAsset || !outputAsset) return setSwapError('Select both assets');
-    if (inputAsset.toString() === outputAsset.toString())
-      return setSwapError('Assets must be different');
-    if (isQuoting) return setSwapError('Please wait, fetching quote…');
-    const sendAmount = fromAmount;
-    const receiveAmount = toAmount;
-    if (!sendAmount && !receiveAmount)
-      return setSwapError('Enter an amount to swap');
+  const buttonVariant = useMemo(() => {
+    return buttonDisabled
+      ? 'disabled'
+      : isSwapping
+      ? 'ternary'
+      : needsWalletConnection || validSwap
+      ? 'primary'
+      : 'disabled';
+  }, [buttonDisabled, isSwapping, validSwap, needsWalletConnection]);
 
-    try {
-      setIsSwapping(true);
-      const payload: SwapParams = {
-        fromAsset: inputAsset.toString(),
-        toAsset: outputAsset.toString(),
-        receiveAmount: lastQuote?.isExactOut
-          ? lastQuote?.sourceAmount
-          : lastQuote?.destinationAmount ?? '',
-        sendAmount: lastQuote?.isExactOut
-          ? lastQuote?.destinationAmount
-          : lastQuote?.sourceAmount ?? '',
-        ...(isBitcoinSwap && { addresses: { bitcoin: btcAddress } }),
-      };
-      console.log(payload);
+  // const fetchInputAssetBalance = useCallback(async () => {
+  //   if (!inputAsset) return;
+  //   await fetchAndSetFiatValues();
+  //   if (isEVM(inputAsset.chain) && address)
+  //     await fetchAndSetEvmBalances(address, inputAsset);
+  //   if (isBitcoin(inputAsset.chain) && provider && btcAddress)
+  //     await fetchAndSetBitcoinBalance(provider, btcAddress);
+  //   if (isStarknet(inputAsset.chain) && starknetAddress)
+  //     await fetchAndSetStarknetBalance(starknetAddress);
+  //   if (isSolana(inputAsset.chain) && solanaAnchorProvider)
+  //     await fetchAndSetSolanaBalance(solanaAnchorProvider.publicKey);
+  //   if (isSui(inputAsset.chain) && currentAccount)
+  //     await fetchAndSetSuiBalance(currentAccount.address);
+  // }, [
+  //   fetchAndSetFiatValues,
+  //   inputAsset,
+  //   address,
+  //   fetchAndSetEvmBalances,
+  //   provider,
+  //   btcAddress,
+  //   fetchAndSetBitcoinBalance,
+  //   starknetAddress,
+  //   fetchAndSetStarknetBalance,
+  //   solanaAnchorProvider,
+  //   fetchAndSetSolanaBalance,
+  //   currentAccount,
+  //   fetchAndSetSuiBalance,
+  // ]);
 
-      const res = await swap(payload);
-      if (res?.error) setSwapError(String(res.error));
-      if (res?.val) console.log(res.val);
-    } catch (e: any) {
-      setSwapError(e?.message ?? 'Failed to create swap');
-    } finally {
-      setIsSwapping(false);
+  const timeEstimate = useMemo(() => {
+    if (!inputAsset || !outputAsset) return '';
+    return getTimeEstimates(inputAsset);
+  }, [inputAsset, outputAsset]);
+
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (loading.input || loading.output) {
+      timeoutId = setTimeout(() => {
+        setLoadingDisabled(true);
+      }, 300);
+    } else {
+      setLoadingDisabled(false);
     }
-  }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    const currentController = controller.current;
+    return () => {
+      if (currentController) {
+        currentController.abort();
+      }
+      clearSwapState();
+    };
+  }, [clearSwapState, controller]);
+
+  console.log('buttonDisabled', buttonDisabled);
+  console.log('buttonVariant', buttonVariant);
+  console.log('buttonLabel', buttonLabel);
+  console.log('loading', loadingDisabled);
   return (
     <div className="flex flex-col gap-3">
       <div className="relative flex flex-col gap-3">
         <div className="w-full">
           <SwapInput
             type={IOType.input}
-            amount={fromAmount}
-            onChange={(amount) => {
-              setAmountInputSide(IOType.input);
-              setFromAmount(amount);
-            }}
-            asset={inputAsset || undefined}
-            loading={isQuoting}
-            price={
-              inputAsset && inputAsset.price
-                ? (Number(fromAmount) * inputAsset.price).toString()
-                : '0'
-            }
-            error={swapError as any}
+            amount={inputAmount}
+            onChange={handleInputAmountChange}
+            asset={inputAsset}
+            loading={loading.input}
+            price={tokenPrices.input}
+            error={error.inputError}
             balance={undefined} // TODO: Add balance fetching
-            timeEstimate={undefined}
           />
         </div>
         <div
@@ -148,21 +191,13 @@ const CreateSwap = () => {
         <div className="w-full">
           <SwapInput
             type={IOType.output}
-            amount={toAmount}
-            onChange={(amount) => {
-              setAmountInputSide(IOType.output);
-              setToAmount(amount);
-            }}
-            asset={outputAsset || undefined}
-            loading={isQuoting}
-            price={
-              outputAsset && outputAsset.price
-                ? (Number(toAmount) * outputAsset.price).toString()
-                : '0'
-            }
-            error={undefined}
-            balance={undefined}
-            timeEstimate="~2-5 min"
+            amount={outputAmount}
+            onChange={handleOutputAmountChange}
+            asset={outputAsset}
+            loading={loading.output}
+            price={tokenPrices.output}
+            error={error.outputError}
+            timeEstimate={timeEstimate}
           />
         </div>
       </div>
@@ -170,13 +205,13 @@ const CreateSwap = () => {
       <InputAddressAndFeeRateDetails />
 
       <Button
-        className="w-full  transition-colors duration-500"
-        disabled={!canSwap}
-        variant={!canSwap ? 'disabled' : 'primary'}
+        className="w-full transition-colors duration-500"
+        variant={buttonVariant}
         size="lg"
+        // disabled={buttonDisabled || loadingDisabled}
         onClick={handleSwapClick}
       >
-        {isSwapping ? 'Creating swap…' : isQuoting ? 'Quoting…' : 'Swap'}
+        {buttonLabel}
       </Button>
     </div>
   );

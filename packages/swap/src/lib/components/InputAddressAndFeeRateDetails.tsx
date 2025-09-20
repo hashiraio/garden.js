@@ -1,13 +1,13 @@
 import React from 'react';
 import { useMemo } from 'react';
-import { useSwapStore } from '../hooks/store';
+import { swapStore } from '../store/swapStore';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
 import { InputAddress } from './InputAddress';
 import { FeesAndRateDetails } from './FeeAndRateDetails';
 
 export const InputAddressAndFeeRateDetails = () => {
-  const { inputAsset, outputAsset, fromAmount, toAmount } = useSwapStore();
+  const { inputAsset, outputAsset, inputAmount, outputAmount } = swapStore();
 
   const shouldShowDetails = useMemo(() => {
     return !!(
@@ -16,10 +16,10 @@ export const InputAddressAndFeeRateDetails = () => {
       //   !error.inputError &&
       //   !error.outputError &&
       //   !error.liquidityError &&
-      fromAmount &&
-      toAmount &&
-      Number(fromAmount) !== 0 &&
-      Number(toAmount) !== 0
+      inputAmount &&
+      outputAmount &&
+      Number(inputAmount) !== 0 &&
+      Number(outputAmount) !== 0
     );
   }, [
     inputAsset,
@@ -27,8 +27,8 @@ export const InputAddressAndFeeRateDetails = () => {
     // error.inputError,
     // error.outputError,
     // error.liquidityError,
-    fromAmount,
-    toAmount,
+    inputAmount,
+    outputAmount,
   ]);
 
   return (

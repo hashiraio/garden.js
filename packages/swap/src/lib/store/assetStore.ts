@@ -4,15 +4,16 @@ import {
   ChainInfo,
   AssetFromResponse,
   ParsedChainInfo,
+  ParsedAsset,
 } from '../types/assetTypes';
-import { Asset, Chain } from '@gardenfi/orderbook';
+import { Chain } from '@gardenfi/orderbook';
 import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
 
 type AssetStoreState = {
   filter: string;
   chains: ParsedChainInfo[];
-  allAssets: Asset[];
+  allAssets: ParsedAsset[];
   isLoading: boolean;
   error: string | null;
   currentNetwork: Network;
@@ -46,7 +47,10 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
   };
 };
 
-const parseAsset = (asset: AssetFromResponse, parent: ChainInfo): Asset => {
+const parseAsset = (
+  asset: AssetFromResponse,
+  parent: ChainInfo,
+): ParsedAsset => {
   const { chain } = parseChainName(parent.chain);
   const { symbol, name } = parseAssetId(asset.id);
 
@@ -59,6 +63,8 @@ const parseAsset = (asset: AssetFromResponse, parent: ChainInfo): Asset => {
     atomicSwapAddress: asset.htlc?.address || '',
     logo: asset.icon,
     price: asset.price,
+    min_amount: asset.min_amount,
+    max_amount: asset.max_amount,
   };
 };
 
@@ -96,7 +102,7 @@ const parseAssetId = (assetId: string): { symbol: string; name: string } => {
   return { symbol, name };
 };
 
-export const useAssetStore = create<AssetStoreState>((set, get) => ({
+export const assetInfoStore = create<AssetStoreState>((set, get) => ({
   chains: [],
   allAssets: [],
   isLoading: false,

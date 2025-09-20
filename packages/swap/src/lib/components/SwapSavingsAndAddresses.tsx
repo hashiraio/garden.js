@@ -5,7 +5,7 @@ import {
   expandAnimation,
   expandWithDelayAnimation,
 } from '../constants/animations';
-import { useSwapStore } from '../hooks/store';
+import { swapStore } from '../store/swapStore';
 import { AddressDetails } from './AddressDetails';
 import { formatAmount, formatTime } from '../utils/utils';
 
@@ -22,7 +22,7 @@ export const SwapSavingsAndAddresses = ({
   showComparison,
   networkFeesValue,
 }: SwapSavingsProps) => {
-  const { outputAsset, toAmount } = useSwapStore();
+  const { outputAsset, outputAmount } = swapStore();
 
   return (
     <motion.div className="flex flex-col" {...expandWithDelayAnimation}>
@@ -71,7 +71,7 @@ export const SwapSavingsAndAddresses = ({
           </div>
           <div className="flex gap-5 py-1">
             <Typography size="h5" weight="regular">
-              {toAmount} {outputAsset?.symbol}
+              {outputAmount} {outputAsset?.symbol}
             </Typography>
           </div>
         </div>

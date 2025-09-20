@@ -61,3 +61,8 @@ export const formatTime = (totalSeconds: number | string): string => {
 
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`;
 };
+
+export const capitalizeChain = (chainKey: string) => {
+  if (chainKey === 'evm') return 'EVM';
+  return chainKey.charAt(0).toUpperCase() + chainKey.slice(1);
+};

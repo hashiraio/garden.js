@@ -4,7 +4,7 @@ import { FC, useId, useMemo } from 'react';
 import { ArrowNorthEastIcon, EditIcon } from '@gardenfi/garden-book';
 import { Typography } from '@gardenfi/garden-book';
 // import { useAssetInfoStore } from '../hooks/useAssetInfoStore';
-import { useSwapStore } from '../hooks/store';
+import { swapStore } from '../store/swapStore';
 import { getTrimmedAddress } from '../utils/utils';
 
 type AddressDetailsProps = {
@@ -18,8 +18,8 @@ export const AddressDetails: FC<AddressDetailsProps> = ({
 }) => {
   //   const { allChains } = useAssetInfoStore();
   const tooltipId = useId();
-  const { inputAsset, outputAsset } = useSwapStore();
-  //   const { setIsEditBTCAddress } = useSwapStore();
+  const { inputAsset, outputAsset } = swapStore();
+  //   const { setIsEditBTCAddress } = swapStore();
 
   const chain = useMemo(() => {
     return isRefund

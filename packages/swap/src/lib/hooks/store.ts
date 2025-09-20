@@ -11,11 +11,11 @@ import { Asset } from '@gardenfi/orderbook';
 type SwapState = {
   inputAsset: Asset | null;
   outputAsset: Asset | null;
-  fromAmount: string;
-  toAmount: string;
+  inputAmount: string;
+  outputAmount: string;
   amountInputSide: IOType;
   isQuoting: boolean;
-  quoteError: string | null;
+  error: string | null;
   btcAddress: string;
   // last successful quote snapshot
   lastQuote?: {
@@ -26,8 +26,8 @@ type SwapState = {
     destinationDisplay: string; // human readable
   };
   selectAsset: (side: IOType, asset: Asset) => void;
-  setFromAmount: (val: string) => void;
-  setToAmount: (val: string) => void;
+  setinputAmount: (val: string) => void;
+  setoutputAmount: (val: string) => void;
   setAmountInputSide: (side: IOType) => void;
   fetchQuote: (side: IOType) => Promise<void>;
   swapAssets: () => void;
@@ -38,14 +38,14 @@ type SwapState = {
   setBtcAddress: (address: string) => void;
 };
 
-export const useSwapStore = create<SwapState>((set, get) => ({
+export const swapStore = create<SwapState>((set, get) => ({
   inputAsset: null,
   outputAsset: null,
-  fromAmount: '',
-  toAmount: '',
+  inputAmount: '',
+  outputAmount: '',
   amountInputSide: IOType.input,
   isQuoting: false,
-  quoteError: null,
+  error: null,
   btcAddress: '',
   lastQuote: undefined,
   currentNetwork: DEFAULT_NETWORK,
@@ -80,30 +80,31 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     setTimeout(() => get().debouncedFetchQuote(side), 100);
   },
 
-  setFromAmount: (val) => {
-    set({ fromAmount: val, amountInputSide: IOType.input });
+  setinputAmount: (val) => {
+    set({ inputAmount: val, amountInputSide: IOType.input });
     // Trigger debounced quote fetch
     get().debouncedFetchQuote(IOType.input);
   },
-  setToAmount: (val) => {
-    set({ toAmount: val, amountInputSide: IOType.output });
+  setoutputAmount: (val) => {
+    set({ outputAmount: val, amountInputSide: IOType.output });
     // Trigger debounced quote fetch
     get().debouncedFetchQuote(IOType.output);
   },
   setAmountInputSide: (side) => set({ amountInputSide: side }),
   fetchQuote: async (side) => {
-    const { inputAsset, outputAsset, fromAmount, toAmount, isQuoting } = get();
+    const { inputAsset, outputAsset, inputAmount, outputAmount, isQuoting } =
+      get();
     if (isQuoting) return; // Avoid overlapping quote requests
     if (!inputAsset || !outputAsset) return;
     const quote = new Quote(getApiEndpoint(get().currentNetwork).api);
     const isExactOut = side === IOType.output;
-    const amountStr = side === IOType.input ? fromAmount : toAmount;
+    const amountStr = side === IOType.input ? inputAmount : outputAmount;
     const amountNum = toBaseUnitsSafe(
       amountStr,
       side === IOType.input ? inputAsset.decimals : outputAsset.decimals,
     );
     if (amountNum <= 0) return;
-    set({ isQuoting: true, quoteError: null });
+    set({ isQuoting: true, error: null });
     try {
       const res = await quote.getQuote(
         inputAsset,
@@ -112,7 +113,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         isExactOut,
       );
       if (res.error) {
-        set({ quoteError: String(res.error) });
+        set({ error: String(res.error) });
         return;
       }
       const val = res.val as any[] | undefined;
@@ -120,10 +121,10 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       if (!best) return;
       if (isExactOut) {
         const srcAmount = Number(best.source?.amount ?? 0);
-        set({ fromAmount: fromBaseUnits(srcAmount, inputAsset.decimals) });
+        set({ inputAmount: fromBaseUnits(srcAmount, inputAsset.decimals) });
       } else {
         const dstAmount = Number(best.destination?.amount ?? 0);
-        set({ toAmount: fromBaseUnits(dstAmount, outputAsset.decimals) });
+        set({ outputAmount: fromBaseUnits(dstAmount, outputAsset.decimals) });
       }
       set({
         lastQuote: {
@@ -135,7 +136,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         },
       });
     } catch (e: any) {
-      set({ quoteError: e?.message ?? 'Failed to fetch quote' });
+      set({ error: e?.message ?? 'Failed to fetch quote' });
     } finally {
       set({ isQuoting: false });
     }
