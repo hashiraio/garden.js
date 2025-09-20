@@ -2,7 +2,7 @@ import React, { FC, useMemo } from 'react';
 import { Typography } from '@gardenfi/garden-book';
 import { SwapInfo } from './SwapInfo';
 import { Order, OrderStatus } from '@gardenfi/orderbook';
-import { useAssetStore } from '../../hooks/assetStore';
+import { useAssetStore } from '../../store/assetStore';
 import {
   formatAmount,
   getAssetFromSwap,

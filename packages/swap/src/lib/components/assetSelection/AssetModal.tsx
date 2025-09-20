@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { ParsedAsset, ParsedChainInfo } from '../../types/assetTypes';
 import { useSwapStore } from '../../hooks/store';
-import { useAssetStore } from '../../hooks/assetStore';
+import { useAssetStore } from '../../store/assetStore';
 import { ChainsTooltip } from '../../common/ChainsToolTip';
 import {
   GradientScroll,
@@ -20,15 +20,15 @@ type Props = {
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
+  const { selectedFrom, selectedTo, currentNetwork } = useSwapStore();
   const {
-    setFilter,
-    selectedFrom,
-    selectedTo,
+    allAssets,
+    chains,
     modalOpenFor,
     isAssetModalOpen,
     closeAssetModal,
-  } = useSwapStore();
-  const { allAssets, chains } = useAssetStore();
+    setFilter,
+  } = useAssetStore();
 
   const [selectedChain, setSelectedChain] = useState<
     ParsedChainInfo | undefined
@@ -38,11 +38,9 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const [visibleChainsCount] = useState<number>(7);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showAllChains, setShowAllChains] = useState(false);
-
   // Simple mobile detection
   const isMobile =
     typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-  const network = Network.TESTNET; // Default to testnet for now
 
   // Chain ordering for display
   const orderedChains = useMemo(() => {
@@ -250,7 +248,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                     <ChainsTooltip
                       chain={chain.chainDisplayName}
                       className={`${
-                        network === Network.TESTNET
+                        currentNetwork === Network.TESTNET
                           ? index === 0
                             ? 'translate-x-7'
                             : orderedChains.length - visibleChainsCount === 0 &&

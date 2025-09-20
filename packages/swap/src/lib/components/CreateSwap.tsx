@@ -52,8 +52,8 @@ const CreateSwap = () => {
       selectedFrom.asset.toString() !== selectedTo.asset.toString() &&
       !isQuoting &&
       !isSwapping &&
-      ((amountInputSide === 'from' && !!fromAmount) ||
-        (amountInputSide === 'to' && !!toAmount)) &&
+      ((amountInputSide === IOType.input && !!fromAmount) ||
+        (amountInputSide === IOType.output && !!toAmount)) &&
       isValidBitcoinAddress
     );
   }, [
@@ -123,7 +123,7 @@ const CreateSwap = () => {
             type={IOType.input}
             amount={fromAmount}
             onChange={(amount) => {
-              setAmountInputSide('from');
+              setAmountInputSide(IOType.input);
               setFromAmount(amount);
             }}
             asset={selectedFrom || undefined}
@@ -150,7 +150,7 @@ const CreateSwap = () => {
             type={IOType.output}
             amount={toAmount}
             onChange={(amount) => {
-              setAmountInputSide('to');
+              setAmountInputSide(IOType.output);
               setToAmount(amount);
             }}
             asset={selectedTo || undefined}

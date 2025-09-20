@@ -5,7 +5,7 @@ import {
   Typography,
 } from '@gardenfi/garden-book';
 import { FC } from 'react';
-import { useAssetStore } from '../../hooks/assetStore';
+import { useAssetStore } from '../../store/assetStore';
 import { ParsedAsset } from '../../types/assetTypes';
 
 type SwapInfoProps = {

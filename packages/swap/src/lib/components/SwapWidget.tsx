@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSwapStore } from '../hooks/store';
-import { useAssetStore } from '../hooks/assetStore';
+import { useAssetStore } from '../store/assetStore';
 import { Navbar } from '../common/Navbar';
 import { TabKey } from '../types/types';
 import TransactionHistory from './transactions/TransactionHistory';
@@ -18,7 +18,7 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
   const { fetchAssets, isLoading, error, allAssets } = useAssetStore();
 
   useEffect(() => {
-    fetchAssets();
+    fetchAssets(networkType);
     setCurrentNetwork(networkType);
   }, [fetchAssets, setCurrentNetwork, networkType]);
 

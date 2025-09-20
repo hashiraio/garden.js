@@ -7,15 +7,23 @@ import {
   ParsedAsset,
 } from '../types/assetTypes';
 import { ChainAsset } from '@gardenfi/orderbook';
-import { getApiEndpoint } from '../constants/constants';
+import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
 
 type AssetStoreState = {
+  filter: string;
   chains: ParsedChainInfo[];
   allAssets: ParsedAsset[];
   isLoading: boolean;
   error: string | null;
   currentNetwork: Network;
+  openAssetModal: () => void;
+  closeAssetModal: () => void;
+  modalOpenFor: IOType | null;
+  isAssetModalOpen: boolean;
+  openModal: (side: IOType) => void;
+  closeModal: () => void;
+  setFilter: (filter: string) => void;
   fetchAssets: (network?: Network) => Promise<void>;
   getAssetsByChain: (chainKey: string) => ParsedAsset[];
   getChainByKey: (chainKey: string) => ParsedChainInfo | undefined;
@@ -92,6 +100,9 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
   isLoading: false,
   error: null,
   currentNetwork: Network.TESTNET,
+  modalOpenFor: null,
+  isAssetModalOpen: false,
+  filter: '',
 
   fetchAssets: async (network?: Network) => {
     const targetNetwork = network || get().currentNetwork;
@@ -147,4 +158,10 @@ export const useAssetStore = create<AssetStoreState>((set, get) => ({
   setCurrentNetwork: (network: Network) => {
     set({ currentNetwork: network });
   },
+
+  openModal: (side: IOType) => set({ modalOpenFor: side }),
+  closeModal: () => set({ modalOpenFor: null }),
+  openAssetModal: () => set({ isAssetModalOpen: true }),
+  closeAssetModal: () => set({ isAssetModalOpen: false, filter: '' }),
+  setFilter: (filter) => set({ filter }),
 }));

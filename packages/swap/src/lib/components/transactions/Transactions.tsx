@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useAssetStore } from '../../hooks/assetStore';
+import { useAssetStore } from '../../store/assetStore';
 import transactionHistoryStore from '../../store/transactionHistoryStore';
 import { getAssetFromSwap } from '../../utils/utils';
 import { useGarden } from '@gardenfi/react-hooks';

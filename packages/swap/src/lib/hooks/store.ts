@@ -2,19 +2,18 @@ import { create } from 'zustand';
 import { ParsedAsset } from '../types/types';
 import { Quote } from '@gardenfi/core';
 import { Network } from '@gardenfi/utils';
-import { getApiEndpoint, DEFAULT_NETWORK } from '../constants/constants';
-
-type SelectionSide = 'from' | 'to';
+import {
+  getApiEndpoint,
+  DEFAULT_NETWORK,
+  IOType,
+} from '../constants/constants';
 
 type SwapState = {
-  filter: string;
-  modalOpenFor: SelectionSide | null;
-  isAssetModalOpen: boolean;
   selectedFrom: ParsedAsset | null;
   selectedTo: ParsedAsset | null;
   fromAmount: string;
   toAmount: string;
-  amountInputSide: SelectionSide;
+  amountInputSide: IOType;
   isQuoting: boolean;
   quoteError: string | null;
   btcAddress: string;
@@ -26,62 +25,43 @@ type SwapState = {
     destinationAmount: string; // base units
     destinationDisplay: string; // human readable
   };
-  setFilter: (filter: string) => void;
-  openModal: (side: SelectionSide) => void;
-  closeModal: () => void;
-  openAssetModal: () => void;
-  closeAssetModal: () => void;
-  selectAsset: (side: SelectionSide, asset: ParsedAsset) => void;
+  selectAsset: (side: IOType, asset: ParsedAsset) => void;
   setFromAmount: (val: string) => void;
   setToAmount: (val: string) => void;
-  setAmountInputSide: (side: SelectionSide) => void;
-  fetchQuote: (side: SelectionSide) => Promise<void>;
+  setAmountInputSide: (side: IOType) => void;
+  fetchQuote: (side: IOType) => Promise<void>;
   swapAssets: () => void;
   currentNetwork: Network;
   setCurrentNetwork: (network: Network) => void;
   setDefaultBTC: (assets: ParsedAsset[]) => void;
-  debouncedFetchQuote: (side: SelectionSide) => void;
+  debouncedFetchQuote: (side: IOType) => void;
   setBtcAddress: (address: string) => void;
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
-  filter: '',
-  modalOpenFor: null,
-  isAssetModalOpen: false,
   selectedFrom: null,
   selectedTo: null,
   fromAmount: '',
   toAmount: '',
-  amountInputSide: 'from',
+  amountInputSide: IOType.input,
   isQuoting: false,
   quoteError: null,
   btcAddress: '',
   lastQuote: undefined,
   currentNetwork: DEFAULT_NETWORK,
   setCurrentNetwork: (network) => set({ currentNetwork: network }),
-  setFilter: (filter) => set({ filter }),
-  openModal: (side) => set({ modalOpenFor: side }),
-  closeModal: () => set({ modalOpenFor: null, filter: '' }),
-  openAssetModal: () => set({ isAssetModalOpen: true }),
-  closeAssetModal: () => set({ isAssetModalOpen: false, filter: '' }),
   selectAsset: (side, asset) => {
     const { selectedFrom, selectedTo } = get();
-    if (side === 'from') {
+    if (side === IOType.input) {
       // If same as to, swap them
       if (selectedTo && selectedTo.asset === asset.asset) {
         set({
           selectedFrom: selectedTo,
           selectedTo: asset,
-          modalOpenFor: null,
-          isAssetModalOpen: false,
-          filter: '',
         });
       } else {
         set({
           selectedFrom: asset,
-          modalOpenFor: null,
-          isAssetModalOpen: false,
-          filter: '',
         });
       }
     } else {
@@ -89,16 +69,10 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         set({
           selectedTo: selectedFrom,
           selectedFrom: asset,
-          modalOpenFor: null,
-          isAssetModalOpen: false,
-          filter: '',
         });
       } else {
         set({
           selectedTo: asset,
-          modalOpenFor: null,
-          isAssetModalOpen: false,
-          filter: '',
         });
       }
     }
@@ -107,14 +81,14 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   },
 
   setFromAmount: (val) => {
-    set({ fromAmount: val, amountInputSide: 'from' });
+    set({ fromAmount: val, amountInputSide: IOType.input });
     // Trigger debounced quote fetch
-    get().debouncedFetchQuote('from');
+    get().debouncedFetchQuote(IOType.input);
   },
   setToAmount: (val) => {
-    set({ toAmount: val, amountInputSide: 'to' });
+    set({ toAmount: val, amountInputSide: IOType.output });
     // Trigger debounced quote fetch
-    get().debouncedFetchQuote('to');
+    get().debouncedFetchQuote(IOType.output);
   },
   setAmountInputSide: (side) => set({ amountInputSide: side }),
   fetchQuote: async (side) => {
@@ -122,11 +96,11 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     if (isQuoting) return; // Avoid overlapping quote requests
     if (!selectedFrom || !selectedTo) return;
     const quote = new Quote(getApiEndpoint(get().currentNetwork).api);
-    const isExactOut = side === 'to';
-    const amountStr = side === 'from' ? fromAmount : toAmount;
+    const isExactOut = side === IOType.output;
+    const amountStr = side === IOType.input ? fromAmount : toAmount;
     const amountNum = toBaseUnitsSafe(
       amountStr,
-      side === 'from' ? selectedFrom.decimals : selectedTo.decimals,
+      side === IOType.input ? selectedFrom.decimals : selectedTo.decimals,
     );
     if (amountNum <= 0) return;
     set({ isQuoting: true, quoteError: null });
@@ -173,7 +147,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       selectedTo: selectedFrom,
     });
     // Trigger quote fetch after swapping assets
-    setTimeout(() => get().debouncedFetchQuote('from'), 100);
+    setTimeout(() => get().debouncedFetchQuote(IOType.input), 100);
   },
 
   setDefaultBTC: (assets: ParsedAsset[]) => {
@@ -193,7 +167,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
 
   debouncedFetchQuote: (() => {
     let timeoutId: NodeJS.Timeout;
-    return (side: SelectionSide) => {
+    return (side: IOType) => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         get().fetchQuote(side);

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ResponsiveModal } from './Modal';
 import AssetModal from '../components/assetSelection/AssetModal';
 import { useSwapStore } from '../hooks/store';
+import { useAssetStore } from '../store/assetStore';
 
 export type ModalProps = {
   open: boolean;
@@ -9,8 +10,8 @@ export type ModalProps = {
 };
 
 export const Modal = () => {
-  const { closeAssetModal, isAssetModalOpen, modalOpenFor, selectAsset } =
-    useSwapStore();
+  const { closeAssetModal, isAssetModalOpen, modalOpenFor } = useAssetStore();
+  const { selectAsset } = useSwapStore();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
