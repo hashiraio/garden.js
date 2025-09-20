@@ -23,8 +23,8 @@ export const AddressDetails: FC<AddressDetailsProps> = ({
 
   const chain = useMemo(() => {
     return isRefund
-      ? inputAsset && inputAsset.asset.chain
-      : outputAsset && outputAsset.asset.chain;
+      ? inputAsset && inputAsset.chain
+      : outputAsset && outputAsset.chain;
   }, [inputAsset, outputAsset, isRefund]);
 
   //   const redirect = useMemo(() => {

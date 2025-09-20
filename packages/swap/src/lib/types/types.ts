@@ -1,11 +1,6 @@
-import { ChainAsset } from '@gardenfi/orderbook';
-
-// Re-export new asset types
-export type { ParsedAsset, ParsedChainInfo, ChainInfo } from './assetTypes';
+export type { ParsedChainInfo, ChainInfo } from './assetTypes';
 
 export type TabKey = 'swap' | 'history';
-
-// ParsedAsset is now imported from assetTypes.ts
 
 export function parseAssetId(assetId: string): {
   chainKey: string;
@@ -37,9 +32,6 @@ export function formatChainName(chainKey: string): string {
   const prettyBase = capitalizeWords(base);
   return hasTestnet ? `${prettyBase} Testnet` : prettyBase;
 }
-
-// toParsedAsset function removed - now using new asset structure from assetTypes.ts
-
 function capitalizeWords(input: string): string {
   return input
     .split(' ')

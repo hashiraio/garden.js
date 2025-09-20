@@ -1,5 +1,4 @@
-import { Swap } from '@gardenfi/orderbook';
-import { ParsedAsset } from '../types/types';
+import { Asset, Swap } from '@gardenfi/orderbook';
 import BigNumber from 'bignumber.js';
 
 export const getDayDifference = (date: string) => {
@@ -19,10 +18,8 @@ export const getDayDifference = (date: string) => {
   return 'Just now';
 };
 
-export const getAssetFromSwap = (swap: Swap, assets: ParsedAsset[] | null) => {
-  return (
-    assets && assets.find((asset) => asset.asset.toString() === swap.asset)
-  );
+export const getAssetFromSwap = (swap: Swap, assets: Asset[] | null) => {
+  return assets && assets.find((asset) => asset.toString() === swap.asset);
 };
 
 export const formatAmount = (

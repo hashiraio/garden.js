@@ -9,7 +9,6 @@ import {
   ErrorFormat,
   Errors,
 } from '../constants/constants';
-import { ParsedAsset } from '../types/assetTypes';
 
 export type TokenPrices = {
   input: string;
@@ -29,8 +28,8 @@ export type SwapErrors = {
 };
 
 type SwapState = {
-  inputAsset?: ParsedAsset;
-  outputAsset?: ParsedAsset;
+  inputAsset?: Asset;
+  outputAsset?: Asset;
   inputAmount: string;
   outputAmount: string;
   rate: number;
@@ -58,7 +57,7 @@ type SwapState = {
   setIsSwapping: (isSwapping: boolean) => void;
   setIsApproving: (isApproving: boolean) => void;
   setStrategy: (strategy: string) => void;
-  setAsset: (ioType: IOType, asset: ParsedAsset | undefined) => void;
+  setAsset: (ioType: IOType, asset: Asset | undefined) => void;
   setAmount: (ioType: IOType, amount: string) => void;
   setRate: (rate: number) => void;
   setNetworkFees: (networkFees: number) => void;

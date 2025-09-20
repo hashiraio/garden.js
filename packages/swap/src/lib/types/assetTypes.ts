@@ -1,4 +1,4 @@
-import { Asset, Chain, ChainAsset } from '@gardenfi/orderbook';
+import { Asset, Chain } from '@gardenfi/orderbook';
 
 export interface AssetFromResponse {
   id: string;
@@ -38,9 +38,9 @@ export interface ChainsApiResponse {
 
 // Parsed types for internal use
 export interface ParsedChainInfo {
-  chainKey: string;
-  chainName: string;
   chain: Chain;
+  chainName: string;
+  chainId: string;
   iconUrl: string;
   explorerUrl: string;
   confirmationTarget: number;
@@ -49,21 +49,4 @@ export interface ParsedChainInfo {
   supportedHtlcSchemas: string[];
   supportedTokenSchemas: string[];
   assets: Asset[];
-}
-
-export interface ParsedAsset {
-  asset: ChainAsset;
-  assetName: string;
-  chainName: string;
-  chainId: string;
-  symbol: string;
-  iconUrl: string;
-  decimals: number;
-  priceUsd: number;
-  minAmountRaw: string;
-  maxAmountRaw: string;
-  htlcAddress: string | null;
-  htlcSchema: string | null;
-  tokenAddress: string | null;
-  tokenSchema: string | null;
 }

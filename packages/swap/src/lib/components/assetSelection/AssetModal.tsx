@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ParsedAsset, ParsedChainInfo } from '../../types/assetTypes';
+import { ParsedChainInfo } from '../../types/assetTypes';
 import { useSwapStore } from '../../hooks/store';
 import { useAssetStore } from '../../store/assetStore';
 import { ChainsTooltip } from '../../common/ChainsToolTip';
@@ -15,9 +15,10 @@ import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
 import { formatAmount } from '../../utils/utils';
 import { IOType } from '../../constants/constants';
+import { Asset } from '@gardenfi/orderbook';
 
 type Props = {
-  onSelect: (asset: ParsedAsset) => void;
+  onSelect: (asset: Asset) => void;
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
@@ -94,7 +95,9 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     const otherAsset = IOType.input ? outputAsset : inputAsset;
     if (otherAsset) {
       assets = assets.filter(
-        (asset) => asset.toString() !== otherAsset.toString(),
+        (asset) =>
+          `${asset.chain}-${asset.symbol}` !==
+          `${otherAsset.chain}-${otherAsset.symbol}`,
       );
     }
 
@@ -112,16 +115,12 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const sortedAssets = useMemo(() => {
     return [...filteredAssets].sort((a, b) => {
       // First sort by chain order
-      const chainA = chains?.find((c) => c.chainId === a.chainId);
-      const chainB = chains?.find((c) => c.chainId === b.chainId);
+      const chainA = chains?.find((c) => c.chain === a.chain);
+      const chainB = chains?.find((c) => c.chain === b.chain);
 
       if (chainA && chainB) {
-        const indexA = orderedChains.findIndex(
-          (c) => c.chainId === chainA.chainId,
-        );
-        const indexB = orderedChains.findIndex(
-          (c) => c.chainId === chainB.chainId,
-        );
+        const indexA = orderedChains.findIndex((c) => c.chain === chainA.chain);
+        const indexB = orderedChains.findIndex((c) => c.chain === chainB.chain);
         if (indexA !== indexB) {
           return indexA - indexB;
         }
@@ -135,10 +134,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   // Visible chains for the chain selector (ensure selected chain is included)
   const visibleChains = useMemo(() => {
     const base = orderedChains.slice(0, visibleChainsCount);
-    if (
-      selectedChain &&
-      !base.find((c) => c.chainId === selectedChain.chainId)
-    ) {
+    if (selectedChain && !base.find((c) => c.chain === selectedChain.chain)) {
       return [selectedChain, ...base.slice(0, visibleChainsCount - 1)];
     }
     return base;
@@ -153,12 +149,12 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const hideSidebar = () => setShowAllChains(false);
 
   const handleChainClick = (chain: ParsedChainInfo) => {
-    if (selectedChain?.chainId === chain.chainId) setSelectedChain(undefined);
+    if (selectedChain?.chain === chain.chain) setSelectedChain(undefined);
     else setSelectedChain(chain);
     setShowAllChains(false);
   };
 
-  const handleAssetSelect = (asset: ParsedAsset) => {
+  const handleAssetSelect = (asset: Asset) => {
     onSelect(asset);
     closeAssetModal();
     setShowAllChains(false);
@@ -227,14 +223,14 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                 <button
                   key={chain.chainId}
                   className={`relative flex h-12 flex-1 items-center justify-center gap-2 overflow-visible rounded-xl outline-none duration-300 ease-in-out ${
-                    !selectedChain || chain.chainId !== selectedChain.chainId
+                    !selectedChain || chain.chain !== selectedChain.chain
                       ? '!bg-white/50'
                       : '!bg-white'
                   }`}
                   onMouseEnter={() => setHoveredChain(chain.chainName)}
                   onMouseLeave={() => setHoveredChain('')}
                   onClick={() =>
-                    selectedChain && chain.chainId === selectedChain.chainId
+                    selectedChain && chain.chain === selectedChain.chain
                       ? setSelectedChain(undefined)
                       : setSelectedChain(chain)
                   }
@@ -313,16 +309,16 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                 <div className="space-y-1">
                   {sortedAssets.map((asset) => (
                     <button
-                      key={asset.asset.toString()}
+                      key={`${asset.chain}-${asset.symbol}`}
                       onClick={() => handleAssetSelect(asset)}
                       className="flex w-full cursor-pointer items-center justify-between !gap-2 !px-4 !py-1.5 hover:bg-[#f4f0fc]"
                     >
                       <div className="flex w-full items-center justify-start gap-2">
                         <div className={`w-10`}>
                           <TokenNetworkLogos
-                            tokenLogo={asset.iconUrl}
+                            tokenLogo={asset.logo}
                             chainLogo={
-                              chains?.find((c) => c.chainId === asset.chainId)
+                              chains?.find((c) => c.chain === asset.chain)
                                 ?.iconUrl
                             }
                           />
@@ -333,11 +329,11 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                           breakpoints={{ sm: 'h4' }}
                           weight="regular"
                         >
-                          {asset.assetName}
+                          {asset.name}
                         </Typography>
                       </div>
                       <div className="flex items-center gap-1">
-                        {asset.priceUsd && (
+                        {asset.price && (
                           <Typography
                             size={'h5'}
                             breakpoints={{
@@ -347,7 +343,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                             className={`!text-mid-grey`}
                           >
                             {formatAmount(
-                              Number(asset.priceUsd),
+                              Number(asset.price),
                               0,
                               Math.min(asset.decimals, 8),
                             )}

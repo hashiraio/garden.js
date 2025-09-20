@@ -27,15 +27,15 @@ export const InputAddress = () => {
   const walletBtcAddress = '';
 
   const isRecoveryAddress = useMemo(
-    () => !!(inputAsset && isBitcoin(inputAsset.asset.chain)),
+    () => !!(inputAsset && isBitcoin(inputAsset.chain)),
     [inputAsset],
   );
 
   const shouldShowAddress = useMemo(() => {
     return (
       (isEditBTCAddress || !walletBtcAddress) &&
-      ((inputAsset?.asset.chain && isBitcoin(inputAsset.asset.chain)) ||
-        (outputAsset?.asset.chain && isBitcoin(outputAsset.asset.chain)))
+      ((inputAsset?.chain && isBitcoin(inputAsset.chain)) ||
+        (outputAsset?.chain && isBitcoin(outputAsset.chain)))
     );
   }, [isEditBTCAddress, walletBtcAddress, inputAsset, outputAsset]);
 

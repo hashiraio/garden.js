@@ -33,7 +33,7 @@ const CreateSwap = () => {
     return !!(
       outputAsset &&
       inputAsset &&
-      (isBitcoin(outputAsset.asset.chain) || isBitcoin(inputAsset.asset.chain))
+      (isBitcoin(outputAsset.chain) || isBitcoin(inputAsset.chain))
     );
   }, [outputAsset, inputAsset]);
 
@@ -49,7 +49,7 @@ const CreateSwap = () => {
       typeof swap === 'function' &&
       !!inputAsset &&
       !!outputAsset &&
-      inputAsset.asset.toString() !== outputAsset.asset.toString() &&
+      inputAsset.toString() !== outputAsset.toString() &&
       !isQuoting &&
       !isSwapping &&
       ((amountInputSide === IOType.input && !!fromAmount) ||
@@ -83,7 +83,7 @@ const CreateSwap = () => {
     if (typeof swap !== 'function')
       return setSwapError('Garden context unavailable');
     if (!inputAsset || !outputAsset) return setSwapError('Select both assets');
-    if (inputAsset.asset.toString() === outputAsset.asset.toString())
+    if (inputAsset.toString() === outputAsset.toString())
       return setSwapError('Assets must be different');
     if (isQuoting) return setSwapError('Please wait, fetching quote…');
     const sendAmount = fromAmount;
@@ -94,8 +94,8 @@ const CreateSwap = () => {
     try {
       setIsSwapping(true);
       const payload: SwapParams = {
-        fromAsset: inputAsset.asset.toString(),
-        toAsset: outputAsset.asset.toString(),
+        fromAsset: inputAsset.toString(),
+        toAsset: outputAsset.toString(),
         receiveAmount: lastQuote?.isExactOut
           ? lastQuote?.sourceAmount
           : lastQuote?.destinationAmount ?? '',
@@ -129,8 +129,8 @@ const CreateSwap = () => {
             asset={inputAsset || undefined}
             loading={isQuoting}
             price={
-              inputAsset
-                ? (Number(fromAmount) * inputAsset.priceUsd).toString()
+              inputAsset && inputAsset.price
+                ? (Number(fromAmount) * inputAsset.price).toString()
                 : '0'
             }
             error={swapError as any}
@@ -156,8 +156,8 @@ const CreateSwap = () => {
             asset={outputAsset || undefined}
             loading={isQuoting}
             price={
-              outputAsset
-                ? (Number(toAmount) * outputAsset.priceUsd).toString()
+              outputAsset && outputAsset.price
+                ? (Number(toAmount) * outputAsset.price).toString()
                 : '0'
             }
             error={undefined}

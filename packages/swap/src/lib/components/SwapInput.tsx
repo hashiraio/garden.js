@@ -8,17 +8,17 @@ import {
 } from '@gardenfi/garden-book';
 import { FC, useMemo, useRef, ChangeEvent, useState, useEffect } from 'react';
 import { useAssetStore } from '../store/assetStore';
-import { ParsedAsset } from '../types/assetTypes';
 import NumberFlow from '@number-flow/react';
 import clsx from 'clsx';
 import { formatAmount } from '../utils/utils';
 import { ErrorFormat, IOType } from '../constants/constants';
+import { Asset } from '@gardenfi/orderbook';
 
 type SwapInputProps = {
   type: IOType;
   amount: string;
   onChange: (amount: string) => void;
-  asset?: ParsedAsset;
+  asset?: Asset;
   loading: boolean;
   price: string;
   error?: ErrorFormat;
@@ -49,7 +49,7 @@ export const SwapInput: FC<SwapInputProps> = ({
 
   const network = useMemo(() => {
     if (!asset) return;
-    return chains?.find((chain) => chain.chainId === asset.chainId);
+    return chains?.find((chain) => chain.chain === asset.chain);
   }, [asset, chains]);
 
   const label = type === IOType.input ? 'Send' : 'Receive';
@@ -260,7 +260,7 @@ export const SwapInput: FC<SwapInputProps> = ({
           {asset ? (
             <TokenInfo
               symbol={asset.symbol}
-              tokenLogo={asset.iconUrl || ''}
+              tokenLogo={asset.logo || ''}
               chainLogo={network?.iconUrl}
               onClick={handleOpenAssetSelector}
             />

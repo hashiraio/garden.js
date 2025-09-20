@@ -7,12 +7,11 @@ import {
 } from '@gardenfi/garden-book';
 
 // import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
-// import { Asset, isBitcoin, isSolana } from '@gardenfi/orderbook';
+import { Asset } from '@gardenfi/orderbook';
 import { motion, AnimatePresence } from 'framer-motion';
 // import { useSwapStore } from '../hooks/store';
 import { formatAmount } from '../utils/utils';
 import { delayedFadeAnimation } from '../constants/animations';
-import { ParsedAsset } from '../types/assetTypes';
 import { useSwapStore } from '../hooks/store';
 import { SwapSavingsAndAddresses } from './SwapSavingsAndAddresses';
 
@@ -23,8 +22,8 @@ const RateDisplay = ({
   formattedTokenPrice,
   className = '',
 }: {
-  inputAsset?: ParsedAsset | null;
-  outputAsset?: ParsedAsset | null;
+  inputAsset?: Asset | null;
+  outputAsset?: Asset | null;
   formattedRate?: number;
   formattedTokenPrice?: number;
   className?: string;

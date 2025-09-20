@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { ParsedAsset } from '../types/types';
 import { Quote } from '@gardenfi/core';
 import { Network } from '@gardenfi/utils';
 import {
@@ -7,10 +6,11 @@ import {
   DEFAULT_NETWORK,
   IOType,
 } from '../constants/constants';
+import { Asset } from '@gardenfi/orderbook';
 
 type SwapState = {
-  inputAsset: ParsedAsset | null;
-  outputAsset: ParsedAsset | null;
+  inputAsset: Asset | null;
+  outputAsset: Asset | null;
   fromAmount: string;
   toAmount: string;
   amountInputSide: IOType;
@@ -25,7 +25,7 @@ type SwapState = {
     destinationAmount: string; // base units
     destinationDisplay: string; // human readable
   };
-  selectAsset: (side: IOType, asset: ParsedAsset) => void;
+  selectAsset: (side: IOType, asset: Asset) => void;
   setFromAmount: (val: string) => void;
   setToAmount: (val: string) => void;
   setAmountInputSide: (side: IOType) => void;
@@ -33,7 +33,7 @@ type SwapState = {
   swapAssets: () => void;
   currentNetwork: Network;
   setCurrentNetwork: (network: Network) => void;
-  setDefaultBTC: (assets: ParsedAsset[]) => void;
+  setDefaultBTC: (assets: Asset[]) => void;
   debouncedFetchQuote: (side: IOType) => void;
   setBtcAddress: (address: string) => void;
 };
@@ -54,7 +54,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     const { inputAsset, outputAsset } = get();
     if (side === IOType.input) {
       // If same as to, swap them
-      if (outputAsset && outputAsset.asset === asset.asset) {
+      if (outputAsset && outputAsset === asset) {
         set({
           inputAsset: outputAsset,
           outputAsset: asset,
@@ -65,7 +65,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         });
       }
     } else {
-      if (inputAsset && inputAsset.asset === asset.asset) {
+      if (inputAsset && inputAsset === asset) {
         set({
           outputAsset: inputAsset,
           inputAsset: asset,
@@ -106,8 +106,8 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     set({ isQuoting: true, quoteError: null });
     try {
       const res = await quote.getQuote(
-        inputAsset.asset.toString(),
-        outputAsset.asset.toString(),
+        inputAsset,
+        outputAsset,
         amountNum,
         isExactOut,
       );
@@ -150,14 +150,14 @@ export const useSwapStore = create<SwapState>((set, get) => ({
     setTimeout(() => get().debouncedFetchQuote(IOType.input), 100);
   },
 
-  setDefaultBTC: (assets: ParsedAsset[]) => {
+  setDefaultBTC: (assets: Asset[]) => {
     const { inputAsset } = get();
     // Only set BTC as default if no asset is currently selected
     if (!inputAsset) {
       const btcAsset = assets.find(
         (asset) =>
           asset.symbol === 'BTC' &&
-          asset.assetName.toLowerCase().includes('bitcoin'),
+          asset.name.toLowerCase().includes('bitcoin'),
       );
       if (btcAsset) {
         set({ inputAsset: btcAsset });

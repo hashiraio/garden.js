@@ -33,8 +33,8 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
 
   return {
     chainName,
-    chainKey: chainInfo.chain,
     chain: chain,
+    chainId: chainInfo.id,
     iconUrl: chainInfo.icon,
     explorerUrl: chainInfo.explorer_url,
     confirmationTarget: chainInfo.confirmation_target,
@@ -46,7 +46,6 @@ const parseChainInfo = (chainInfo: ChainInfo): ParsedChainInfo => {
   };
 };
 
-// Helper function to parse asset, inheriting chain display name and id from parent
 const parseAsset = (asset: AssetFromResponse, parent: ChainInfo): Asset => {
   const { chain } = parseChainName(parent.chain);
   const { symbol, name } = parseAssetId(asset.id);
@@ -59,6 +58,7 @@ const parseAsset = (asset: AssetFromResponse, parent: ChainInfo): Asset => {
     tokenAddress: asset.token?.address || '',
     atomicSwapAddress: asset.htlc?.address || '',
     logo: asset.icon,
+    price: asset.price,
   };
 };
 
