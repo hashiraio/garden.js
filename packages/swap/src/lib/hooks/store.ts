@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { ParsedAsset } from '../types/types';
 import { Quote } from '@gardenfi/core';
 import { Network } from '@gardenfi/utils';
-import { getApiEndpoint, DEFAULT_NETWORK } from '../constants/network';
+import { getApiEndpoint, DEFAULT_NETWORK } from '../constants/constants';
 
 type SelectionSide = 'from' | 'to';
 

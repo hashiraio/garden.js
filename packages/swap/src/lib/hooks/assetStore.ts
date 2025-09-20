@@ -7,7 +7,7 @@ import {
   ParsedAsset,
 } from '../types/assetTypes';
 import { ChainAsset } from '@gardenfi/orderbook';
-import { getApiEndpoint } from '../constants/network';
+import { getApiEndpoint } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
 
 type AssetStoreState = {

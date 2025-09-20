@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { ResponsiveModal } from './Modal';
-import AssetModal from './AssetModal';
+import AssetModal from '../components/assetSelection/AssetModal';
 import { useSwapStore } from '../hooks/store';
 
 export type ModalProps = {

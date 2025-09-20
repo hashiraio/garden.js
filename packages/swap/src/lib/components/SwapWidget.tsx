@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSwapStore } from '../hooks/store';
 import { useAssetStore } from '../hooks/assetStore';
-import { Navbar } from './Navbar';
+import { Navbar } from '../common/Navbar';
 import { TabKey } from '../types/types';
-import TransactionHistory from './TransactionHistory';
+import TransactionHistory from './transactions/TransactionHistory';
 import CreateSwap from './CreateSwap';
 import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
-import { Modal } from './ModalComponent';
+import { Modal } from '../common/ModalComponent';
 import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
 
 const SwapWidget = ({ network }: { network: ApiConfig }) => {

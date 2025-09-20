@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { ParsedAsset, ParsedChainInfo } from '../types/assetTypes';
-import { useSwapStore } from '../hooks/store';
-import { useAssetStore } from '../hooks/assetStore';
-import { ChainsTooltip } from './ChainsToolTip';
+import { ParsedAsset, ParsedChainInfo } from '../../types/assetTypes';
+import { useSwapStore } from '../../hooks/store';
+import { useAssetStore } from '../../hooks/assetStore';
+import { ChainsTooltip } from '../../common/ChainsToolTip';
 import {
   GradientScroll,
   CloseIcon,
@@ -13,7 +13,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
-import { formatAmount } from '../utils/utils';
+import { formatAmount } from '../../utils/utils';
 
 type Props = {
   onSelect: (asset: ParsedAsset) => void;

@@ -66,16 +66,3 @@ export interface ParsedAsset {
   tokenAddress: string | null;
   tokenSchema: string | null;
 }
-
-// Legacy compatibility types
-export interface ApiAsset {
-  id: string;
-  chain: string;
-  icon: string | null;
-  htlc: { address: string; schema: string } | null;
-  token: { address: string; schema: string | null } | null;
-  decimals: number;
-  min_amount: string;
-  max_amount: string;
-  price: number;
-}

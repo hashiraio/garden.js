@@ -1,17 +1,5 @@
 import { ChainAsset } from '@gardenfi/orderbook';
 
-export type ApiAsset = {
-  id: string;
-  chain: string;
-  icon: string | null;
-  htlc: { address: string; schema: string } | null;
-  token: { address: string; schema: string | null } | null;
-  decimals: number;
-  min_amount: string;
-  max_amount: string;
-  price: number;
-};
-
 // Re-export new asset types
 export type { ParsedAsset, ParsedChainInfo, ChainInfo } from './assetTypes';
 

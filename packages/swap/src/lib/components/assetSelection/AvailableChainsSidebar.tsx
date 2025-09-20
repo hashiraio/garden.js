@@ -1,5 +1,5 @@
 import React from 'react';
-import { ParsedChainInfo } from '../types/assetTypes';
+import { ParsedChainInfo } from '../../types/assetTypes';
 import {
   ArrowLeftIcon,
   GradientScroll,
@@ -8,7 +8,7 @@ import {
 } from '@gardenfi/garden-book';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
-import { viewPortStore } from '../hooks/viewPortStore';
+import { viewPortStore } from '../../hooks/viewPortStore';
 
 type SidebarProps = {
   show: boolean;
