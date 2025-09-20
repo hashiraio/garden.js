@@ -1,4 +1,4 @@
-import { ChainAsset, SupportedAssets } from '@gardenfi/orderbook';
+import { ChainAsset, Assets } from '@gardenfi/orderbook';
 import { Environment, Network } from '@gardenfi/utils';
 
 export type Api = {
@@ -86,5 +86,5 @@ export const SUI_CONFIG: Record<
 } as const;
 
 export const DEFAULT_AFFILIATE_ASSET = {
-  asset: ChainAsset.from(SupportedAssets.mainnet.base.cBBTC),
+  asset: ChainAsset.from(Assets.base.cBBTC),
 };

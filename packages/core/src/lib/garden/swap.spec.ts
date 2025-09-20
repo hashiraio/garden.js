@@ -1,5 +1,5 @@
 import { Garden } from './garden';
-import { ChainAsset, SupportedAssets } from '@gardenfi/orderbook';
+import { ChainAsset, Assets } from '@gardenfi/orderbook';
 import { with0x, Network, sleep } from '@gardenfi/utils';
 import { RpcProvider, Account } from 'starknet';
 import { describe, it } from 'vitest';
@@ -123,11 +123,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(
-        SupportedAssets.testnet.ethereum_sepolia.WBTC,
-      );
+      const from = ChainAsset.from(Assets.ethereum_sepolia.WBTC);
 
-      const to = ChainAsset.from(SupportedAssets.testnet.base_sepolia.USDT);
+      const to = ChainAsset.from(Assets.base_sepolia.USDT);
       const sendAmount = 50000;
       const quote = await garden.quote.getQuote(from, to, sendAmount, false);
 
@@ -165,11 +163,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
           evm: evmWallet,
         },
       });
-      const from = ChainAsset.from(
-        SupportedAssets.testnet.arbitrum_sepolia.WBTC,
-      );
+      const from = ChainAsset.from(Assets.arbitrum_sepolia.WBTC);
 
-      const to = ChainAsset.from(SupportedAssets.testnet.bitcoin_testnet.BTC);
+      const to = ChainAsset.from(Assets.bitcoin_testnet.BTC);
       const sendAmount = 50000;
       const quote = await gardenWithoutHTLCs.quote.getQuote(
         from,
@@ -211,11 +207,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         },
       });
 
-      const from = ChainAsset.from(
-        SupportedAssets.testnet.arbitrum_sepolia.WBTC,
-      );
+      const from = ChainAsset.from(Assets.arbitrum_sepolia.WBTC);
 
-      const to = ChainAsset.from(SupportedAssets.testnet.solana_testnet.cbBTC);
+      const to = ChainAsset.from(Assets.solana_testnet.cbBTC);
       const sendAmount = 50000;
       const quote = await gardenWithoutHTLCs.quote.getQuote(
         from,

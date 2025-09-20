@@ -1,6 +1,6 @@
 import { OrderWithStatus, QuoteParamsForAssets } from '@gardenfi/core';
 import { IGardenJS, QuoteResponse, SwapParams } from '@gardenfi/core';
-import { IOrderbook, Order } from '@gardenfi/orderbook';
+import { IOrderbook } from '@gardenfi/orderbook';
 import { GardenConfigWithHTLCs, GardenConfigWithWallets } from '@gardenfi/core';
 import { AsyncResult, IStore } from '@gardenfi/utils';
 

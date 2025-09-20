@@ -19,6 +19,7 @@ import {
 } from '@gardenfi/utils';
 import { ConstructUrl, discriminateOrderResponse } from '../utils';
 import { ParseOrderStatus } from '../orderStatus/orderStatus';
+import { BlockchainType } from '../constants/asset.types';
 
 /**
  * A class that allows you to create and manage orders with the orderbook url.
@@ -32,16 +33,16 @@ export class Orderbook implements IOrderbook {
     this.url = url;
   }
 
-  async createOrder(
+  async createOrder<T extends BlockchainType>(
     order: CreateOrderRequest,
     auth: IAuth,
-  ): AsyncResult<CreateOrderResponse, string> {
+  ): AsyncResult<CreateOrderResponse<T>, string> {
     try {
       const headers = await auth.getAuthHeaders();
       if (headers.error) {
         return Err(headers.error);
       }
-      const res = await Fetcher.post<APIResponse<CreateOrderResponse>>(
+      const res = await Fetcher.post<APIResponse<CreateOrderResponse<T>>>(
         this.url.endpoint('/v2/orders'),
         {
           body: JSON.stringify(order),
@@ -63,7 +64,7 @@ export class Orderbook implements IOrderbook {
         return Err('CreateOrder: Unable to determine order type from response');
       }
 
-      return Ok(createOrderResponse);
+      return Ok(createOrderResponse as unknown as CreateOrderResponse<T>);
     } catch (error) {
       return Err('CreateOrder Err:', String(error));
     }

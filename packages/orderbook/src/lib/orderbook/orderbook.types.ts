@@ -1,5 +1,6 @@
 import { AsyncResult, IAuth, Request } from '@gardenfi/utils';
-import { BlockchainType, Chain, OrderLifecycle, OrderStatus } from '../asset';
+import { OrderLifecycle, OrderStatus } from '../constants/asset';
+import { BlockchainType, Chain } from '../constants/asset.types';
 import type { Calldata, RawArgs, TypedData } from 'starknet';
 import { ChainAsset } from '../chainAsset/chainAsset';
 

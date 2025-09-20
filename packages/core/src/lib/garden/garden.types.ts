@@ -1,13 +1,8 @@
 import {
   AffiliateFee,
-  Asset,
   AssetLike,
   BitcoinOrderResponse,
   BlockchainType,
-  Chain,
-  ChainAsset,
-  ChainAssetString,
-  CreateOrderResponse,
   EvmOrderResponse,
   IOrderbook,
   Order,
@@ -16,7 +11,6 @@ import {
   SolanaOrderResponse,
   StarknetOrderResponse,
   SuiOrderResponse,
-  getBlockchainType,
 } from '@gardenfi/orderbook';
 import { ApiKey, AsyncResult, IAuth, Network } from '@gardenfi/utils';
 import { ISecretManager } from '../secretManager/secretManager.types';
@@ -204,6 +198,3 @@ export type ResponseTypeMap = {
   [BlockchainType.solana]: SolanaOrderResponse;
   [BlockchainType.sui]: SuiOrderResponse;
 };
-
-export type CreateOrderResponseFromParams<T extends SwapParams> =
-  CreateOrderResponse;

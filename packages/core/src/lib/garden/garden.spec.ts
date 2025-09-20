@@ -4,12 +4,7 @@ import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { describe, expect, it } from 'vitest';
 import { loadTestConfig } from '../../../../../test-config-loader';
-import {
-  ChainAsset,
-  isBitcoin,
-  Order,
-  SupportedAssets,
-} from '@gardenfi/orderbook';
+import { ChainAsset, isBitcoin, Order, Assets } from '@gardenfi/orderbook';
 import { arbitrumSepolia, sepolia } from 'viem/chains';
 import { DigestKey } from '@gardenfi/utils';
 import { switchOrAddNetwork } from '../switchOrAddNetwork';
@@ -56,7 +51,7 @@ describe('checking garden initialisation', async () => {
   });
 
   console.log('garden :', garden);
-  const order = await garden.orderbook.getOrder(
+  const order = await garden.getOrder(
     'df4d18a3f4d8754d17c831b491b375f8b925625fa8b389b4b671325a66bdc176',
   );
   console.log('this is an order fetched', order.val);
@@ -120,8 +115,8 @@ describe('swap and execute using garden', () => {
 
   it('should create an order', async () => {
     const orderObj = {
-      fromAsset: SupportedAssets.testnet.arbitrum_sepolia.WBTC,
-      toAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
+      fromAsset: Assets.arbitrum_sepolia.WBTC,
+      toAsset: Assets.bitcoin_testnet.BTC,
       sendAmount: '10000'.toString(),
       receiveAmount: '9970'.toString(),
       additionalData: {
@@ -137,7 +132,7 @@ describe('swap and execute using garden', () => {
     }
     const orderId = result.val;
 
-    const res = (await garden.orderbook.getOrder(orderId)).val;
+    const res = (await garden.getOrder(orderId)).val;
     if (!res) throw new Error('error getting order');
     order = res;
     console.log('orderCreated and matched ✅ ', order.order_id);
@@ -209,8 +204,8 @@ describe.only('switch network with http transport', () => {
   const trade = async (garden: Garden) => {
     for (let i = 0; i < 10; i++) {
       const quote = await garden.quote.getQuote(
-        ChainAsset.from(SupportedAssets.testnet.arbitrum_sepolia.WBTC),
-        ChainAsset.from(SupportedAssets.testnet.base_sepolia.WBTC),
+        ChainAsset.from(Assets.arbitrum_sepolia.WBTC),
+        ChainAsset.from(Assets.base_sepolia.WBTC),
         Number('50000'),
         false,
       );
@@ -233,7 +228,7 @@ describe.only('switch network with http transport', () => {
         continue;
       }
       const matchedOrder = order.val;
-      const res = await garden.orderbook.getOrder(matchedOrder);
+      const res = await garden.getOrder(matchedOrder);
       if (!res.val) {
         throw new Error('order not found');
       }

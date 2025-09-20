@@ -246,9 +246,10 @@ export class Executor {
       [BlockchainType.starknet]: () => this.starknetRedeem(order, secret),
       [BlockchainType.solana]: () => this.solRedeem(order, secret),
       [BlockchainType.sui]: () => this.suiRedeem(order, secret),
-    };
+    } as const;
 
-    const handler = redeemHandlers[blockchainType];
+    const handler =
+      redeemHandlers[blockchainType as keyof typeof redeemHandlers];
     if (handler) {
       await handler();
     } else {

@@ -1,13 +1,6 @@
 import { Network } from '@gardenfi/utils';
-import {
-  Asset,
-  BlockchainType,
-  Chain,
-  Chains,
-  ChainsConfig,
-  getBlockchainType,
-} from '../asset';
-import { SupportedAssets } from '../constants';
+import { Asset, BlockchainType, Chain } from '../constants/asset.types';
+import { Assets, Chains, Config, getBlockchainType } from '../constants/asset';
 
 export type ChainAssetString = `${Chain}:${string}`;
 
@@ -27,11 +20,8 @@ export class ChainAsset {
     this.blockchainType = getBlockchainType(chain);
     this.formatted =
       `${chain.toLowerCase()}:${symbol.toLowerCase()}` as ChainAssetString;
-    this.network = ChainsConfig[chain].network;
-    this.asset =
-      SupportedAssets[this.network][
-        chain as keyof (typeof SupportedAssets)[Network]
-      ][symbol];
+    this.network = Config[chain].network;
+    this.asset = Assets[chain as Chain][symbol as keyof (typeof Assets)[Chain]];
   }
 
   /* ---------------- factories ---------------- */

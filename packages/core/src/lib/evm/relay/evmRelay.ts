@@ -18,7 +18,7 @@ import {
   isEvmNativeToken,
   Order,
   isEvmOrderResponse,
-  EvmChain,
+  EVMChains,
   ChainAsset,
 } from '@gardenfi/orderbook';
 import { AtomicSwapABI } from '../abi/atomicSwap';
@@ -61,7 +61,7 @@ export class EvmRelay implements IEVMHTLC {
     if (!isEVM(order.source_swap.chain))
       return Err('Source chain is not an EVM chain');
 
-    const evmChain = order.source_swap.chain as EvmChain;
+    const evmChain = order.source_swap.chain as EVMChains;
     const _walletClient = await switchOrAddNetwork(evmChain, this.wallet);
     if (!_walletClient.ok) return Err(_walletClient.error);
     this.wallet = _walletClient.val.walletClient;

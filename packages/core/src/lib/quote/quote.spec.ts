@@ -1,4 +1,4 @@
-import { SupportedAssets } from '@gardenfi/orderbook';
+import { Assets } from '@gardenfi/orderbook';
 import { Quote } from './quote';
 import { describe, expect, it } from 'vitest';
 
@@ -45,8 +45,8 @@ describe('quote', () => {
 
   it('get quote ƒrom assets', async () => {
     const res = await quote.getQuoteFromAssets({
-      fromAsset: SupportedAssets.mainnet.arbitrum.WBTC,
-      toAsset: SupportedAssets.mainnet.bitcoin.BTC,
+      fromAsset: Assets.arbitrum_sepolia.WBTC,
+      toAsset: Assets.bitcoin_testnet.BTC,
       amount: 100000,
       isExactOut: true,
     });

@@ -9,7 +9,7 @@ import {
   SolanaOrderResponse,
   SuiOrderResponse,
 } from './orderbook/orderbook.types';
-import { BlockchainType } from './asset';
+import { BlockchainType } from './constants/asset.types';
 
 /**
  * Constructs a URL with the given base URL, endpoint and parameters (query params)
@@ -127,30 +127,40 @@ export const isOrder: OrderResponseTypeGuard<Order> = (
  * Discriminated union type guard that determines the specific order response type
  * and returns the appropriate typed response
  */
-export function discriminateOrderResponse(
-  response: BaseCreateOrderResponse,
-): CreateOrderResponse | null {
+export function discriminateOrderResponse(response: BaseCreateOrderResponse) {
   if (isEvmOrderResponse(response)) {
-    return { type: BlockchainType.evm, ...response } as CreateOrderResponse;
+    return {
+      type: BlockchainType.evm,
+      ...response,
+    } as CreateOrderResponse<BlockchainType.evm>;
   }
 
   if (isStarknetOrderResponse(response)) {
     return {
       type: BlockchainType.starknet,
       ...response,
-    } as CreateOrderResponse;
+    } as CreateOrderResponse<BlockchainType.starknet>;
   }
 
   if (isBitcoinOrderResponse(response)) {
-    return { type: BlockchainType.bitcoin, ...response } as CreateOrderResponse;
+    return {
+      type: BlockchainType.bitcoin,
+      ...response,
+    } as CreateOrderResponse<BlockchainType.bitcoin>;
   }
 
   if (isSolanaOrderResponse(response)) {
-    return { type: BlockchainType.solana, ...response } as CreateOrderResponse;
+    return {
+      type: BlockchainType.solana,
+      ...response,
+    } as CreateOrderResponse<BlockchainType.solana>;
   }
 
   if (isSuiOrderResponse(response)) {
-    return { type: BlockchainType.sui, ...response } as CreateOrderResponse;
+    return {
+      type: BlockchainType.sui,
+      ...response,
+    } as CreateOrderResponse<BlockchainType.sui>;
   }
 
   return null;
