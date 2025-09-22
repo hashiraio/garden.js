@@ -13,7 +13,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
-import { formatAmount } from '../../utils/utils';
+// import { formatAmount } from '../../utils/utils';
 import { IOType } from '../../constants/constants';
 
 type Props = {
@@ -331,7 +331,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                           {asset.name}
                         </Typography>
                       </div>
-                      <div className="flex items-center gap-1">
+                      {/* <div className="flex items-center gap-1">
                         {asset.price && (
                           <Typography
                             size={'h5'}
@@ -358,7 +358,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                         >
                           {asset.symbol}
                         </Typography>
-                      </div>
+                      </div> */}
                     </button>
                   ))}
                 </div>

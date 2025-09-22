@@ -1,19 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { swapStore } from '../store/swapStore';
 import { assetInfoStore } from '../store/assetStore';
-import { Navbar } from '../common/Navbar';
+import { Header } from '../common/Header';
 import TransactionHistory from './transactions/TransactionHistory';
 import CreateSwap from './CreateSwap';
-import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
 import { Modal } from '../common/ModalComponent';
 import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
-import { TabKey } from '../types/types';
+import SwapWidgetBase from '../common/SwapWidgetBase';
 
 const SwapWidget = ({ network }: { network: ApiConfig }) => {
   const { network: networkType } = resolveApiConfig(network);
-  const [activeTab, setActiveTab] = useState<TabKey>('swap');
 
-  const { setCurrentNetwork } = swapStore();
+  const { setCurrentNetwork, activeTab } = swapStore();
   const { fetchAssets } = assetInfoStore();
 
   useEffect(() => {
@@ -23,24 +21,13 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
 
   return (
     <>
-      <div
-        className={`mx-auto flex h-full w-[424px] rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-start gap-4 sm:max-w-[424px] ${
-          activeTab === 'history' ? 'max-h-[496px]' : ''
-        }`}
-      >
-        <Navbar active={activeTab} onChange={setActiveTab} />
+      <SwapWidgetBase>
+        <Header />
         <div className="flex-1 flex flex-col min-h-0 w-full">
           {activeTab === 'swap' && <CreateSwap />}
           {activeTab === 'history' && <TransactionHistory />}
         </div>
-
-        <div className="text-xs h-4 text-mid-grey flex items-center justify-center gap-1.5 px-2">
-          <Typography size="h5" weight="medium" className="!text-mid-grey">
-            Powered by
-          </Typography>
-          <GardenFullLogo width={58} />
-        </div>
-      </div>
+      </SwapWidgetBase>
       <Modal />
     </>
   );

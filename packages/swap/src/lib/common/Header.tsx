@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   SwapHorizontalIcon,
   BlogIcon,
   Typography,
 } from '@gardenfi/garden-book';
 import { TabKey } from '../types/types';
+import { swapStore } from '../store/swapStore';
 
-type NavbarProps = {
-  active?: TabKey;
-  onChange?: (key: TabKey) => void;
+type HeaderProps = {
   className?: string;
 };
 
@@ -21,23 +20,13 @@ const tabs: Array<{
   { key: 'history', label: 'History', Icon: BlogIcon },
 ];
 
-export const Navbar: React.FC<NavbarProps> = ({
-  active = 'swap',
-  onChange,
-  className,
-}) => {
-  const [current, setCurrent] = useState<TabKey>(active);
-
-  function handleSelect(key: TabKey) {
-    setCurrent(key);
-    onChange?.(key);
-  }
-
-  const activeTab = tabs.find((t) => t.key === current);
+export const Header: React.FC<HeaderProps> = ({ className }) => {
+  const { activeTab: active, setActiveTab } = swapStore();
+  const activeTab = tabs.find((t) => t.key === active);
 
   const tabWidth = 48;
   const tabGap = 2;
-  const activeIndex = tabs.findIndex((t) => t.key === current);
+  const activeIndex = tabs.findIndex((t) => t.key === active);
   const pillLeft = activeIndex * (tabWidth + tabGap);
 
   return (
@@ -49,10 +38,9 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
       <div className="ml-auto relative">
         <div
-          className="flex justify-center items-center gap-1 max-w-24 w-24 h-8 rounded-[38px] bg-white/30 relative"
+          className="flex justify-center cursor-pointer items-center gap-1 max-w-24 w-24 h-8 rounded-[38px] bg-white/30 relative"
           style={{ position: 'relative' }}
         >
-          {/* Smooth pill, no entrance animation, no spring, just CSS transition */}
           <span
             className="absolute top-0 left-0 h-full w-12 rounded-full bg-white z-0"
             style={{
@@ -61,12 +49,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
           />
           {tabs.map(({ key, Icon }) => {
-            const isActive = current === key;
+            const isActive = active === key;
             return (
               <button
                 key={key}
                 className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-dark-grey h-full`}
-                onClick={() => handleSelect(key)}
+                onClick={() => setActiveTab(key)}
                 disabled={isActive}
                 type="button"
                 style={{ position: 'relative' }}
