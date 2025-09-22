@@ -1,8 +1,6 @@
 import { Asset, Chain } from '@gardenfi/orderbook';
 import { FC, SVGProps } from 'react';
 
-export type TabKey = 'swap' | 'history';
-
 export interface AssetFromResponse {
   id: string;
   chain: string;

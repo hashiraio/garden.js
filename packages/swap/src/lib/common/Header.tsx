@@ -1,18 +1,10 @@
 import React from 'react';
 import { Typography } from '@gardenfi/garden-book';
-import { Tab } from '../types/types';
 import { tabs } from '../constants/constants';
+import { swapStore } from '../store/swapStore';
 
-type NavbarProps = {
-  activeTab?: Tab;
-  onChange?: React.Dispatch<React.SetStateAction<Tab>>;
-};
-
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, onChange }) => {
-  const toggle = () => {
-    onChange?.((p: Tab) => (p.id === tabs.swap.id ? tabs.history : tabs.swap));
-  };
-
+export const Header: React.FC = () => {
+  const { activeTab, setActiveTab } = swapStore();
   const pillLeft = (activeTab?.index || 0) * (48 + 2);
 
   return (
@@ -34,12 +26,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onChange }) => {
               transition: 'transform 0.3s ease-in-out',
             }}
           />
-          {Object.entries(tabs).map(([key, { Icon }]) => {
+          {Object.entries(tabs).map(([key, { Icon, id }]) => {
             return (
               <button
                 key={key}
                 className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-dark-grey h-full`}
-                onClick={toggle}
+                onClick={() => setActiveTab(tabs[id])}
                 type="button"
                 style={{ position: 'relative' }}
               >

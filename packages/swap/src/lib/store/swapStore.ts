@@ -4,10 +4,11 @@ import {
   ErrorFormat,
   Errors,
   DEFAULT_NETWORK,
+  tabs,
 } from '../constants/constants';
 import { Chains } from '@gardenfi/orderbook';
 import { Network } from '@gardenfi/utils';
-import { ParsedAsset, TabKey } from '../types/types';
+import { ParsedAsset, Tab } from '../types/types';
 
 export type TokenPrices = {
   input: string;
@@ -50,7 +51,7 @@ type SwapState = {
   maxTimeSaved: number;
   maxCostSaved: number;
   currentNetwork: Network;
-  activeTab: TabKey;
+  activeTab: Tab;
   setCurrentNetwork: (network: Network) => void;
   setTokenPrices: (tokenPrices: TokenPrices) => void;
   setIsSwapping: (isSwapping: boolean) => void;
@@ -73,7 +74,7 @@ type SwapState = {
   clearSwapState: () => void;
   clear: () => void;
   clearSwapInputState: () => void;
-  setActiveTab: (activeTab: TabKey) => void;
+  setActiveTab: (activeTab: Tab) => void;
 };
 
 export const BTC = {
@@ -130,7 +131,7 @@ export const swapStore = create<SwapState>((set) => ({
   maxTimeSaved: 0,
   maxCostSaved: 0,
   currentNetwork: DEFAULT_NETWORK,
-  activeTab: 'swap',
+  activeTab: tabs.swap,
   setCurrentNetwork: (network) =>
     set({
       currentNetwork: network,
@@ -140,8 +141,8 @@ export const swapStore = create<SwapState>((set) => ({
           network === Network.MAINNET ? Chains.bitcoin : Chains.bitcoin_testnet,
       },
     }),
-  setActiveTab: (activeTab) => {
-    set({ activeTab });
+  setActiveTab: (p) => {
+    set({ activeTab: p.id === tabs.swap.id ? tabs.swap : tabs.history });
   },
   setAsset: (ioType, asset) => {
     set((state) => ({

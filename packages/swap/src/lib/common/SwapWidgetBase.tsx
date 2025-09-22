@@ -1,6 +1,7 @@
 import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
 import React from 'react';
 import { swapStore } from '../store/swapStore';
+import { tabs } from '../constants/constants';
 
 type SwapWidgetBaseProps = {
   children: React.ReactNode;
@@ -11,7 +12,7 @@ const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
   return (
     <div
       className={`mx-auto flex h-full w-[424px] rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-start gap-4 sm:max-w-[424px] ${
-        activeTab === 'history' ? 'max-h-[496px]' : ''
+        activeTab.id === tabs.history.id ? 'max-h-[496px]' : ''
       }`}
     >
       {children}
