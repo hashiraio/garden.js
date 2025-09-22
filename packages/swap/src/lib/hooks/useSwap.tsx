@@ -6,15 +6,14 @@ import debounce from 'lodash.debounce';
 // import { assetInfoStore } from '../store/assetStore';
 import { validateBTCAddress } from '@gardenfi/core';
 import { useGarden } from '@gardenfi/react-hooks';
-
 import { isStarknet, isEVM } from '@gardenfi/orderbook';
 // import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
 import { Environment } from '@gardenfi/utils';
 import { Errors } from '../constants/constants';
 import BigNumber from 'bignumber.js';
 import { formatAmount } from '../utils/utils';
-
 // import { useNetworkFees } from './useNetworkFees';
+
 export const useSwap = () => {
   const {
     inputAmount,

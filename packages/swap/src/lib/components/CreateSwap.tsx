@@ -11,7 +11,6 @@ import {
   isSui,
 } from '@gardenfi/orderbook';
 import { useSwap } from '../hooks/useSwap';
-import { capitalizeChain } from '../utils/utils';
 
 const CreateSwap = () => {
   const [loadingDisabled, setLoadingDisabled] = useState(false);
@@ -51,8 +50,8 @@ const CreateSwap = () => {
   }, [inputAsset, outputAsset]);
 
   const buttonLabel = useMemo(() => {
-    if (needsWalletConnection)
-      return `Connect ${capitalizeChain(needsWalletConnection)} Wallet`;
+    // if (needsWalletConnection)
+    //   return `Connect ${capitalizeChain(needsWalletConnection)} Wallet`;
 
     return error.liquidityError
       ? 'Insufficient liquidity'
@@ -60,8 +59,6 @@ const CreateSwap = () => {
       ? 'Wallet does not support the chain'
       : error.insufficientBalanceError
       ? 'Insufficient balance'
-      : needsWalletConnection
-      ? `Connect ${capitalizeChain(needsWalletConnection)} Wallet`
       : isApproving
       ? 'Approving...'
       : isSwapping
@@ -95,11 +92,11 @@ const CreateSwap = () => {
   ]);
 
   const buttonVariant = useMemo(() => {
-    return buttonDisabled
+    return buttonDisabled || needsWalletConnection
       ? 'disabled'
       : isSwapping
       ? 'ternary'
-      : needsWalletConnection || validSwap
+      : validSwap
       ? 'primary'
       : 'disabled';
   }, [buttonDisabled, isSwapping, validSwap, needsWalletConnection]);
