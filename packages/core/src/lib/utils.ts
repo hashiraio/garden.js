@@ -354,9 +354,10 @@ export const withDefaultAffiliateFees = (
 export const getAddresses = async (
   blockchainType: BlockchainType,
   htlcs: GardenHTLCModules,
+  redeemServiceEnabled: boolean,
   addresses?: Partial<Record<BlockchainType, string>>,
 ) => {
-  if (addresses && addresses[blockchainType]) {
+  if (redeemServiceEnabled && addresses && addresses[blockchainType]) {
     return Ok(addresses[blockchainType]!);
   }
 
@@ -420,6 +421,10 @@ export const validateHTLCForSwap = async (
     [BlockchainType.sui]: { htlc: htlcs.sui, name: 'Sui' },
     [BlockchainType.bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
   };
+
+  if (blockchainType === BlockchainType.bitcoin) {
+    return Ok(undefined);
+  }
 
   const entry = htlcMap[blockchainType];
   if (!entry) {

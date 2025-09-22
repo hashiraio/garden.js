@@ -81,7 +81,7 @@ export const isBitcoinOrderResponse: OrderResponseTypeGuard<
   return (
     hasKeys(response, ['to', 'amount']) &&
     typeof response.to === 'string' &&
-    typeof response.amount === 'number'
+    typeof response.amount === 'string'
   );
 };
 
