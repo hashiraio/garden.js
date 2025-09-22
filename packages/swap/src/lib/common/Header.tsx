@@ -1,39 +1,25 @@
 import React from 'react';
-import {
-  SwapHorizontalIcon,
-  BlogIcon,
-  Typography,
-} from '@gardenfi/garden-book';
-import { TabKey } from '../types/types';
-import { swapStore } from '../store/swapStore';
+import { Typography } from '@gardenfi/garden-book';
+import { Tab } from '../types/types';
+import { tabs } from '../constants/constants';
 
-type HeaderProps = {
-  className?: string;
+type NavbarProps = {
+  activeTab?: Tab;
+  onChange?: React.Dispatch<React.SetStateAction<Tab>>;
 };
 
-const tabs: Array<{
-  key: TabKey;
-  label: string;
-  Icon: React.ComponentType<any>;
-}> = [
-  { key: 'swap', label: 'Swap', Icon: SwapHorizontalIcon },
-  { key: 'history', label: 'History', Icon: BlogIcon },
-];
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, onChange }) => {
+  const toggle = () => {
+    onChange?.((p: Tab) => (p.id === tabs.swap.id ? tabs.history : tabs.swap));
+  };
 
-export const Header: React.FC<HeaderProps> = ({ className }) => {
-  const { activeTab: active, setActiveTab } = swapStore();
-  const activeTab = tabs.find((t) => t.key === active);
-
-  const tabWidth = 48;
-  const tabGap = 2;
-  const activeIndex = tabs.findIndex((t) => t.key === active);
-  const pillLeft = activeIndex * (tabWidth + tabGap);
+  const pillLeft = (activeTab?.index || 0) * (48 + 2);
 
   return (
-    <div className={`w-full flex items-center px-2 ${className ?? ''}`}>
+    <div className={`w-full flex items-center px-2`}>
       <div className="flex items-center gap-2">
         <Typography size="h4" color="#473C75" weight="medium">
-          {activeTab && <>{activeTab.label}</>}
+          {activeTab?.label}
         </Typography>
       </div>
       <div className="ml-auto relative">
@@ -48,14 +34,12 @@ export const Header: React.FC<HeaderProps> = ({ className }) => {
               transition: 'transform 0.3s ease-in-out',
             }}
           />
-          {tabs.map(({ key, Icon }) => {
-            const isActive = active === key;
+          {Object.entries(tabs).map(([key, { Icon }]) => {
             return (
               <button
                 key={key}
                 className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-dark-grey h-full`}
-                onClick={() => setActiveTab(key)}
-                disabled={isActive}
+                onClick={toggle}
                 type="button"
                 style={{ position: 'relative' }}
               >
