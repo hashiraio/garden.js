@@ -1,4 +1,5 @@
 import { Asset, Chain } from '@gardenfi/orderbook';
+import { FC, SVGProps } from 'react';
 
 export type TabKey = 'swap' | 'history';
 
@@ -58,3 +59,10 @@ export interface ParsedAsset extends Asset {
   min_amount: string;
   max_amount: string;
 }
+
+export type Tab = {
+  id: string;
+  label: string;
+  index: number;
+  Icon: FC<SVGProps<SVGSVGElement>>;
+};

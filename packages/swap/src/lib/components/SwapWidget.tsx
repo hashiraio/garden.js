@@ -7,11 +7,12 @@ import CreateSwap from './CreateSwap';
 import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
 import { Modal } from '../common/ModalComponent';
 import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
-import { TabKey } from '../types/types';
+import { tabs } from '../constants/constants';
+import { Tab } from '../types/types';
 
 const SwapWidget = ({ network }: { network: ApiConfig }) => {
   const { network: networkType } = resolveApiConfig(network);
-  const [activeTab, setActiveTab] = useState<TabKey>('swap');
+  const [activeTab, setActiveTab] = useState<Tab>(tabs.swap);
 
   const { setCurrentNetwork } = swapStore();
   const { fetchAssets } = assetInfoStore();
@@ -25,13 +26,13 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
     <>
       <div
         className={`mx-auto flex h-full w-[424px] rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-start gap-4 sm:max-w-[424px] ${
-          activeTab === 'history' ? 'max-h-[496px]' : ''
+          activeTab.id === tabs.history.id ? 'max-h-[496px]' : ''
         }`}
       >
-        <Navbar active={activeTab} onChange={setActiveTab} />
+        <Navbar activeTab={activeTab} onChange={setActiveTab} />
         <div className="flex-1 flex flex-col min-h-0 w-full">
-          {activeTab === 'swap' && <CreateSwap />}
-          {activeTab === 'history' && <TransactionHistory />}
+          {activeTab.id === tabs.swap.id && <CreateSwap />}
+          {activeTab.id === tabs.history.id && <TransactionHistory />}
         </div>
 
         <div className="text-xs h-4 text-mid-grey flex items-center justify-center gap-1.5 px-2">

@@ -1,3 +1,4 @@
+import { BlogIcon, SwapHorizontalIcon } from '@gardenfi/garden-book';
 import {
   Asset,
   isBitcoin,
@@ -76,3 +77,18 @@ export const getTimeEstimates = (inputAsset: Asset) => {
 
   return '';
 };
+
+export const tabs = {
+  swap: {
+    id: 'swap',
+    label: 'Swap',
+    index: 0,
+    Icon: SwapHorizontalIcon,
+  },
+  history: {
+    id: 'history',
+    label: 'History',
+    index: 1,
+    Icon: BlogIcon,
+  },
+} as const;
