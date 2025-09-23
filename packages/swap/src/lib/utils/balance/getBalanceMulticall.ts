@@ -13,6 +13,19 @@ export const getBalanceMulticall = async (
   const viemChain = evmToViemChainMap[chain];
   if (!viemChain || tokenAddresses.length === 0) return {};
 
+  // Filter out empty or invalid token addresses
+  const validTokenAddresses = tokenAddresses.filter(addr => 
+    addr && addr.trim() !== '' && addr !== '0x' && addr.length === 42
+  );
+  
+  console.log('Original token addresses:', tokenAddresses.length);
+  console.log('Valid token addresses:', validTokenAddresses.length);
+  
+  if (validTokenAddresses.length === 0) {
+    console.log('No valid token addresses to process');
+    return {};
+  }
+
   const multicallAddress =
     viemChain.contracts?.multicall3?.address ??
     MULTICALL_CONTRACT_ADDRESSES[viemChain.id];
@@ -28,7 +41,7 @@ export const getBalanceMulticall = async (
   const fetchBalances = async (
     client: ReturnType<typeof createPublicClient>,
   ) => {
-    const calls = tokenAddresses.map((token) =>
+    const calls = validTokenAddresses.map((token) =>
       isEvmNativeToken(chain, token)
         ? {
             address: multicallAddress as Hex,
@@ -48,14 +61,26 @@ export const getBalanceMulticall = async (
       contracts: calls,
       multicallAddress: multicallAddress as Hex,
     });
-    console.log(calls, result);
-    return result.reduce((acc, call, index) => {
-      acc[tokenAddresses[index]] =
-        call.status === 'success'
-          ? new BigNumber(call.result.toString())
-          : new BigNumber(0);
-      return acc;
-    }, {} as Record<string, BigNumber>);
+    console.log("FETCHING BALANCE - calls:", calls.length, "results:", result.length);
+    
+    const balances: Record<string, BigNumber> = {};
+    
+    // Map results back to valid token addresses
+    result.forEach((call, index) => {
+      const tokenAddress = validTokenAddresses[index];
+      balances[tokenAddress] = call.status === 'success'
+        ? new BigNumber(call.result.toString())
+        : new BigNumber(0);
+    });
+    
+    // Also create entries for invalid addresses with 0 balance
+    tokenAddresses.forEach(addr => {
+      if (!validTokenAddresses.includes(addr)) {
+        balances[addr] = new BigNumber(0);
+      }
+    });
+    
+    return balances;
   };
 
   const getDefaultRpcUrl = (): string => {

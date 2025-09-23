@@ -39,7 +39,7 @@ const CreateSwap = () => {
     swapAssets,
   } = useSwap();
 
-  const { balances, fetchAndSetEvmBalances } = assetInfoStore();
+  const { balances, fetchAndSetEvmBalances, allAssets } = assetInfoStore();
 
   const isChainSupported = useMemo(() => {
     if (!inputAsset || !outputAsset) return true;
@@ -135,6 +135,27 @@ const CreateSwap = () => {
   //   fetchAndSetSuiBalance,
   // ]);
 
+  useEffect(() => {
+    if (!allAssets || !evmAddress) return;
+    fetchAndSetEvmBalances(evmAddress);
+  }, [allAssets,evmAddress, fetchAndSetEvmBalances]);
+
+  useEffect(() => {
+    if (!allAssets || !evmAddress) return;
+
+    const interval = setInterval(() => {
+      fetchAndSetEvmBalances(evmAddress);
+    }, 7000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [
+    allAssets,
+    evmAddress,
+    fetchAndSetEvmBalances
+  ]);
+
   const timeEstimate = useMemo(() => {
     if (!inputAsset || !outputAsset) return '';
     return getTimeEstimates(inputAsset);
@@ -167,8 +188,9 @@ const CreateSwap = () => {
   useEffect(() => {
     if (!evmAddress) return;
     fetchAndSetEvmBalances(evmAddress);
-    console.log('balances', balances);
   }, [evmAddress, fetchAndSetEvmBalances]);
+
+  console.log(balances,"balances")
 
   return (
     <div className="flex flex-col">

@@ -21,6 +21,7 @@ import { getBalanceMulticall } from '../utils/balance/getBalanceMulticall';
 import { Hex } from 'viem';
 import { SupportedChains } from '../constants/wagmiConfig';
 import { getLegacyGasEstimate } from '../utils/balance/getNativeTokenFee';
+import BigNumber from 'bignumber.js';
 
 type AssetStoreState = {
   filter: string;
@@ -186,33 +187,31 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
   fetchAndSetEvmBalances: async (address: string, fetchOnlyAsset?: Asset) => {
     const { allAssets, workingRPCs } = get();
     if (!allAssets) return;
-    console.log(workingRPCs, 'workingRPCs');
     const tokensByChain: Partial<Record<Chain, Asset[]>> = {}; //TODO let
     const targetAssets = fetchOnlyAsset
       ? [fetchOnlyAsset]
       : Object.values(allAssets);
-    console.log('allAssets', allAssets);
-    console.log('targetAssets', targetAssets);
-    for (const asset of targetAssets) {
-      if (!isEVM(asset.chain)) continue;
-      console.log('asset', asset);
-      if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
-      console.log('asset.chain', asset.chain);
-      tokensByChain[asset.chain]!.push(asset);
-    }
+      for (const asset of targetAssets) {
+        if (!isEVM(asset.chain)) continue;
+        // Skip assets with empty or invalid token addresses
+        if (!asset.tokenAddress || asset.tokenAddress.trim() === '') {
+          console.log('Skipping asset with empty tokenAddress:', asset);
+          continue;
+        }
+        if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
+        tokensByChain[asset.chain]!.push(asset);
+      }
     console.log('tokensByChain', tokensByChain);
     try {
-      console.log('asdad', tokensByChain);
       const balanceResults = await Promise.allSettled(
         Object.entries(tokensByChain).map(async ([chain, assets]) => {
-          console.log(assets, 'assets');
           const chainBalances = await getBalanceMulticall(
             assets.map((asset) => asset.tokenAddress) as Hex[],
             address as Hex,
             chain as EVMChains,
             workingRPCs,
           );
-          console.log(chainBalances, 'chainBalances');
+          console.log(chainBalances, chain);
 
           const updatedBalances: Record<string, BigNumber | undefined> = {};
 
