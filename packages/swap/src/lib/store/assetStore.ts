@@ -11,8 +11,13 @@ import {
   Chain,
   ChainAsset,
   EVMChains,
+  // isBitcoin,
   isEVM,
   isEvmNativeToken,
+  isSolana,
+  isSolanaNativeToken,
+  isStarknet,
+  isSui,
 } from '@gardenfi/orderbook';
 import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
@@ -22,6 +27,13 @@ import { Hex } from 'viem';
 import { SupportedChains } from '../constants/wagmiConfig';
 import { getLegacyGasEstimate } from '../utils/balance/getNativeTokenFee';
 import BigNumber from 'bignumber.js';
+import {
+  getStarknetTokenBalance,
+  getSolanaTokenBalance,
+  getSuiTokenBalance,
+} from '../utils/balance/getTokenBalance';
+// import { BitcoinProvider } from '@gardenfi/core';
+// import { getSpendableBalance } from '../utils/balance/getmaxBtc';
 
 type AssetStoreState = {
   filter: string;
@@ -46,6 +58,9 @@ type AssetStoreState = {
     address: string,
     fetchOnlyAsset?: Asset,
   ) => Promise<void>;
+  fetchAndSetStarknetBalance: (address: string) => Promise<void>;
+  fetchAndSetSolanaBalance: (address: string) => Promise<void>;
+  fetchAndSetSuiBalance: (address: string) => Promise<void>;
 };
 
 // Helper function to parse chain info
@@ -184,6 +199,7 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
     const workingRPCs = await getAllWorkingRPCs([...SupportedChains]);
     set({ workingRPCs, isLoading: false });
   },
+
   fetchAndSetEvmBalances: async (address: string, fetchOnlyAsset?: Asset) => {
     const { allAssets, workingRPCs } = get();
     if (!allAssets) return;
@@ -191,17 +207,16 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
     const targetAssets = fetchOnlyAsset
       ? [fetchOnlyAsset]
       : Object.values(allAssets);
-      for (const asset of targetAssets) {
-        if (!isEVM(asset.chain)) continue;
-        // Skip assets with empty or invalid token addresses
-        if (!asset.tokenAddress || asset.tokenAddress.trim() === '') {
-          console.log('Skipping asset with empty tokenAddress:', asset);
-          continue;
-        }
-        if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
-        tokensByChain[asset.chain]!.push(asset);
+    for (const asset of targetAssets) {
+      if (!isEVM(asset.chain)) continue;
+      // Skip assets with empty or invalid token addresses
+      if (!asset.tokenAddress || asset.tokenAddress.trim() === '') {
+        console.log('Skipping asset with empty tokenAddress:', asset);
+        continue;
       }
-    console.log('tokensByChain', tokensByChain);
+      if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
+      tokensByChain[asset.chain]!.push(asset);
+    }
     try {
       const balanceResults = await Promise.allSettled(
         Object.entries(tokensByChain).map(async ([chain, assets]) => {
@@ -211,12 +226,10 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
             chain as EVMChains,
             workingRPCs,
           );
-          console.log(chainBalances, chain);
 
           const updatedBalances: Record<string, BigNumber | undefined> = {};
 
           for (const asset of assets!) {
-            // const orderKey = getOrderPair(chain, asset.tokenAddress);
             const orderKey = ChainAsset.from(asset).toString();
             let balance = chainBalances[asset.tokenAddress];
 
@@ -255,4 +268,127 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
       console.error('Failed to fetch balances', err);
     }
   },
+
+  fetchAndSetStarknetBalance: async (address: string) => {
+    const { allAssets } = get();
+    if (!allAssets) return;
+
+    const starknetAsset = Object.values(allAssets).find((asset) =>
+      isStarknet(asset.chain),
+    );
+
+    if (!starknetAsset) return;
+
+    const starknetBalance: Record<string, BigNumber | undefined> = {};
+    const balanceRaw = await getStarknetTokenBalance(
+      address,
+      starknetAsset,
+      get().currentNetwork,
+    );
+
+    const orderKey = ChainAsset.from(starknetAsset).toString();
+    // Keep raw base units in store for consistent UI formatting
+    starknetBalance[orderKey] = new BigNumber(balanceRaw);
+    set({ balances: { ...get().balances, ...starknetBalance } });
+  },
+
+  fetchAndSetSolanaBalance: async (address: string) => {
+    const { allAssets } = get();
+    if (!allAssets) return;
+
+    const solanaAssets = Object.values(allAssets).filter((asset) =>
+      isSolana(asset.chain),
+    );
+
+    if (!solanaAssets.length) return;
+    const solanaBalance: Record<string, BigNumber | undefined> = {};
+
+    for (const asset of solanaAssets) {
+      const balanceRaw = await getSolanaTokenBalance(
+        address,
+        asset,
+        get().currentNetwork,
+      );
+      const orderKey = ChainAsset.from(asset).toString();
+
+      if (isSolanaNativeToken(asset.chain, asset.tokenAddress)) {
+        // Subtract estimated rent/fee in lamports, keep lamports (raw) in store
+        const lamports = new BigNumber(balanceRaw);
+        const estimatedFeeLamports = new BigNumber(3806080); // ~0.00380608 SOL
+        const netLamports = BigNumber.max(
+          lamports.minus(estimatedFeeLamports),
+          0,
+        );
+        solanaBalance[orderKey] = netLamports;
+      } else {
+        // SPL tokens: keep smallest unit in store
+        solanaBalance[orderKey] = new BigNumber(balanceRaw);
+      }
+    }
+    set({ balances: { ...get().balances, ...solanaBalance } });
+  },
+
+  fetchAndSetSuiBalance: async (address: string) => {
+    const { allAssets } = get();
+    if (!allAssets) return;
+
+    const suiAssets = Object.values(allAssets).filter((asset) =>
+      isSui(asset.chain),
+    );
+
+    if (!suiAssets.length) return;
+    const suiBalance: Record<string, BigNumber | undefined> = {};
+
+    for (const asset of suiAssets) {
+      const balanceRaw = await getSuiTokenBalance(
+        address,
+        asset,
+        get().currentNetwork,
+      );
+      const orderKey = ChainAsset.from(asset).toString();
+      // Keep raw smallest unit in store
+      suiBalance[orderKey] = new BigNumber(balanceRaw);
+    }
+    set({ balances: { ...get().balances, ...suiBalance } });
+  },
+
+  // fetchAndSetBitcoinBalance: async (
+  //   provider: IInjectedBitcoinProvider,
+  //   address: string,
+  // ) => {
+  //   const { allAssets } = get();
+  //   if (!allAssets || !provider) return;
+
+  //   try {
+  //     const balance = await provider.getBalance();
+  //     if (!balance?.val?.total) return;
+
+  //     const formattedBalance = new BigNumber(balance.val.confirmed);
+
+  //     const _provider = new BitcoinProvider(get().currentNetwork);
+
+  //     const feeRate = await _provider.getFeeRates();
+  //     const utxos = await _provider.getUTXOs(address, Number(formattedBalance));
+  //     const spendable = await getSpendableBalance(
+  //       address,
+  //       Number(formattedBalance),
+  //       utxos.length,
+  //       feeRate.fastestFee,
+  //     );
+  //     const maxSpendableBalance = spendable.ok ? spendable.val : 0;
+
+  //     const btcBalance = Object.values(allAssets)
+  //       .filter((asset) => isBitcoin(asset.chain))
+  //       .reduce((acc, asset) => {
+  //         acc[ChainAsset.from(asset).toString()] = new BigNumber(
+  //           maxSpendableBalance,
+  //         );
+  //         return acc;
+  //       }, {} as Record<string, BigNumber | undefined>);
+
+  //     set({ balances: { ...get().balances, ...btcBalance } });
+  //   } catch {
+  //     /*empty*/
+  //   }
+  // },
 }));

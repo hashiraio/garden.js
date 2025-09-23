@@ -1045,7 +1045,9 @@ __metadata:
     "@gardenfi/orderbook": "workspace:*"
     "@gardenfi/react-hooks": "workspace:*"
     "@gardenfi/utils": "workspace:*"
+    "@mysten/sui": "npm:^1.37.2"
     "@number-flow/react": "npm:^0.5.9"
+    "@solana/web3.js": "npm:^1.98.2"
     "@types/lodash.debounce": "npm:^4"
     "@types/react": "npm:^18"
     "@vitejs/plugin-react": "npm:^5.0.3"
@@ -1056,6 +1058,7 @@ __metadata:
     motion: "npm:^12.23.15"
     postcss: "npm:^8.4.32"
     react: "npm:^18.3.1"
+    starknet: "npm:7.6.4"
     tailwindcss: "npm:^3.3.6"
     typescript: "npm:^5.2.2"
     vite: "npm:^5.1.6"
@@ -1889,7 +1892,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mysten/sui@npm:^1.37.1":
+"@mysten/sui@npm:^1.37.1, @mysten/sui@npm:^1.37.2":
   version: 1.38.0
   resolution: "@mysten/sui@npm:1.38.0"
   dependencies:

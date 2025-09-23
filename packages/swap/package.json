@@ -34,11 +34,14 @@
     "@gardenfi/orderbook": "workspace:*",
     "@gardenfi/react-hooks": "workspace:*",
     "@gardenfi/utils": "workspace:*",
+    "@mysten/sui": "^1.37.2",
     "@number-flow/react": "^0.5.9",
+    "@solana/web3.js": "^1.98.2",
     "bignumber.js": "^9.1.2",
     "framer-motion": "^11.18.1",
     "lodash.debounce": "^4.0.8",
     "react": "^18.3.1",
+    "starknet": "7.6.4",
     "zustand": "^5.0.2"
   },
   "devDependencies": {

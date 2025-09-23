@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, ExchangeIcon } from '@gardenfi/garden-book';
 import { SwapInput } from '../common/SwapInput';
 import { getTimeEstimates, IOType } from '../constants/constants';
@@ -16,8 +16,9 @@ import { useWallets } from '../hooks/useWallets';
 
 const CreateSwap = () => {
   const [loadingDisabled, setLoadingDisabled] = useState(false);
-  const { evmAddress } = useWallets();
-  console.log('address', evmAddress);
+  const { evmAddress, solanaAddress, starknetAddress, suiAddress } =
+    useWallets();
+
   const {
     outputAmount,
     inputAmount,
@@ -39,7 +40,14 @@ const CreateSwap = () => {
     swapAssets,
   } = useSwap();
 
-  const { balances, fetchAndSetEvmBalances, allAssets } = assetInfoStore();
+  const {
+    fetchAndSetEvmBalances,
+    fetchAndSetSolanaBalance,
+    fetchAndSetStarknetBalance,
+    fetchAndSetSuiBalance,
+    allAssets,
+    isAssetModalOpen,
+  } = assetInfoStore();
 
   const isChainSupported = useMemo(() => {
     if (!inputAsset || !outputAsset) return true;
@@ -106,55 +114,75 @@ const CreateSwap = () => {
       : 'disabled';
   }, [buttonDisabled, isSwapping, validSwap, needsWalletConnection]);
 
-  // const fetchInputAssetBalance = useCallback(async () => {
-  //   if (!inputAsset) return;
-  //   await fetchAndSetFiatValues();
-  //   if (isEVM(inputAsset.chain) && address)
-  //     await fetchAndSetEvmBalances(address, inputAsset);
-  //   if (isBitcoin(inputAsset.chain) && provider && btcAddress)
-  //     await fetchAndSetBitcoinBalance(provider, btcAddress);
-  //   if (isStarknet(inputAsset.chain) && starknetAddress)
-  //     await fetchAndSetStarknetBalance(starknetAddress);
-  //   if (isSolana(inputAsset.chain) && solanaAnchorProvider)
-  //     await fetchAndSetSolanaBalance(solanaAnchorProvider.publicKey);
-  //   if (isSui(inputAsset.chain) && currentAccount)
-  //     await fetchAndSetSuiBalance(currentAccount.address);
-  // }, [
-  //   fetchAndSetFiatValues,
-  //   inputAsset,
-  //   address,
-  //   fetchAndSetEvmBalances,
-  //   provider,
-  //   btcAddress,
-  //   fetchAndSetBitcoinBalance,
-  //   starknetAddress,
-  //   fetchAndSetStarknetBalance,
-  //   solanaAnchorProvider,
-  //   fetchAndSetSolanaBalance,
-  //   currentAccount,
-  //   fetchAndSetSuiBalance,
-  // ]);
+  const fetchInputAssetBalance = useCallback(async () => {
+    if (!inputAsset) return;
+    if (isEVM(inputAsset.chain) && evmAddress)
+      await fetchAndSetEvmBalances(evmAddress, inputAsset);
+    // if (isBitcoin(inputAsset.chain) && provider && btcAddress)
+    //   await fetchAndSetBitcoinBalance(provider, btcAddress);
+    if (isStarknet(inputAsset.chain) && starknetAddress)
+      await fetchAndSetStarknetBalance(starknetAddress);
+    if (isSolana(inputAsset.chain) && solanaAddress)
+      await fetchAndSetSolanaBalance(solanaAddress);
+    if (isSui(inputAsset.chain) && suiAddress)
+      await fetchAndSetSuiBalance(suiAddress);
+  }, [
+    inputAsset,
+    evmAddress,
+    fetchAndSetEvmBalances,
+    // provider,
+    // btcAddress,
+    // fetchAndSetBitcoinBalance,
+    starknetAddress,
+    fetchAndSetStarknetBalance,
+    solanaAddress,
+    fetchAndSetSolanaBalance,
+    // currentAccount,
+    // fetchAndSetSuiBalance,
+  ]);
+
+  const fetchAllBalances = useCallback(async () => {
+    await Promise.allSettled([
+      evmAddress && fetchAndSetEvmBalances(evmAddress),
+      // btcAddress && provider && fetchAndSetBitcoinBalance(provider, btcAddress),
+      starknetAddress && fetchAndSetStarknetBalance(starknetAddress),
+      solanaAddress && fetchAndSetSolanaBalance(solanaAddress),
+      suiAddress && fetchAndSetSuiBalance(suiAddress),
+    ]);
+  }, [
+    evmAddress,
+    solanaAddress,
+    starknetAddress,
+    fetchAndSetEvmBalances,
+    // fetchAndSetBitcoinBalance,
+    starknetAddress,
+    solanaAddress,
+    // fetchAndSetFiatValues,
+    fetchAndSetStarknetBalance,
+    fetchAndSetSolanaBalance,
+    fetchAndSetSuiBalance,
+  ]);
 
   useEffect(() => {
-    if (!allAssets || !evmAddress) return;
-    fetchAndSetEvmBalances(evmAddress);
-  }, [allAssets,evmAddress, fetchAndSetEvmBalances]);
+    if (!allAssets) return;
+    fetchAllBalances();
+  }, [allAssets, fetchAllBalances]);
 
   useEffect(() => {
-    if (!allAssets || !evmAddress) return;
+    if (!allAssets) return;
 
     const interval = setInterval(() => {
-      fetchAndSetEvmBalances(evmAddress);
+      if (isAssetModalOpen) {
+        fetchAllBalances();
+      } else {
+        fetchInputAssetBalance();
+      }
     }, 7000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [
-    allAssets,
-    evmAddress,
-    fetchAndSetEvmBalances
-  ]);
+  }, [allAssets, isAssetModalOpen, fetchAllBalances, fetchInputAssetBalance]);
 
   const timeEstimate = useMemo(() => {
     if (!inputAsset || !outputAsset) return '';
@@ -184,13 +212,6 @@ const CreateSwap = () => {
       clearSwapState();
     };
   }, [clearSwapState, controller]);
-
-  useEffect(() => {
-    if (!evmAddress) return;
-    fetchAndSetEvmBalances(evmAddress);
-  }, [evmAddress, fetchAndSetEvmBalances]);
-
-  console.log(balances,"balances")
 
   return (
     <div className="flex flex-col">

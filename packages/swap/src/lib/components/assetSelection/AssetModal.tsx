@@ -30,7 +30,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     isAssetModalOpen,
     closeAssetModal,
     setFilter,
-    balances
+    balances,
   } = assetInfoStore();
 
   const [selectedChain, setSelectedChain] = useState<
@@ -184,6 +184,9 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     }
   }, [isAssetModalOpen]);
 
+  console.log('balances', balances['solana_testnet:cbbtc']);
+  console.log('balances', balances['solana_testnet:usdc']);
+  console.log('balances', balances['solana_testnet:sol']);
   return (
     <>
       <AvailableChainsSidebar
@@ -344,7 +347,9 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                             className={`!text-mid-grey`}
                           >
                             {formatAmount(
-                              balances[ChainAsset.from(asset).toString()]?.toString() || 0,
+                              balances[
+                                ChainAsset.from(asset).toString()
+                              ]?.toString() || 0,
                               asset.decimals,
                               Math.min(asset.decimals, 8),
                             )}

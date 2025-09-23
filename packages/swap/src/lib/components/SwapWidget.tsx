@@ -22,6 +22,7 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
 
   useEffect(() => {
     fetchAndSetRPCs();
+    console.log('hi rpc');
   }, [fetchAndSetRPCs]);
 
   return (
