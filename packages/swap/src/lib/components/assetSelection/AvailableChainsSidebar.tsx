@@ -75,11 +75,9 @@ export const AvailableChainsSidebar = ({
     <AnimatePresence>
       <motion.div
         {...(isMobile ? mobileAnimationConfig : animationConfig)}
-        className={`absolute left-0 top-0 z-50 w-full rounded-[16px] p-3 ${
-          isMobile ? 'pt-7' : ''
-        }`}
+        className={`absolute left-0 top-0 z-50 w-full rounded-[16px] p-3`}
       >
-        <div className="transition-left left-auto top-60 z-40 m-1 flex w-full flex-col gap-3 pr-2 duration-700 ease-cubic-in-out">
+        <div className="transition-left left-auto top-60 z-40 flex w-full flex-col gap-3 duration-700 ease-cubic-in-out">
           <div className="flex items-center justify-between p-1">
             <Typography size="h4" weight="medium">
               Select chain
@@ -102,10 +100,10 @@ export const AvailableChainsSidebar = ({
             <SearchIcon />
           </div>
           <div
-            className={`flex h-full max-h-[388px] flex-col overflow-auto rounded-2xl bg-white`}
+            className={`flex h-full flex-col overflow-auto rounded-2xl bg-white`}
           >
             <GradientScroll
-              height={isMobile ? 384 : 376}
+              height={364}
               gradientHeight={42}
               className="rounded-2xl"
             >

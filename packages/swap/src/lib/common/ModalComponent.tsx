@@ -28,18 +28,13 @@ export const Modal = () => {
   }, [isAssetModalOpen, closeAssetModal]);
 
   return (
-    <>
-      <ResponsiveModal
-        open={isAssetModalOpen}
-        onClose={() => closeAssetModal()}
-      >
-        <AssetModal
-          onSelect={(asset) => {
-            if (!modalOpenFor) return;
-            setAsset(modalOpenFor, asset);
-          }}
-        />
-      </ResponsiveModal>
-    </>
+    <ResponsiveModal open={isAssetModalOpen} onClose={() => closeAssetModal()}>
+      <AssetModal
+        onSelect={(asset) => {
+          if (!modalOpenFor) return;
+          setAsset(modalOpenFor, asset);
+        }}
+      />
+    </ResponsiveModal>
   );
 };

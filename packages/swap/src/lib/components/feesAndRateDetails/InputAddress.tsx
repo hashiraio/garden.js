@@ -15,13 +15,11 @@ export const InputAddress = () => {
   const tooltipId = useId();
   const {
     inputAsset,
-    outputAsset,
     btcAddress: storedBtcAddress,
     setBtcAddress,
     currentNetwork,
+    showBtcAddress,
   } = swapStore();
-
-  const isEditBTCAddress = true;
 
   // const { account: walletBtcAddress } = useBitcoinWallet();
   const walletBtcAddress = '';
@@ -30,14 +28,6 @@ export const InputAddress = () => {
     () => !!(inputAsset && isBitcoin(inputAsset.chain)),
     [inputAsset],
   );
-
-  const shouldShowAddress = useMemo(() => {
-    return (
-      (isEditBTCAddress || !walletBtcAddress) &&
-      ((inputAsset?.chain && isBitcoin(inputAsset.chain)) ||
-        (outputAsset?.chain && isBitcoin(outputAsset.chain)))
-    );
-  }, [isEditBTCAddress, walletBtcAddress, inputAsset, outputAsset]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     let input = e.target.value;
@@ -62,13 +52,12 @@ export const InputAddress = () => {
 
   return (
     <AnimatePresence mode="wait">
-      {shouldShowAddress && (
+      {showBtcAddress && (
         <motion.div
           variants={{
             hidden: {
               opacity: 0,
               height: 0,
-              marginBottom: '0',
               pointerEvents: 'none' as const,
               transition: {
                 duration: 0.3,
@@ -79,7 +68,6 @@ export const InputAddress = () => {
             visible: {
               opacity: 1,
               height: 'auto',
-              marginBottom: '12px',
               pointerEvents: 'auto' as const,
               transition: {
                 duration: 0.3,
@@ -90,7 +78,6 @@ export const InputAddress = () => {
             exit: {
               opacity: 0,
               height: 0,
-              marginBottom: '0',
               pointerEvents: 'none' as const,
               transition: {
                 duration: 0.3,
@@ -102,6 +89,7 @@ export const InputAddress = () => {
           initial="hidden"
           animate="visible"
           exit="exit"
+          className="mt-3"
         >
           <div className="flex flex-col gap-2 rounded-2xl bg-white p-4">
             <Typography

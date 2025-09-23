@@ -63,7 +63,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full gap-3">
-      <div className="scrollbar-hide flex flex-1 flex-col gap-5 overflow-y-auto items-center rounded-2xl pb-6 min-h-0">
+      <div className="scrollbar-hide flex flex-1 flex-col gap-5 overflow-y-auto items-center rounded-2xl pb-6">
         <div className="flex flex-col rounded-2xl w-full bg-white/50">
           <Transactions />
         </div>

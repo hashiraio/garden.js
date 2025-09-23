@@ -37,6 +37,9 @@ type SwapState = {
   btcAddress: string;
   isSwapping: boolean;
   isApproving: boolean;
+  showBtcAddress: boolean;
+  showInputAddress: boolean;
+  showFeesAndRateDetails: boolean;
   tokenPrices: TokenPrices;
   error: SwapErrors;
   isNetworkFeesLoading: boolean;
@@ -68,6 +71,9 @@ type SwapState = {
   setIsEditBTCAddress: (isEditBTCAddress: boolean) => void;
   setIsComparisonVisible: (isComparisonVisible: boolean) => void;
   setIsValidBitcoinAddress: (isValidBitcoinAddress: boolean) => void;
+  setShowBtcAddress: (showBtcAddress: boolean) => void;
+  setShowInputAddress: (showInputAddress: boolean) => void;
+  setShowFeesAndRateDetails: (showFeesAndRateDetails: boolean) => void;
   showComparisonHandler: (type: 'time' | 'fees') => void;
   hideComparison: () => void;
   updateComparisonSavings: (time: number, cost: number) => void;
@@ -106,6 +112,9 @@ export const swapStore = create<SwapState>((set) => ({
     isOpen: false,
     order: null,
   },
+  showBtcAddress: false,
+  showInputAddress: false,
+  showFeesAndRateDetails: false,
   isSwapping: false,
   tokenPrices: {
     input: '0',
@@ -162,6 +171,12 @@ export const swapStore = create<SwapState>((set) => ({
       rate,
     }));
   },
+  setShowBtcAddress: (showBtcAddress: boolean) =>
+    set({ showBtcAddress: showBtcAddress }),
+  setShowInputAddress: (showInputAddress: boolean) =>
+    set({ showInputAddress: showInputAddress }),
+  setShowFeesAndRateDetails: (showFeesAndRateDetails: boolean) =>
+    set({ showFeesAndRateDetails: showFeesAndRateDetails }),
   setNetworkFees: (networkFees) => {
     set((state) => ({
       ...state,

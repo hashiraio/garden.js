@@ -102,7 +102,7 @@ export const FeesAndRateDetails = () => {
   //   );
 
   return (
-    <div className="flex flex-col rounded-2xl bg-white/50 pb-4 transition-all duration-200">
+    <div className="flex flex-col rounded-2xl bg-white/50 pb-4 mt-3 transition-all duration-200">
       <div className="flex w-full items-center justify-between rounded-2xl px-4 pt-4">
         <div className="relative flex w-full items-center justify-start gap-1">
           <AnimatePresence mode="wait">

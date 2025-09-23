@@ -21,7 +21,13 @@ type Props = {
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
-  const { inputAsset, outputAsset, currentNetwork } = swapStore();
+  const {
+    inputAsset,
+    outputAsset,
+    currentNetwork,
+    showFeesAndRateDetails,
+    showBtcAddress,
+  } = swapStore();
   const {
     allAssets,
     chains,
@@ -36,12 +42,15 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   >();
   const [searchInput, setSearchInput] = useState<string>('');
   const [hoveredChain, setHoveredChain] = useState<string>('');
-  const [visibleChainsCount] = useState<number>(7);
+  const [visibleChainsCount] = useState<number>(5);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showAllChains, setShowAllChains] = useState(false);
   // Simple mobile detection
   const isMobile =
     typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+
+  const height =
+    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 208;
 
   // Chain ordering for display
   const orderedChains = useMemo(() => {
@@ -184,13 +193,15 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
 
   return (
     <>
-      <AvailableChainsSidebar
-        show={showAllChains}
-        chains={[...orderedChains]}
-        hide={hideSidebar}
-        onClick={handleChainClick}
-      />
       <AnimatePresence mode="wait">
+        {showAllChains && (
+          <AvailableChainsSidebar
+            show={showAllChains}
+            chains={[...orderedChains]}
+            hide={hideSidebar}
+            onClick={handleChainClick}
+          />
+        )}
         <motion.div
           key="assetModal"
           initial={{ opacity: 1 }}
@@ -200,9 +211,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             delay: showAllChains ? 0 : 0.25,
             ease: 'easeOut',
           }}
-          className={`left-auto top-60 z-30 flex flex-col gap-3 rounded-[20px] sm:min-w-[468px] ${
-            isMobile ? '' : 'm-1'
-          }`}
+          className={`left-0 top-60 z-30 flex flex-col gap-3 w-full rounded-[20px]`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-1">
@@ -291,7 +300,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             <SearchIcon />
           </div>
           {/* Asset List */}
-          <div className="flex h-[316px] flex-col overflow-auto rounded-2xl !bg-white">
+          <div className="flex h-full flex-col overflow-auto rounded-2xl !bg-white">
             <div className="px-4 pb-2 pt-2">
               <Typography size="h5" weight="medium">
                 {selectedChain
@@ -300,7 +309,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
               </Typography>
             </div>
             <GradientScroll
-              height={272}
+              height={height}
               gradientHeight={42}
               onClose={!isAssetModalOpen}
             >

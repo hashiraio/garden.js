@@ -24,12 +24,10 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
     <>
       <SwapWidgetBase>
         <Header />
-        <div className="flex-1 flex flex-col min-h-0 w-full">
-          {activeTab.id === tabs.swap.id && <CreateSwap />}
-          {activeTab.id === tabs.history.id && <TransactionHistory />}
-        </div>
+        {activeTab.id === tabs.swap.id && <CreateSwap />}
+        {activeTab.id === tabs.history.id && <TransactionHistory />}
+        <Modal />
       </SwapWidgetBase>
-      <Modal />
     </>
   );
 };

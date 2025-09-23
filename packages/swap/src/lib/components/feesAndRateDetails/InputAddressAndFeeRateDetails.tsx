@@ -1,5 +1,4 @@
 import React from 'react';
-import { useMemo } from 'react';
 import { swapStore } from '../../store/swapStore';
 import { motion } from 'framer-motion';
 import { AnimatePresence } from 'framer-motion';
@@ -7,33 +6,10 @@ import { InputAddress } from './InputAddress';
 import { FeesAndRateDetails } from './FeeAndRateDetails';
 
 export const InputAddressAndFeeRateDetails = () => {
-  const { inputAsset, outputAsset, inputAmount, outputAmount } = swapStore();
-
-  const shouldShowDetails = useMemo(() => {
-    return !!(
-      inputAsset &&
-      outputAsset &&
-      //   !error.inputError &&
-      //   !error.outputError &&
-      //   !error.liquidityError &&
-      inputAmount &&
-      outputAmount &&
-      Number(inputAmount) !== 0 &&
-      Number(outputAmount) !== 0
-    );
-  }, [
-    inputAsset,
-    outputAsset,
-    // error.inputError,
-    // error.outputError,
-    // error.liquidityError,
-    inputAmount,
-    outputAmount,
-  ]);
-
+  const { showFeesAndRateDetails } = swapStore();
   return (
     <AnimatePresence mode="wait">
-      {shouldShowDetails && (
+      {showFeesAndRateDetails && (
         <motion.div
           variants={{
             hidden: {
@@ -56,7 +32,7 @@ export const InputAddressAndFeeRateDetails = () => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="flex flex-col mt-3 overflow-hidden"
+          className="flex flex-col overflow-hidden"
         >
           <InputAddress />
           <FeesAndRateDetails />

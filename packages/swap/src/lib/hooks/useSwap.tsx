@@ -38,6 +38,8 @@ export const useSwap = () => {
     setIsFetchingQuote,
     isComparisonVisible,
     setIsValidBitcoinAddress,
+    setShowBtcAddress,
+    setShowFeesAndRateDetails,
     // setIsApproving,
     setTokenPrices,
     clearSwapState,
@@ -75,6 +77,41 @@ export const useSwap = () => {
   //   if (!inputAmount || inputTokenBalance == null) return false;
   //   return BigNumber(inputAmount).gt(inputTokenBalance);
   // }, [inputAmount, inputTokenBalance]);
+
+  const shouldShowDetails = useMemo(() => {
+    return !!(
+      inputAsset &&
+      outputAsset &&
+      //   !error.inputError &&
+      //   !error.outputError &&
+      //   !error.liquidityError &&
+      inputAmount &&
+      outputAmount &&
+      Number(inputAmount) !== 0 &&
+      Number(outputAmount) !== 0
+    );
+  }, [
+    inputAsset,
+    outputAsset,
+    // error.inputError,
+    // error.outputError,
+    // error.liquidityError,
+    inputAmount,
+    outputAmount,
+  ]);
+
+  const shouldShowAddress = useMemo(() => {
+    return (
+      (isEditBTCAddress || !garden?.htlcs.bitcoin?.htlcActorAddress) &&
+      ((inputAsset?.chain && isBitcoin(inputAsset.chain)) ||
+        (outputAsset?.chain && isBitcoin(outputAsset.chain)))
+    );
+  }, [
+    isEditBTCAddress,
+    garden?.htlcs.bitcoin?.htlcActorAddress,
+    inputAsset,
+    outputAsset,
+  ]);
 
   const isBitcoinSwap = useMemo(() => {
     return !!(
@@ -535,6 +572,19 @@ export const useSwap = () => {
       : false;
     setIsValidBitcoinAddress(isValid);
   }, [btcAddress, isBitcoinSwap, setIsValidBitcoinAddress]);
+
+  useEffect(() => {
+    if (shouldShowDetails) {
+      setShowFeesAndRateDetails(true);
+    } else {
+      setShowFeesAndRateDetails(false);
+    }
+    if (shouldShowAddress) {
+      setShowBtcAddress(true);
+    } else {
+      setShowBtcAddress(false);
+    }
+  }, [shouldShowAddress, shouldShowDetails]);
 
   return {
     inputAmount,
