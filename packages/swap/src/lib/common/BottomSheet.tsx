@@ -16,11 +16,11 @@ export const BottomSheet: FC<{
     <AnimatePresence mode="wait">
       {open && (
         <motion.div
-          initial={{ opacity: 0, translateX: '100%' }}
-          animate={{ opacity: 1, translateX: '0%' }}
+          initial={{ opacity: 0, x: '100%' }}
+          animate={{ opacity: 1, x: '0%' }}
           exit={{
             opacity: 0,
-            translateX: '100%',
+            x: '100%',
           }}
           transition={{
             type: 'spring',

@@ -9,12 +9,12 @@ type SwapWidgetBaseProps = {
 
 const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
   const { showFeesAndRateDetails, showBtcAddress } = swapStore();
-
   return (
     <motion.div
       layout
       animate={{
         minHeight: showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348,
+        maxHeight: showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348,
       }}
       className={`mx-auto relative flex h-full overflow-hidden w-[424px] rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-start gap-4 sm:max-w-[424px]`}
     >

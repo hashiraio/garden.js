@@ -9,6 +9,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { viewPortStore } from '../../store/viewPortStore';
+import { swapStore } from '../../store/swapStore';
 
 type SidebarProps = {
   show: boolean;
@@ -26,6 +27,11 @@ export const AvailableChainsSidebar = ({
   const [input, setInput] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const { isMobile } = viewPortStore();
+
+  const { showFeesAndRateDetails, showBtcAddress } = swapStore();
+
+  const height =
+    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 116;
 
   const animationConfig = {
     initial: { x: '100%', opacity: 0 },
@@ -103,7 +109,7 @@ export const AvailableChainsSidebar = ({
             className={`flex h-full flex-col overflow-auto rounded-2xl bg-white`}
           >
             <GradientScroll
-              height={364}
+              height={height}
               gradientHeight={42}
               className="rounded-2xl"
             >

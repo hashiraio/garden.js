@@ -23,7 +23,13 @@ type Props = {
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
-  const { inputAsset, outputAsset, currentNetwork } = swapStore();
+  const {
+    inputAsset,
+    outputAsset,
+    currentNetwork,
+    showFeesAndRateDetails,
+    showBtcAddress,
+  } = swapStore();
   const {
     allAssets,
     chains,
@@ -33,9 +39,17 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     balances,
   } = assetInfoStore();
 
-  const { evmAddress, bitcoinAddress, starknetAddress, suiAddress, solanaAddress } = useWallets();
+  const {
+    evmAddress,
+    bitcoinAddress,
+    starknetAddress,
+    suiAddress,
+    solanaAddress,
+  } = useWallets();
 
-  const [selectedChain, setSelectedChain] = useState<ParsedChainInfo | undefined>();
+  const [selectedChain, setSelectedChain] = useState<
+    ParsedChainInfo | undefined
+  >();
   const [searchInput, setSearchInput] = useState<string>('');
   const [results, setResults] = useState<ParsedAsset[]>();
   const [searchResults, setSearchResults] = useState<ParsedAsset[]>();
@@ -43,9 +57,13 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const [visibleChainsCount] = useState<number>(7);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showAllChains, setShowAllChains] = useState(false);
-  
+
   // Simple mobile detection
-  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  const isMobile =
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+
+  const height =
+    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 208;
 
   // Chain ordering for display
   const orderedChains = useMemo(() => {
@@ -76,7 +94,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
 
   const comparisonToken = useMemo(
     () => (modalOpenFor === IOType.input ? outputAsset : inputAsset),
-    [modalOpenFor, inputAsset, outputAsset]
+    [modalOpenFor, inputAsset, outputAsset],
   );
 
   const sortedResults = useMemo(() => {
@@ -90,16 +108,18 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
           const chainB = chains?.find((c) => c.chain === b.chain);
           if (chainA && chainB) {
             const indexA = orderedChains.findIndex(
-              (c) => c.chain === chainA.chain
+              (c) => c.chain === chainA.chain,
             );
             const indexB = orderedChains.findIndex(
-              (c) => c.chain === chainB.chain
+              (c) => c.chain === chainB.chain,
             );
             return indexA - indexB;
           }
           return 0;
         })
-        .filter((asset) => !selectedChain || asset.chain === selectedChain.chain)
+        .filter(
+          (asset) => !selectedChain || asset.chain === selectedChain.chain,
+        )
         .map((asset) => {
           const network = chains?.find((c) => c.chain === asset.chain);
           const chainAssetKey = ChainAsset.from(asset).toString();
@@ -107,10 +127,14 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
           const fiatRate = asset.price ?? 0;
           const formattedBalance =
             balance && asset && balance.toString() === '0'
-              ? ""
+              ? ''
               : balance
-                ? formatAmount(balance.toString(), asset.decimals, Math.min(asset.decimals, 8))
-                : undefined;
+              ? formatAmount(
+                  balance.toString(),
+                  asset.decimals,
+                  Math.min(asset.decimals, 8),
+                )
+              : undefined;
 
           const fiatBalance =
             formattedBalance &&
@@ -175,8 +199,8 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
       results.filter(
         (asset) =>
           asset.name?.toLowerCase().includes(inputValue) ||
-          asset.symbol?.toLowerCase().includes(inputValue)
-      )
+          asset.symbol?.toLowerCase().includes(inputValue),
+      ),
     );
   };
 
@@ -193,7 +217,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     closeAssetModal();
     setTimeout(() => {
       setSelectedChain(undefined);
-      setSearchInput("");
+      setSearchInput('');
     }, 700);
     setShowAllChains(false);
   };
@@ -202,7 +226,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     closeAssetModal();
     setTimeout(() => {
       setSelectedChain(undefined);
-      setSearchInput("");
+      setSearchInput('');
     }, 700);
     setShowAllChains(false);
   };
@@ -217,7 +241,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
       const filteredAssets = allAssets.filter(
         (asset) =>
           `${asset.chain}-${asset.symbol}` !==
-          `${otherAsset.chain}-${otherAsset.symbol}`
+          `${otherAsset.chain}-${otherAsset.symbol}`,
       );
       setResults([...filteredAssets, otherAsset]);
     }
@@ -240,12 +264,14 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
 
   return (
     <>
-      <AvailableChainsSidebar
-        show={showAllChains}
-        chains={[...orderedChains]}
-        hide={hideSidebar}
-        onClick={handleChainClick}
-      />
+      {showAllChains && (
+        <AvailableChainsSidebar
+          show={showAllChains}
+          chains={[...orderedChains]}
+          hide={hideSidebar}
+          onClick={handleChainClick}
+        />
+      )}
       <AnimatePresence mode="wait">
         <motion.div
           key="assetModal"
@@ -256,14 +282,14 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             delay: showAllChains ? 0 : 0.25,
             ease: 'easeOut',
           }}
-          className={`left-auto top-60 z-30 flex flex-col gap-3 rounded-[20px] sm:min-w-[468px] ${
-            isMobile ? '' : 'm-1'
-          }`}
+          className={`left-auto top-60 z-30 flex flex-col gap-3 rounded-[20px] w-full`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-1">
             <Typography size="h4" weight="medium">
-              {`Select token to ${modalOpenFor === IOType.input ? 'send' : 'receive'}`}
+              {`Select token to ${
+                modalOpenFor === IOType.input ? 'send' : 'receive'
+              }`}
             </Typography>
             <CloseIcon
               className="hidden cursor-pointer sm:visible sm:block"
@@ -346,9 +372,9 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             </div>
             <SearchIcon />
           </div>
-          
+
           {/* Asset List */}
-          <div className="flex h-[316px] flex-col overflow-auto rounded-2xl !bg-white">
+          <div className="flex h-full flex-col overflow-auto rounded-2xl !bg-white">
             <div className="px-4 pb-2 pt-2">
               <Typography size="h5" weight="medium">
                 {selectedChain
@@ -357,7 +383,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
               </Typography>
             </div>
             <GradientScroll
-              height={272}
+              height={height}
               gradientHeight={42}
               onClose={!isAssetModalOpen}
             >
@@ -412,7 +438,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                         </div>
                       </div>
                     );
-                  }
+                  },
                 )
               ) : (
                 <div className="flex min-h-[274px] w-full items-center justify-center">
