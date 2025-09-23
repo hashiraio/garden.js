@@ -1,4 +1,4 @@
-import { Asset, Chain } from '@gardenfi/orderbook';
+import { Asset, Chain, ChainAsset } from '@gardenfi/orderbook';
 import { FC, SVGProps } from 'react';
 
 export interface AssetFromResponse {
@@ -53,6 +53,7 @@ export interface ParsedChainInfo {
 }
 
 export interface ParsedAsset extends Asset {
+  id: ChainAsset;
   price: number;
   min_amount: string;
   max_amount: string;

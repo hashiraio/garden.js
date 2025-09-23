@@ -13,8 +13,9 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
-// import { formatAmount } from '../../utils/utils';
+import { formatAmount } from '../../utils/utils';
 import { IOType } from '../../constants/constants';
+import { ChainAsset } from '@gardenfi/orderbook';
 
 type Props = {
   onSelect: (asset: ParsedAsset) => void;
@@ -35,6 +36,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     isAssetModalOpen,
     closeAssetModal,
     setFilter,
+    balances,
   } = assetInfoStore();
 
   const [selectedChain, setSelectedChain] = useState<
@@ -340,7 +342,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                           {asset.name}
                         </Typography>
                       </div>
-                      {/* <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1">
                         {asset.price && (
                           <Typography
                             size={'h5'}
@@ -351,8 +353,10 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                             className={`!text-mid-grey`}
                           >
                             {formatAmount(
-                              Number(asset.price),
-                              0,
+                              balances[
+                                ChainAsset.from(asset).toString()
+                              ]?.toString() || 0,
+                              asset.decimals,
                               Math.min(asset.decimals, 8),
                             )}
                           </Typography>
@@ -367,7 +371,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                         >
                           {asset.symbol}
                         </Typography>
-                      </div> */}
+                      </div>
                     </button>
                   ))}
                 </div>

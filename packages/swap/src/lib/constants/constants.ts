@@ -1,3 +1,4 @@
+import { hyperliquid } from '@gardenfi/core';
 import { BlogIcon, SwapHorizontalIcon } from '@gardenfi/garden-book';
 import {
   Asset,
@@ -8,6 +9,7 @@ import {
   isSui,
 } from '@gardenfi/orderbook';
 import { Network } from '@gardenfi/utils';
+import { botanix, citreaTestnet } from 'viem/chains';
 
 export type ErrorFormat =
   | `Minimum amount is ${string} ${string}`
@@ -92,3 +94,9 @@ export const tabs = {
     Icon: BlogIcon,
   },
 } as const;
+
+export const MULTICALL_CONTRACT_ADDRESSES: Record<number, string> = {
+  [hyperliquid.id]: '0xcA11bde05977b3631167028862bE2a173976CA11',
+  [citreaTestnet.id]: '0x8470Ee1FCD47e7F9B90486bB5D142430e5C1f409',
+  [botanix.id]: '0xeaE7721d779276eb0f5837e2fE260118724a2Ba4',
+};

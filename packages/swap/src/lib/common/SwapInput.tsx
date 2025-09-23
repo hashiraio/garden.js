@@ -9,7 +9,6 @@ import {
 import { FC, useMemo, useRef, ChangeEvent, useState, useEffect } from 'react';
 import { assetInfoStore } from '../store/assetStore';
 import NumberFlow from '@number-flow/react';
-import clsx from 'clsx';
 import { formatAmount } from '../utils/utils';
 import { ErrorFormat, IOType } from '../constants/constants';
 import { Asset } from '@gardenfi/orderbook';
@@ -201,10 +200,9 @@ export const SwapInput: FC<SwapInputProps> = ({
           >
             <div className="relative w-[150px] max-w-[150px] md:w-[200px] md:max-w-[200px]">
               <div
-                className={clsx(
-                  'relative flex w-full items-center',
-                  !isAnimating && 'cursor-text',
-                )}
+                className={`relative flex w-full items-center${
+                  !isAnimating ? ' cursor-text' : ''
+                }`}
                 onClick={(e) => {
                   if (isAnimating) return;
                   e.preventDefault();
@@ -218,10 +216,9 @@ export const SwapInput: FC<SwapInputProps> = ({
                 {isFocused ? (
                   <input
                     ref={inputRef}
-                    className={clsx(
-                      'w-full bg-transparent py-[1px] text-start font-[inherit] outline-none',
-                      isAnimating && 'pointer-events-none',
-                    )}
+                    className={`w-full bg-transparent py-[1px] text-start font-[inherit] outline-none${
+                      isAnimating ? ' pointer-events-none' : ''
+                    }`}
                     style={{ fontKerning: 'none' }}
                     inputMode="decimal"
                     value={amount}

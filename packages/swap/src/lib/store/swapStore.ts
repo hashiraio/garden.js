@@ -6,7 +6,7 @@ import {
   DEFAULT_NETWORK,
   tabs,
 } from '../constants/constants';
-import { Chains } from '@gardenfi/orderbook';
+import { ChainAsset, Chains } from '@gardenfi/orderbook';
 import { Network } from '@gardenfi/utils';
 import { ParsedAsset, Tab } from '../types/types';
 
@@ -84,6 +84,13 @@ type SwapState = {
 };
 
 export const BTC = {
+  id: ChainAsset.from(
+    `${
+      DEFAULT_NETWORK === Network.TESTNET
+        ? Chains.bitcoin_testnet
+        : Chains.bitcoin
+    }:btc`,
+  ),
   name: 'Bitcoin',
   decimals: 8,
   symbol: 'BTC',
