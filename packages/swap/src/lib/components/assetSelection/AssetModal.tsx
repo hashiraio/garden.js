@@ -184,9 +184,6 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     }
   }, [isAssetModalOpen]);
 
-  console.log('balances', balances['solana_testnet:cbbtc']);
-  console.log('balances', balances['solana_testnet:usdc']);
-  console.log('balances', balances['solana_testnet:sol']);
   return (
     <>
       <AvailableChainsSidebar

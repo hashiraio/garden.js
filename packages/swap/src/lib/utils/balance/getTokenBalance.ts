@@ -1,5 +1,12 @@
-import { STARKNET_CONFIG } from '@gardenfi/core';
-import { isStarknet, isSui } from '@gardenfi/orderbook';
+import { evmToViemChainMap, STARKNET_CONFIG } from '@gardenfi/core';
+import {
+  Asset,
+  isBitcoin,
+  isEVM,
+  isEvmNativeToken,
+  isStarknet,
+  isSui,
+} from '@gardenfi/orderbook';
 import { Network } from '@gardenfi/utils';
 import { ParsedAsset } from 'src/lib/types/types';
 import BigNumber from 'bignumber.js';
@@ -7,6 +14,8 @@ import { RpcProvider, Contract } from 'starknet';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { getFullnodeUrl } from '@mysten/sui/client';
 import { getSuiTotalGasFee } from './getNetworkFees';
+import { createPublicClient, http } from 'viem';
+import { formatAmount } from '../utils';
 
 const erc20ABI = [
   {
@@ -195,34 +204,34 @@ export const getStarknetTokenBalance = async (
 //   }
 // };
 
-// export const getNativeBalance = async (address: string, asset: Asset) => {
-//   try {
-//     if (
-//       isBitcoin(asset.chain) ||
-//       !isEVM(asset.chain) ||
-//       !isEvmNativeToken(asset.chain, asset.tokenAddress)
-//     )
-//       return 0;
-//     const _chain = evmToViemChainMap[asset.chain];
-//     if (!_chain) return 0;
+export const getNativeBalance = async (address: string, asset: Asset) => {
+  try {
+    if (
+      isBitcoin(asset.chain) ||
+      !isEVM(asset.chain) ||
+      !isEvmNativeToken(asset.chain, asset.tokenAddress)
+    )
+      return 0;
+    const _chain = evmToViemChainMap[asset.chain];
+    if (!_chain) return 0;
 
-//     const publicClient = createPublicClient({
-//       chain: _chain,
-//       transport: http(),
-//     });
+    const publicClient = createPublicClient({
+      chain: _chain,
+      transport: http(),
+    });
 
-//     const balance = await publicClient.getBalance({
-//       address: address as `0x${string}`,
-//     });
+    const balance = await publicClient.getBalance({
+      address: address as `0x${string}`,
+    });
 
-//     const balanceInDecimals = formatAmount(balance, asset.decimals, 8);
+    const balanceInDecimals = formatAmount(balance, asset.decimals, 8);
 
-//     return balanceInDecimals;
-//   } catch (error) {
-//     console.error('Error fetching native balance:', error);
-//     return 0;
-//   }
-// };
+    return balanceInDecimals;
+  } catch (error) {
+    console.error('Error fetching native balance:', error);
+    return 0;
+  }
+};
 
 // Returns RAW base units as string (mist for SUI)
 export const getSuiTokenBalance = async (

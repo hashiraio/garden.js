@@ -11,7 +11,7 @@ import {
   Chain,
   ChainAsset,
   EVMChains,
-  // isBitcoin,
+  isBitcoin,
   isEVM,
   isEvmNativeToken,
   isSolana,
@@ -21,6 +21,7 @@ import {
 } from '@gardenfi/orderbook';
 import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
+import { BitcoinProvider } from '@gardenfi/core';
 import { getAllWorkingRPCs } from '../utils/balance/rpcUtils';
 import { getBalanceMulticall } from '../utils/balance/getBalanceMulticall';
 import { Hex } from 'viem';
@@ -31,9 +32,9 @@ import {
   getStarknetTokenBalance,
   getSolanaTokenBalance,
   getSuiTokenBalance,
+  getNativeBalance,
 } from '../utils/balance/getTokenBalance';
-// import { BitcoinProvider } from '@gardenfi/core';
-// import { getSpendableBalance } from '../utils/balance/getmaxBtc';
+import { getSpendableBalance } from '../utils/balance/getmaxBtc';
 
 type AssetStoreState = {
   filter: string;
@@ -61,6 +62,10 @@ type AssetStoreState = {
   fetchAndSetStarknetBalance: (address: string) => Promise<void>;
   fetchAndSetSolanaBalance: (address: string) => Promise<void>;
   fetchAndSetSuiBalance: (address: string) => Promise<void>;
+  fetchAndSetBitcoinBalance: (
+    provider: BitcoinProvider,
+    address: string,
+  ) => Promise<void>;
 };
 
 // Helper function to parse chain info
@@ -209,10 +214,9 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
       : Object.values(allAssets);
     for (const asset of targetAssets) {
       if (!isEVM(asset.chain)) continue;
-      // Skip assets with empty or invalid token addresses
-      if (!asset.tokenAddress || asset.tokenAddress.trim() === '') {
-        console.log('Skipping asset with empty tokenAddress:', asset);
-        continue;
+
+      if (!asset.tokenAddress || asset.tokenAddress === '') {
+        await getNativeBalance(address, asset);
       }
       if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
       tokensByChain[asset.chain]!.push(asset);
@@ -352,43 +356,43 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
     set({ balances: { ...get().balances, ...suiBalance } });
   },
 
-  // fetchAndSetBitcoinBalance: async (
-  //   provider: IInjectedBitcoinProvider,
-  //   address: string,
-  // ) => {
-  //   const { allAssets } = get();
-  //   if (!allAssets || !provider) return;
+  fetchAndSetBitcoinBalance: async (
+    provider: BitcoinProvider,
+    address: string,
+  ) => {
+    const { allAssets } = get();
+    if (!allAssets || !provider) return;
 
-  //   try {
-  //     const balance = await provider.getBalance();
-  //     if (!balance?.val?.total) return;
+    try {
+      const balance = await provider.getBalance(address);
+      if (!balance?.toFixed()) return;
 
-  //     const formattedBalance = new BigNumber(balance.val.confirmed);
+      const formattedBalance = new BigNumber(balance);
 
-  //     const _provider = new BitcoinProvider(get().currentNetwork);
+      const _provider = new BitcoinProvider(get().currentNetwork);
 
-  //     const feeRate = await _provider.getFeeRates();
-  //     const utxos = await _provider.getUTXOs(address, Number(formattedBalance));
-  //     const spendable = await getSpendableBalance(
-  //       address,
-  //       Number(formattedBalance),
-  //       utxos.length,
-  //       feeRate.fastestFee,
-  //     );
-  //     const maxSpendableBalance = spendable.ok ? spendable.val : 0;
+      const feeRate = await _provider.getFeeRates();
+      const utxos = await _provider.getUTXOs(address, Number(formattedBalance));
+      const spendable = await getSpendableBalance(
+        address,
+        Number(formattedBalance),
+        utxos.length,
+        feeRate.fastestFee,
+      );
+      const maxSpendableBalance = spendable.ok ? spendable.val : 0;
 
-  //     const btcBalance = Object.values(allAssets)
-  //       .filter((asset) => isBitcoin(asset.chain))
-  //       .reduce((acc, asset) => {
-  //         acc[ChainAsset.from(asset).toString()] = new BigNumber(
-  //           maxSpendableBalance,
-  //         );
-  //         return acc;
-  //       }, {} as Record<string, BigNumber | undefined>);
+      const btcBalance = Object.values(allAssets)
+        .filter((asset) => isBitcoin(asset.chain))
+        .reduce((acc, asset) => {
+          acc[ChainAsset.from(asset).toString()] = new BigNumber(
+            maxSpendableBalance,
+          );
+          return acc;
+        }, {} as Record<string, BigNumber | undefined>);
 
-  //     set({ balances: { ...get().balances, ...btcBalance } });
-  //   } catch {
-  //     /*empty*/
-  //   }
-  // },
+      set({ balances: { ...get().balances, ...btcBalance } });
+    } catch {
+      /*empty*/
+    }
+  },
 }));

@@ -16,8 +16,14 @@ import { useWallets } from '../hooks/useWallets';
 
 const CreateSwap = () => {
   const [loadingDisabled, setLoadingDisabled] = useState(false);
-  const { evmAddress, solanaAddress, starknetAddress, suiAddress } =
-    useWallets();
+  const {
+    evmAddress,
+    solanaAddress,
+    starknetAddress,
+    suiAddress,
+    bitcoinAddress,
+    bitcoinProvider,
+  } = useWallets();
 
   const {
     outputAmount,
@@ -45,6 +51,7 @@ const CreateSwap = () => {
     fetchAndSetSolanaBalance,
     fetchAndSetStarknetBalance,
     fetchAndSetSuiBalance,
+    fetchAndSetBitcoinBalance,
     allAssets,
     isAssetModalOpen,
   } = assetInfoStore();
@@ -118,8 +125,8 @@ const CreateSwap = () => {
     if (!inputAsset) return;
     if (isEVM(inputAsset.chain) && evmAddress)
       await fetchAndSetEvmBalances(evmAddress, inputAsset);
-    // if (isBitcoin(inputAsset.chain) && provider && btcAddress)
-    //   await fetchAndSetBitcoinBalance(provider, btcAddress);
+    if (isBitcoin(inputAsset.chain) && bitcoinProvider && bitcoinAddress)
+      await fetchAndSetBitcoinBalance(bitcoinProvider, bitcoinAddress);
     if (isStarknet(inputAsset.chain) && starknetAddress)
       await fetchAndSetStarknetBalance(starknetAddress);
     if (isSolana(inputAsset.chain) && solanaAddress)
@@ -128,36 +135,37 @@ const CreateSwap = () => {
       await fetchAndSetSuiBalance(suiAddress);
   }, [
     inputAsset,
+    bitcoinProvider,
     evmAddress,
-    fetchAndSetEvmBalances,
-    // provider,
-    // btcAddress,
-    // fetchAndSetBitcoinBalance,
+    bitcoinAddress,
     starknetAddress,
-    fetchAndSetStarknetBalance,
     solanaAddress,
+    suiAddress,
+    fetchAndSetEvmBalances,
+    fetchAndSetBitcoinBalance,
+    fetchAndSetStarknetBalance,
     fetchAndSetSolanaBalance,
-    // currentAccount,
-    // fetchAndSetSuiBalance,
+    fetchAndSetSuiBalance,
   ]);
 
   const fetchAllBalances = useCallback(async () => {
     await Promise.allSettled([
       evmAddress && fetchAndSetEvmBalances(evmAddress),
-      // btcAddress && provider && fetchAndSetBitcoinBalance(provider, btcAddress),
+      bitcoinAddress &&
+        bitcoinProvider &&
+        fetchAndSetBitcoinBalance(bitcoinProvider, bitcoinAddress),
       starknetAddress && fetchAndSetStarknetBalance(starknetAddress),
       solanaAddress && fetchAndSetSolanaBalance(solanaAddress),
       suiAddress && fetchAndSetSuiBalance(suiAddress),
     ]);
   }, [
     evmAddress,
-    solanaAddress,
     starknetAddress,
+    solanaAddress,
+    suiAddress,
+    bitcoinProvider,
     fetchAndSetEvmBalances,
-    // fetchAndSetBitcoinBalance,
-    starknetAddress,
-    solanaAddress,
-    // fetchAndSetFiatValues,
+    fetchAndSetBitcoinBalance,
     fetchAndSetStarknetBalance,
     fetchAndSetSolanaBalance,
     fetchAndSetSuiBalance,

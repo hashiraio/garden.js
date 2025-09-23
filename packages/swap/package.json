@@ -38,6 +38,7 @@
     "@number-flow/react": "^0.5.9",
     "@solana/web3.js": "^1.98.2",
     "bignumber.js": "^9.1.2",
+    "bitcoinjs-lib": "^6.1.5",
     "framer-motion": "^11.18.1",
     "lodash.debounce": "^4.0.8",
     "react": "^18.3.1",

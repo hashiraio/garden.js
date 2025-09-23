@@ -14,13 +14,10 @@ export const getBalanceMulticall = async (
   if (!viemChain || tokenAddresses.length === 0) return {};
 
   // Filter out empty or invalid token addresses
-  const validTokenAddresses = tokenAddresses.filter(addr => 
-    addr && addr.trim() !== '' && addr !== '0x' && addr.length === 42
+  const validTokenAddresses = tokenAddresses.filter(
+    (addr) => addr && addr.trim() !== '' && addr !== '0x' && addr.length === 42,
   );
-  
-  console.log('Original token addresses:', tokenAddresses.length);
-  console.log('Valid token addresses:', validTokenAddresses.length);
-  
+
   if (validTokenAddresses.length === 0) {
     console.log('No valid token addresses to process');
     return {};
@@ -61,25 +58,25 @@ export const getBalanceMulticall = async (
       contracts: calls,
       multicallAddress: multicallAddress as Hex,
     });
-    console.log("FETCHING BALANCE - calls:", calls.length, "results:", result.length);
-    
+
     const balances: Record<string, BigNumber> = {};
-    
+
     // Map results back to valid token addresses
     result.forEach((call, index) => {
       const tokenAddress = validTokenAddresses[index];
-      balances[tokenAddress] = call.status === 'success'
-        ? new BigNumber(call.result.toString())
-        : new BigNumber(0);
+      balances[tokenAddress] =
+        call.status === 'success'
+          ? new BigNumber(call.result.toString())
+          : new BigNumber(0);
     });
-    
+
     // Also create entries for invalid addresses with 0 balance
-    tokenAddresses.forEach(addr => {
+    tokenAddresses.forEach((addr) => {
       if (!validTokenAddresses.includes(addr)) {
         balances[addr] = new BigNumber(0);
       }
     });
-    
+
     return balances;
   };
 
@@ -95,7 +92,7 @@ export const getBalanceMulticall = async (
     }
   };
   const chainRpcs = workingRPCs[viemChain.id];
-  console.log(chainRpcs);
+
   for (const rpcUrl of chainRpcs) {
     try {
       const defaultClient = createPublicClient({
