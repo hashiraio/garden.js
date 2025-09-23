@@ -39,6 +39,7 @@ type AssetStoreState = {
   closeModal: () => void;
   setFilter: (filter: string) => void;
   fetchAssets: (network?: Network) => Promise<void>;
+  fetchAndSetRPCs: () => Promise<void>;
   setCurrentNetwork: (network: Network) => void;
   fetchAndSetEvmBalances: (
     address: string,
@@ -185,27 +186,33 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
   fetchAndSetEvmBalances: async (address: string, fetchOnlyAsset?: Asset) => {
     const { allAssets, workingRPCs } = get();
     if (!allAssets) return;
-
+    console.log(workingRPCs, 'workingRPCs');
     const tokensByChain: Partial<Record<Chain, Asset[]>> = {}; //TODO let
     const targetAssets = fetchOnlyAsset
       ? [fetchOnlyAsset]
       : Object.values(allAssets);
-
+    console.log('allAssets', allAssets);
+    console.log('targetAssets', targetAssets);
     for (const asset of targetAssets) {
       if (!isEVM(asset.chain)) continue;
+      console.log('asset', asset);
       if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
+      console.log('asset.chain', asset.chain);
       tokensByChain[asset.chain]!.push(asset);
     }
-
+    console.log('tokensByChain', tokensByChain);
     try {
+      console.log('asdad', tokensByChain);
       const balanceResults = await Promise.allSettled(
         Object.entries(tokensByChain).map(async ([chain, assets]) => {
+          console.log(assets, 'assets');
           const chainBalances = await getBalanceMulticall(
             assets.map((asset) => asset.tokenAddress) as Hex[],
             address as Hex,
             chain as EVMChains,
             workingRPCs,
           );
+          console.log(chainBalances, 'chainBalances');
 
           const updatedBalances: Record<string, BigNumber | undefined> = {};
 

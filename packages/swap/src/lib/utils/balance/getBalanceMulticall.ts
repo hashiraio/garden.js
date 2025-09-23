@@ -48,7 +48,7 @@ export const getBalanceMulticall = async (
       contracts: calls,
       multicallAddress: multicallAddress as Hex,
     });
-
+    console.log(calls, result);
     return result.reduce((acc, call, index) => {
       acc[tokenAddresses[index]] =
         call.status === 'success'
@@ -70,6 +70,7 @@ export const getBalanceMulticall = async (
     }
   };
   const chainRpcs = workingRPCs[viemChain.id];
+  console.log(chainRpcs);
   for (const rpcUrl of chainRpcs) {
     try {
       const defaultClient = createPublicClient({

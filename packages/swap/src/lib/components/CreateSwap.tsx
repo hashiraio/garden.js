@@ -11,10 +11,13 @@ import {
   isSui,
 } from '@gardenfi/orderbook';
 import { useSwap } from '../hooks/useSwap';
+import { assetInfoStore } from '../store/assetStore';
+import { useWallets } from '../hooks/useWallets';
 
 const CreateSwap = () => {
   const [loadingDisabled, setLoadingDisabled] = useState(false);
-
+  const { evmAddress } = useWallets();
+  console.log('address', evmAddress);
   const {
     outputAmount,
     inputAmount,
@@ -35,6 +38,8 @@ const CreateSwap = () => {
     clearSwapState,
     swapAssets,
   } = useSwap();
+
+  const { balances, fetchAndSetEvmBalances } = assetInfoStore();
 
   const isChainSupported = useMemo(() => {
     if (!inputAsset || !outputAsset) return true;
@@ -158,6 +163,12 @@ const CreateSwap = () => {
       clearSwapState();
     };
   }, [clearSwapState, controller]);
+
+  useEffect(() => {
+    if (!evmAddress) return;
+    fetchAndSetEvmBalances(evmAddress);
+    console.log('balances', balances);
+  }, [evmAddress, fetchAndSetEvmBalances]);
 
   return (
     <div className="flex flex-col">

@@ -13,12 +13,16 @@ const SwapWidget = ({ network }: { network: ApiConfig }) => {
   const { network: networkType } = resolveApiConfig(network);
 
   const { setCurrentNetwork, activeTab } = swapStore();
-  const { fetchAssets } = assetInfoStore();
+  const { fetchAssets, fetchAndSetRPCs } = assetInfoStore();
 
   useEffect(() => {
     fetchAssets(networkType);
     setCurrentNetwork(networkType);
   }, [fetchAssets, setCurrentNetwork, networkType]);
+
+  useEffect(() => {
+    fetchAndSetRPCs();
+  }, [fetchAndSetRPCs]);
 
   return (
     <>
