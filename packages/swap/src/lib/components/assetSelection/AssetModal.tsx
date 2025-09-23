@@ -16,43 +16,36 @@ import { Network } from '@gardenfi/utils';
 import { formatAmount } from '../../utils/utils';
 import { IOType } from '../../constants/constants';
 import { ChainAsset } from '@gardenfi/orderbook';
+import { useWallets } from '../../hooks/useWallets';
 
 type Props = {
   onSelect: (asset: ParsedAsset) => void;
 };
 
 const AssetModal: React.FC<Props> = ({ onSelect }) => {
-  const {
-    inputAsset,
-    outputAsset,
-    currentNetwork,
-    showFeesAndRateDetails,
-    showBtcAddress,
-  } = swapStore();
+  const { inputAsset, outputAsset, currentNetwork } = swapStore();
   const {
     allAssets,
     chains,
     modalOpenFor,
     isAssetModalOpen,
     closeAssetModal,
-    setFilter,
     balances,
   } = assetInfoStore();
 
-  const [selectedChain, setSelectedChain] = useState<
-    ParsedChainInfo | undefined
-  >();
+  const { evmAddress, bitcoinAddress, starknetAddress, suiAddress, solanaAddress } = useWallets();
+
+  const [selectedChain, setSelectedChain] = useState<ParsedChainInfo | undefined>();
   const [searchInput, setSearchInput] = useState<string>('');
+  const [results, setResults] = useState<ParsedAsset[]>();
+  const [searchResults, setSearchResults] = useState<ParsedAsset[]>();
   const [hoveredChain, setHoveredChain] = useState<string>('');
-  const [visibleChainsCount] = useState<number>(5);
+  const [visibleChainsCount] = useState<number>(7);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showAllChains, setShowAllChains] = useState(false);
+  
   // Simple mobile detection
-  const isMobile =
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false;
-
-  const height =
-    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 208;
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   // Chain ordering for display
   const orderedChains = useMemo(() => {
@@ -81,65 +74,84 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     return sortedChainsByOrder;
   }, [chains]);
 
-  // Filter assets based on search and chain selection
-  const filteredAssets = useMemo(() => {
-    let assets = allAssets;
+  const comparisonToken = useMemo(
+    () => (modalOpenFor === IOType.input ? outputAsset : inputAsset),
+    [modalOpenFor, inputAsset, outputAsset]
+  );
 
-    // Filter by chain if selected
-    if (selectedChain) {
-      assets = assets.filter((asset) => asset.chain === selectedChain.chain);
-    }
+  const sortedResults = useMemo(() => {
+    const assetsToSort = searchInput ? searchResults : results;
+    if (!assetsToSort && orderedChains.length === 0) return [];
+    return (
+      assetsToSort &&
+      assetsToSort
+        .sort((a, b) => {
+          const chainA = chains?.find((c) => c.chain === a.chain);
+          const chainB = chains?.find((c) => c.chain === b.chain);
+          if (chainA && chainB) {
+            const indexA = orderedChains.findIndex(
+              (c) => c.chain === chainA.chain
+            );
+            const indexB = orderedChains.findIndex(
+              (c) => c.chain === chainB.chain
+            );
+            return indexA - indexB;
+          }
+          return 0;
+        })
+        .filter((asset) => !selectedChain || asset.chain === selectedChain.chain)
+        .map((asset) => {
+          const network = chains?.find((c) => c.chain === asset.chain);
+          const chainAssetKey = ChainAsset.from(asset).toString();
+          const balance = balances?.[chainAssetKey];
+          const fiatRate = asset.price ?? 0;
+          const formattedBalance =
+            balance && asset && balance.toString() === '0'
+              ? ""
+              : balance
+                ? formatAmount(balance.toString(), asset.decimals, Math.min(asset.decimals, 8))
+                : undefined;
 
-    // Filter by search input
-    if (searchInput.trim()) {
-      const searchLower = searchInput.toLowerCase();
-      assets = assets.filter(
-        (asset) =>
-          asset.symbol.toLowerCase().includes(searchLower) ||
-          asset.chain.toLowerCase().includes(searchLower) ||
-          asset.name.toLowerCase().includes(searchLower),
-      );
-    }
+          const fiatBalance =
+            formattedBalance &&
+            (Number(formattedBalance) * Number(fiatRate)).toFixed(5);
 
-    // Exclude the other selected asset
-    const otherAsset = IOType.input ? outputAsset : inputAsset;
-    if (otherAsset) {
-      assets = assets.filter(
-        (asset) =>
-          `${asset.chain}-${asset.symbol}` !==
-          `${otherAsset.chain}-${otherAsset.symbol}`,
-      );
-    }
-
-    return assets;
+          return {
+            asset,
+            network,
+            formattedBalance,
+            fiatBalance,
+          };
+        })
+    );
   }, [
-    allAssets,
+    searchResults,
+    results,
+    orderedChains,
+    chains,
     selectedChain,
+    balances,
     searchInput,
-    modalOpenFor,
-    inputAsset,
-    outputAsset,
   ]);
 
-  // Sort assets by chain order and then by symbol
-  const sortedAssets = useMemo(() => {
-    return [...filteredAssets].sort((a, b) => {
-      // First sort by chain order
-      const chainA = chains?.find((c) => c.chain === a.chain);
-      const chainB = chains?.find((c) => c.chain === b.chain);
+  const isAnyWalletConnected =
+    !!evmAddress ||
+    !!bitcoinAddress ||
+    !!starknetAddress ||
+    !!solanaAddress ||
+    !!suiAddress;
 
-      if (chainA && chainB) {
-        const indexA = orderedChains.findIndex((c) => c.chain === chainA.chain);
-        const indexB = orderedChains.findIndex((c) => c.chain === chainB.chain);
-        if (indexA !== indexB) {
-          return indexA - indexB;
-        }
-      }
-
-      // Then sort by symbol
-      return a.symbol.localeCompare(b.symbol);
-    });
-  }, [filteredAssets, chains, orderedChains]);
+  const fiatBasedSortedResults = useMemo(() => {
+    if (!isAnyWalletConnected) return sortedResults;
+    return (
+      sortedResults &&
+      [...sortedResults].sort((a, b) => {
+        const aFiat = a.fiatBalance ? Number(a.fiatBalance) : 0;
+        const bFiat = b.fiatBalance ? Number(b.fiatBalance) : 0;
+        return bFiat - aFiat;
+      })
+    );
+  }, [sortedResults, isAnyWalletConnected]);
 
   // Visible chains for the chain selector (ensure selected chain is included)
   const visibleChains = useMemo(() => {
@@ -151,9 +163,21 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   }, [orderedChains, visibleChainsCount, selectedChain]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchInput(value);
-    setFilter(value); // Keep the store in sync
+    if (!results) return;
+    const inputValue = e.target.value.toLowerCase();
+    setSearchInput(inputValue);
+
+    if (!inputValue) {
+      setSearchResults(undefined);
+      return;
+    }
+    setSearchResults(
+      results.filter(
+        (asset) =>
+          asset.name?.toLowerCase().includes(inputValue) ||
+          asset.symbol?.toLowerCase().includes(inputValue)
+      )
+    );
   };
 
   const hideSidebar = () => setShowAllChains(false);
@@ -167,24 +191,45 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const handleAssetSelect = (asset: ParsedAsset) => {
     onSelect(asset);
     closeAssetModal();
+    setTimeout(() => {
+      setSelectedChain(undefined);
+      setSearchInput("");
+    }, 700);
     setShowAllChains(false);
   };
 
   const handleClose = () => {
     closeAssetModal();
-    // onClose();
+    setTimeout(() => {
+      setSelectedChain(undefined);
+      setSearchInput("");
+    }, 700);
     setShowAllChains(false);
   };
+
+  useEffect(() => {
+    if (!allAssets) return;
+    const otherAsset = modalOpenFor === IOType.input ? outputAsset : inputAsset;
+    if (!otherAsset || modalOpenFor === IOType.input) {
+      setResults([...allAssets]);
+    } else {
+      // Filter out the other selected asset
+      const filteredAssets = allAssets.filter(
+        (asset) =>
+          `${asset.chain}-${asset.symbol}` !==
+          `${otherAsset.chain}-${otherAsset.symbol}`
+      );
+      setResults([...filteredAssets, otherAsset]);
+    }
+  }, [allAssets, comparisonToken, modalOpenFor]);
 
   // Reset state when modal closes
   useEffect(() => {
     if (!isAssetModalOpen) {
-      setSelectedChain(undefined);
-      setSearchInput('');
-      setFilter('');
-      setHoveredChain('');
+      setShowAllChains(false);
+      closeAssetModal();
     }
-  }, [isAssetModalOpen, setFilter]);
+  }, [closeAssetModal, isAssetModalOpen]);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -195,15 +240,13 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
 
   return (
     <>
+      <AvailableChainsSidebar
+        show={showAllChains}
+        chains={[...orderedChains]}
+        hide={hideSidebar}
+        onClick={handleChainClick}
+      />
       <AnimatePresence mode="wait">
-        {showAllChains && (
-          <AvailableChainsSidebar
-            show={showAllChains}
-            chains={[...orderedChains]}
-            hide={hideSidebar}
-            onClick={handleChainClick}
-          />
-        )}
         <motion.div
           key="assetModal"
           initial={{ opacity: 1 }}
@@ -213,12 +256,14 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             delay: showAllChains ? 0 : 0.25,
             ease: 'easeOut',
           }}
-          className={`left-0 top-60 z-30 flex flex-col gap-3 w-full rounded-[20px]`}
+          className={`left-auto top-60 z-30 flex flex-col gap-3 rounded-[20px] sm:min-w-[468px] ${
+            isMobile ? '' : 'm-1'
+          }`}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-1">
             <Typography size="h4" weight="medium">
-              {`Select token to ${modalOpenFor ? 'send' : 'receive'}`}
+              {`Select token to ${modalOpenFor === IOType.input ? 'send' : 'receive'}`}
             </Typography>
             <CloseIcon
               className="hidden cursor-pointer sm:visible sm:block"
@@ -301,8 +346,9 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
             </div>
             <SearchIcon />
           </div>
+          
           {/* Asset List */}
-          <div className="flex h-full flex-col overflow-auto rounded-2xl !bg-white">
+          <div className="flex h-[316px] flex-col overflow-auto rounded-2xl !bg-white">
             <div className="px-4 pb-2 pt-2">
               <Typography size="h5" weight="medium">
                 {selectedChain
@@ -311,39 +357,48 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
               </Typography>
             </div>
             <GradientScroll
-              height={height}
+              height={272}
               gradientHeight={42}
               onClose={!isAssetModalOpen}
             >
-              {sortedAssets.length > 0 ? (
-                <div className="space-y-1">
-                  {sortedAssets.map((asset) => (
-                    <button
-                      key={`${asset.chain}-${asset.symbol}`}
-                      onClick={() => handleAssetSelect(asset)}
-                      className="flex w-full cursor-pointer items-center justify-between !gap-2 !px-4 !py-1.5 hover:bg-[#f4f0fc]"
-                    >
-                      <div className="flex w-full items-center justify-start gap-2">
-                        <div className={`w-10`}>
-                          <TokenNetworkLogos
-                            tokenLogo={asset.logo}
-                            chainLogo={
-                              chains?.find((c) => c.chain === asset.chain)
-                                ?.iconUrl
-                            }
-                          />
+              {fiatBasedSortedResults && fiatBasedSortedResults.length > 0 ? (
+                fiatBasedSortedResults?.map(
+                  ({ asset, network, formattedBalance }) => {
+                    return (
+                      <div
+                        key={`${asset.chain}-${asset.symbol}`}
+                        className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-1.5 hover:bg-[#f4f0fc]"
+                        onClick={() => handleAssetSelect(asset)}
+                      >
+                        <div className="flex w-full items-center gap-2">
+                          <div className={`w-10`}>
+                            <TokenNetworkLogos
+                              tokenLogo={asset.logo}
+                              chainLogo={network?.iconUrl}
+                            />
+                          </div>
+                          <Typography
+                            className={`w-2/3`}
+                            size={'h5'}
+                            breakpoints={{ sm: 'h4' }}
+                            weight="regular"
+                          >
+                            {asset.name}
+                          </Typography>
                         </div>
-                        <Typography
-                          className={`w-2/3 !text-start`}
-                          size={'h5'}
-                          breakpoints={{ sm: 'h4' }}
-                          weight="regular"
-                        >
-                          {asset.name}
-                        </Typography>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {asset.price && (
+                        <div className="flex items-center gap-1">
+                          {formattedBalance && (
+                            <Typography
+                              size={'h5'}
+                              breakpoints={{
+                                sm: 'h4',
+                              }}
+                              weight="regular"
+                              className={`!text-mid-grey`}
+                            >
+                              {formattedBalance}
+                            </Typography>
+                          )}
                           <Typography
                             size={'h5'}
                             breakpoints={{
@@ -352,29 +407,13 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                             weight="regular"
                             className={`!text-mid-grey`}
                           >
-                            {formatAmount(
-                              balances[
-                                ChainAsset.from(asset).toString()
-                              ]?.toString() || 0,
-                              asset.decimals,
-                              Math.min(asset.decimals, 8),
-                            )}
+                            {asset.symbol}
                           </Typography>
-                        )}
-                        <Typography
-                          size={'h5'}
-                          breakpoints={{
-                            sm: 'h4',
-                          }}
-                          weight="regular"
-                          className={`!text-mid-grey`}
-                        >
-                          {asset.symbol}
-                        </Typography>
+                        </div>
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    );
+                  }
+                )
               ) : (
                 <div className="flex min-h-[274px] w-full items-center justify-center">
                   <Typography size="h4" weight="regular">
