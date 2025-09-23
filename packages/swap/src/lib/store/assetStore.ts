@@ -6,9 +6,21 @@ import {
   ParsedChainInfo,
   ParsedAsset,
 } from '../types/types';
-import { Chain } from '@gardenfi/orderbook';
+import {
+  Asset,
+  Chain,
+  ChainAsset,
+  EVMChains,
+  isEVM,
+  isEvmNativeToken,
+} from '@gardenfi/orderbook';
 import { getApiEndpoint, IOType } from '../constants/constants';
 import { Network } from '@gardenfi/utils';
+import { getAllWorkingRPCs } from '../utils/balance/rpcUtils';
+import { getBalanceMulticall } from '../utils/balance/getBalanceMulticall';
+import { Hex } from 'viem';
+import { SupportedChains } from '../constants/wagmiConfig';
+import { getLegacyGasEstimate } from '../utils/balance/getNativeTokenFee';
 
 type AssetStoreState = {
   filter: string;
@@ -21,11 +33,17 @@ type AssetStoreState = {
   closeAssetModal: () => void;
   modalOpenFor: IOType | null;
   isAssetModalOpen: boolean;
+  balances: Record<string, BigNumber | undefined>;
+  workingRPCs: Record<number, string[]>;
   openModal: (side: IOType) => void;
   closeModal: () => void;
   setFilter: (filter: string) => void;
   fetchAssets: (network?: Network) => Promise<void>;
   setCurrentNetwork: (network: Network) => void;
+  fetchAndSetEvmBalances: (
+    address: string,
+    fetchOnlyAsset?: Asset,
+  ) => Promise<void>;
 };
 
 // Helper function to parse chain info
@@ -55,6 +73,7 @@ const parseAsset = (
   const { symbol, name } = parseAssetId(asset.id);
 
   return {
+    id: ChainAsset.from(asset.id),
     name: name,
     symbol: symbol,
     chain: chain,
@@ -111,6 +130,8 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
   modalOpenFor: null,
   isAssetModalOpen: false,
   filter: '',
+  balances: {},
+  workingRPCs: {},
 
   fetchAssets: async (network?: Network) => {
     const targetNetwork = network || get().currentNetwork;
@@ -156,4 +177,76 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
   openAssetModal: () => set({ isAssetModalOpen: true }),
   closeAssetModal: () => set({ isAssetModalOpen: false, filter: '' }),
   setFilter: (filter) => set({ filter }),
+  fetchAndSetRPCs: async () => {
+    set({ isLoading: true });
+    const workingRPCs = await getAllWorkingRPCs([...SupportedChains]);
+    set({ workingRPCs, isLoading: false });
+  },
+  fetchAndSetEvmBalances: async (address: string, fetchOnlyAsset?: Asset) => {
+    const { allAssets, workingRPCs } = get();
+    if (!allAssets) return;
+
+    const tokensByChain: Partial<Record<Chain, Asset[]>> = {}; //TODO let
+    const targetAssets = fetchOnlyAsset
+      ? [fetchOnlyAsset]
+      : Object.values(allAssets);
+
+    for (const asset of targetAssets) {
+      if (!isEVM(asset.chain)) continue;
+      if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
+      tokensByChain[asset.chain]!.push(asset);
+    }
+
+    try {
+      const balanceResults = await Promise.allSettled(
+        Object.entries(tokensByChain).map(async ([chain, assets]) => {
+          const chainBalances = await getBalanceMulticall(
+            assets.map((asset) => asset.tokenAddress) as Hex[],
+            address as Hex,
+            chain as EVMChains,
+            workingRPCs,
+          );
+
+          const updatedBalances: Record<string, BigNumber | undefined> = {};
+
+          for (const asset of assets!) {
+            // const orderKey = getOrderPair(chain, asset.tokenAddress);
+            const orderKey = ChainAsset.from(asset).toString();
+            let balance = chainBalances[asset.tokenAddress];
+
+            if (
+              balance &&
+              balance.gt(0) &&
+              isEvmNativeToken(chain as EVMChains, asset.tokenAddress)
+            ) {
+              const fee = await getLegacyGasEstimate(
+                chain as EVMChains,
+                address as `0x${string}`,
+                asset.atomicSwapAddress as `0x${string}`,
+              );
+
+              if (fee) {
+                const feeBN = new BigNumber(fee.gasCost);
+                balance = BigNumber.max(balance.minus(feeBN), 0);
+              }
+            }
+
+            updatedBalances[orderKey] = balance;
+          }
+
+          return updatedBalances;
+        }),
+      );
+
+      const finalBalances = balanceResults.reduce((acc, result) => {
+        return result.status === 'fulfilled'
+          ? { ...acc, ...result.value }
+          : acc;
+      }, {});
+
+      set({ balances: { ...get().balances, ...finalBalances } });
+    } catch (err) {
+      console.error('Failed to fetch balances', err);
+    }
+  },
 }));
