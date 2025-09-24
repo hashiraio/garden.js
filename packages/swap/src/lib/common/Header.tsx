@@ -18,9 +18,7 @@ export const Header: React.FC = () => {
       </div>
       <div className="ml-auto relative">
         {pendingOrders.length > 0 && (
-          <div className="absolute -top-1 -right-1 w-5 h-5 z-50 bg-rose rounded-full flex items-center justify-center text-xs font-bold text-white select-none">
-            {pendingOrders.length}
-          </div>
+          <div className="absolute top-1.5 right-3.5 w-2 h-2 z-50 bg-rose/80 backdrop-blur-[1px] rounded-full"></div>
         )}
         <div
           className="flex justify-center cursor-pointer items-center gap-1 max-w-24 w-24 h-8 rounded-[38px] bg-white/30 relative"
