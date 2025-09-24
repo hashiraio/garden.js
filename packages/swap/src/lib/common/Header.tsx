@@ -2,10 +2,12 @@ import React from 'react';
 import { Typography } from '@gardenfi/garden-book';
 import { tabs } from '../constants/constants';
 import { swapStore } from '../store/swapStore';
+import { useGarden } from '@gardenfi/react-hooks';
 
 export const Header: React.FC = () => {
   const { activeTab, setActiveTab } = swapStore();
   const pillLeft = (activeTab?.index || 0) * (48 + 2);
+  const { pendingOrders } = useGarden();
 
   return (
     <div className={`w-full flex items-center px-2`}>
@@ -15,6 +17,11 @@ export const Header: React.FC = () => {
         </Typography>
       </div>
       <div className="ml-auto relative">
+        {pendingOrders.length > 0 && (
+          <div className="absolute -top-1 -right-1 w-5 h-5 z-50 bg-rose rounded-full flex items-center justify-center text-xs font-bold text-white select-none">
+            {pendingOrders.length}
+          </div>
+        )}
         <div
           className="flex justify-center cursor-pointer items-center gap-1 max-w-24 w-24 h-8 rounded-[38px] bg-white/30 relative"
           style={{ position: 'relative' }}

@@ -1,7 +1,7 @@
 import React, { FC, useMemo } from 'react';
 import { Typography } from '@gardenfi/garden-book';
 import { SwapInfo } from './SwapInfo';
-import { Order, OrderStatus } from '@gardenfi/orderbook';
+import { Order, OrderStatus, isBitcoin } from '@gardenfi/orderbook';
 import { assetInfoStore } from '../../store/assetStore';
 import {
   formatAmount,
@@ -9,7 +9,9 @@ import {
   getDayDifference,
 } from '../../utils/utils';
 import { swapStore } from '../../store/swapStore';
-import { getApiEndpoint } from '../../constants/constants';
+import { getApiEndpoint, tabs } from '../../constants/constants';
+import orderInProgressStore from '../../store/orderInProgressStore';
+import { useGarden } from '@gardenfi/react-hooks';
 
 type TransactionProps = {
   order: Order;
@@ -57,8 +59,10 @@ export const TransactionRow: FC<TransactionProps> = ({
 }) => {
   const { source_swap, destination_swap } = order;
   const { allAssets } = assetInfoStore();
-  const { currentNetwork } = swapStore();
+  const { currentNetwork, setActiveTab } = swapStore();
   // const { evmInitiate } = useGarden();
+  const { setIsOpen, setOrder } = orderInProgressStore();
+  const { garden } = useGarden();
 
   const sendAsset = useMemo(
     () => getAssetFromSwap(source_swap, allAssets),
@@ -98,10 +102,17 @@ export const TransactionRow: FC<TransactionProps> = ({
   );
 
   const handleTransactionClick = () => {
-    if (order.order_id) {
-      const endpoint = getApiEndpoint(currentNetwork).explorer;
-      window.open(`${endpoint}/order/${order.order_id}`, '_blank');
+    if (!order.order_id || !garden) return;
+
+    if (status === OrderStatus.Created && isBitcoin(order.source_swap.chain)) {
+      setIsOpen(true);
+      setActiveTab(tabs.swap);
+      setOrder(garden, order.order_id);
+      return;
     }
+
+    const endpoint = getApiEndpoint(currentNetwork).explorer;
+    window.open(`${endpoint}/order/${order.order_id}`, '_blank');
   };
 
   if (!sendAsset || !receiveAsset) return null;

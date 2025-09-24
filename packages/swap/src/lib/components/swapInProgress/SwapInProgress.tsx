@@ -13,14 +13,10 @@ import {
 } from '../../utils/utils';
 import { assetInfoStore } from '../../store/assetStore';
 import QRCode from 'react-qr-code';
-import { OrderStatus } from './OrderStatus';
-import { OrderDetails } from './OrderDetails';
 import { isBitcoin } from '@gardenfi/orderbook';
 import { CopyToClipboard } from '../../common/CopyToClipboard';
-import { useOrderStatus } from '../../hooks/useOrderStatus';
 import { OrderStatus as OrderStatusEnum } from '@gardenfi/orderbook';
 import { BTC } from '../../store/swapStore';
-// import { deletedOrdersStore } from '../../../store/deletedOrdersStore';
 import { SwapInfo } from '../transactions/SwapInfo';
 import { getApiEndpoint } from '../../constants/constants';
 import orderInProgressStore from '../../store/orderInProgressStore';
@@ -28,9 +24,6 @@ import orderInProgressStore from '../../store/orderInProgressStore';
 export const SwapInProgress = () => {
   const { order, setIsOpen } = orderInProgressStore();
   const { allAssets, currentNetwork } = assetInfoStore();
-  // const { addDeletedOrder } = deletedOrdersStore();
-  const { orderProgress, viewableStatus, confirmationsString } =
-    useOrderStatus();
 
   const { depositAddress, inputAsset, outputAsset } = useMemo(() => {
     return {
@@ -55,29 +48,13 @@ export const SwapInProgress = () => {
     );
   };
 
-  // const handleDeleteOrder = useCallback(() => {
-  //   if (!order) return;
-  //   addDeletedOrder(order.order_id);
-  //   goBack();
-  // }, [order, addDeletedOrder, goBack]);
-
-  // const showDeleteButton = useMemo(() => {
-  //   return order?.status === OrderStatusEnum.Created;
-  // }, [order?.status]);
-
   return order ? (
-    <div className="animate-fade-out flex flex-col gap-3 p-3">
+    <div className="animate-fade-out flex flex-col gap-3">
       <div className="flex items-center justify-between p-1">
         <Typography size="h4" weight="medium">
           Swap in progress
         </Typography>
         <div className="flex items-center justify-center gap-3">
-          {/* {showDeleteButton && (
-            <DeleteIcon
-              className="m-1 cursor-pointer"
-              onClick={handleDeleteOrder}
-            />
-          )} */}
           <CloseIcon className="m-1 h-3 w-3 cursor-pointer" onClick={goBack} />
         </div>
       </div>
@@ -130,12 +107,6 @@ export const SwapInProgress = () => {
             <QRCode value={depositAddress} size={48} fgColor="#554B6A" />
           </div>
         )}
-      <OrderStatus
-        orderProgress={orderProgress}
-        viewableStatus={viewableStatus}
-        confirmationString={confirmationsString}
-      />
-      <OrderDetails order={order} />
     </div>
   ) : (
     <></>
