@@ -25,10 +25,9 @@ export const BottomSheet: FC<{
           transition={{
             type: 'spring',
             stiffness: 250,
-            damping: 25,
-            mass: 0.1,
+            damping: 30,
           }}
-          className="absolute top-0 left-0 p-2 w-full h-full bg-white/50 backdrop-blur-md rounded-t-2xl z-[99]"
+          className="absolute top-0 left-0 p-3 w-full h-full bg-white/50 backdrop-blur-md rounded-t-2xl z-[99]"
           onClick={(e) => {
             handleOverlayClick(e);
             e.stopPropagation();

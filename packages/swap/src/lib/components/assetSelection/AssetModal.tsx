@@ -54,7 +54,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
   const [results, setResults] = useState<ParsedAsset[]>();
   const [searchResults, setSearchResults] = useState<ParsedAsset[]>();
   const [hoveredChain, setHoveredChain] = useState<string>('');
-  const [visibleChainsCount] = useState<number>(7);
+  const [visibleChainsCount] = useState<number>(5);
   const inputRef = useRef<HTMLInputElement>(null);
   const [showAllChains, setShowAllChains] = useState(false);
 
@@ -63,7 +63,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   const height =
-    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 208;
+    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 216;
 
   // Chain ordering for display
   const orderedChains = useMemo(() => {

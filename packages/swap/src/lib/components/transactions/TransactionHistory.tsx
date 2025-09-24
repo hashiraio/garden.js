@@ -4,6 +4,7 @@ import { useGarden } from '@gardenfi/react-hooks';
 import { BlockchainType } from '@gardenfi/orderbook';
 import transactionHistoryStore from '../../store/transactionHistoryStore';
 import Transactions from './Transactions';
+import { swapStore } from '../../store/swapStore';
 
 type TransactionHistoryProps = {
   isOpen?: boolean;
@@ -26,6 +27,8 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const { garden } = useGarden();
   const { fetchTransactions, totalItems, transactions, loadMore } =
     transactionHistoryStore();
+
+  const { showFeesAndRateDetails, showBtcAddress } = swapStore();
 
   const showLoadMore = useMemo(
     () => transactions.length < totalItems,
@@ -61,9 +64,15 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   if (!isOpen) return null;
 
+  const newHeight =
+    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 88;
+
   return (
     <div className="flex flex-col h-full w-full gap-3">
-      <div className="scrollbar-hide flex flex-1 flex-col gap-5 overflow-y-auto items-center rounded-2xl pb-6">
+      <div
+        className="scrollbar-hide flex flex-1 flex-col gap-5 overflow-y-auto h-full items-center rounded-2xl pb-6"
+        style={{ minHeight: newHeight }}
+      >
         <div className="flex flex-col rounded-2xl w-full bg-white/50">
           <Transactions />
         </div>

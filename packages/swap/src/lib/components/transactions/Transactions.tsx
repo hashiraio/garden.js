@@ -41,7 +41,7 @@ const Transactions = () => {
 
   return (
     <AnimatePresence mode="wait">
-      <motion.div className="flex w-full flex-col overflow-y-auto scrollbar-hide">
+      <motion.div className="flex w-full flex-col overflow-y-auto scrollbar-hide h-full">
         {isLoading ? (
           <TransactionsSkeleton />
         ) : allTransactions.length === 0 ? (

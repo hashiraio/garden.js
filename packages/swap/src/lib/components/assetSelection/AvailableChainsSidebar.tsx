@@ -81,7 +81,7 @@ export const AvailableChainsSidebar = ({
     <AnimatePresence>
       <motion.div
         {...(isMobile ? mobileAnimationConfig : animationConfig)}
-        className={`absolute left-0 top-0 z-50 w-full rounded-[16px] p-3`}
+        className={`absolute left-0 top-0 z-50 w-full rounded-[16px] p-2`}
       >
         <div className="transition-left left-auto top-60 z-40 flex w-full flex-col gap-3 duration-700 ease-cubic-in-out">
           <div className="flex items-center justify-between p-1">

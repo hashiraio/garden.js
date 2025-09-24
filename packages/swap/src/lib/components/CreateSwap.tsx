@@ -222,7 +222,7 @@ const CreateSwap = () => {
   }, [clearSwapState, controller]);
 
   return (
-    <div className="flex flex-col relative">
+    <div className="flex flex-col w-full">
       <div className="relative flex flex-col gap-3">
         <div className="w-full">
           <SwapInput
