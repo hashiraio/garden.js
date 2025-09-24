@@ -65,3 +65,15 @@ export type Tab = {
   index: number;
   Icon: FC<SVGProps<SVGSVGElement>>;
 };
+
+import type { GardenProviderProps } from '@gardenfi/react-hooks';
+
+export type GardenSwapWidgetStyle = {
+  buttonColor?: string;
+};
+
+export type GardenSwapWidgetProps = Omit<GardenProviderProps, 'config'> & {
+  config: GardenProviderProps['config'] & {
+    style?: GardenSwapWidgetStyle;
+  };
+};
