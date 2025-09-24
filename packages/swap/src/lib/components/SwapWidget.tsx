@@ -8,19 +8,28 @@ import { Modal } from '../common/ModalComponent';
 import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
 import { tabs } from '../constants/constants';
 import SwapWidgetBase from '../common/SwapWidgetBase';
-// import Swap from './Swap';
 import orderInProgressStore from '../store/orderInProgressStore';
 import { SwapInProgress } from './swapInProgress/SwapInProgress';
+import { GardenSwapWidgetStyle } from '../types/types';
+import widgetConfigStore from '../store/widgetConfigStore';
 
-const SwapWidget = ({ network }: { network: ApiConfig }) => {
+const SwapWidget = ({
+  network,
+  style,
+}: {
+  network: ApiConfig;
+  style: GardenSwapWidgetStyle;
+}) => {
   const { network: networkType } = resolveApiConfig(network);
 
   const { setCurrentNetwork, activeTab } = swapStore();
   const { fetchAssets, fetchAndSetRPCs } = assetInfoStore();
+  const { setStyle } = widgetConfigStore();
 
   useEffect(() => {
     fetchAssets(networkType);
     setCurrentNetwork(networkType);
+    setStyle(style);
   }, [fetchAssets, setCurrentNetwork, networkType]);
 
   useEffect(() => {

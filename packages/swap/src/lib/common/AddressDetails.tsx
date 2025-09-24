@@ -3,7 +3,6 @@ import { isBitcoin } from '@gardenfi/orderbook';
 import { FC, useId, useMemo } from 'react';
 import { ArrowNorthEastIcon, EditIcon } from '@gardenfi/garden-book';
 import { Typography } from '@gardenfi/garden-book';
-// import { useAssetInfoStore } from '../hooks/useAssetInfoStore';
 import { swapStore } from '../store/swapStore';
 import { getTrimmedAddress } from '../utils/utils';
 
@@ -16,26 +15,13 @@ export const AddressDetails: FC<AddressDetailsProps> = ({
   isRefund,
   address,
 }) => {
-  //   const { allChains } = useAssetInfoStore();
   const tooltipId = useId();
   const { inputAsset, outputAsset } = swapStore();
-  //   const { setIsEditBTCAddress } = swapStore();
-
   const chain = useMemo(() => {
     return isRefund
       ? inputAsset && inputAsset.chain
       : outputAsset && outputAsset.chain;
   }, [inputAsset, outputAsset, isRefund]);
-
-  //   const redirect = useMemo(() => {
-  //     return allChains && chain ? allChains[chain] : null;
-  //   }, [allChains, chain]);
-
-  //   const handleAddressRedirect = (address: string) => {
-  //     if (!redirect) return;
-  //     const url = new Url('address', redirect.explorer).endpoint(address);
-  //     window.open(url, '_blank');
-  //   };
 
   return (
     <>
@@ -48,7 +34,6 @@ export const AddressDetails: FC<AddressDetailsProps> = ({
           }`}
           onClick={(e) => {
             e.stopPropagation();
-            // handleAddressRedirect(address);
           }}
         >
           <Typography
@@ -79,16 +64,6 @@ export const AddressDetails: FC<AddressDetailsProps> = ({
           </div>
         </div>
       )}
-      <Typography size="h5" weight="regular">
-        {/* {isRefund && (
-          <Tooltip
-            id={tooltipId}
-            place="right"
-            content="If the swap expires, your Bitcoin will be refunded to this address."
-            multiline={true}
-          />
-        )} */}
-      </Typography>
     </>
   );
 };

@@ -13,6 +13,7 @@ import {
 import { useSwap } from '../hooks/useSwap';
 import { assetInfoStore } from '../store/assetStore';
 import { useWallets } from '../hooks/useWallets';
+import widgetConfigStore from '../store/widgetConfigStore';
 
 const CreateSwap = () => {
   const [loadingDisabled, setLoadingDisabled] = useState(false);
@@ -24,6 +25,7 @@ const CreateSwap = () => {
     bitcoinAddress,
     bitcoinProvider,
   } = useWallets();
+  const { style } = widgetConfigStore();
 
   const {
     outputAmount,
@@ -260,6 +262,7 @@ const CreateSwap = () => {
       <InputAddressAndFeeRateDetails />
 
       <Button
+        style={{ backgroundColor: style.buttonColor }}
         className="w-full mt-3 transition-colors duration-500"
         variant={buttonVariant}
         size="lg"

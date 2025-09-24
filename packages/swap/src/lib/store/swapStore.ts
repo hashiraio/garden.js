@@ -161,10 +161,28 @@ export const swapStore = create<SwapState>((set) => ({
     set({ activeTab: p.id === tabs.swap.id ? tabs.swap : tabs.history });
   },
   setAsset: (ioType, asset) => {
-    set((state) => ({
-      ...state,
-      [ioType === IOType.input ? 'inputAsset' : 'outputAsset']: asset,
-    }));
+    set((state) => {
+      const isSettingInput = ioType === IOType.input;
+      const currentKey = isSettingInput ? 'inputAsset' : 'outputAsset';
+      const otherKey = isSettingInput ? 'outputAsset' : 'inputAsset';
+
+      const getAssetKey = (a: typeof state.inputAsset) =>
+        a?.id && typeof a.id.toString === 'function'
+          ? a.id.toString()
+          : `${a?.chain ?? ''}:${(a?.symbol ?? '').toLowerCase()}:${(
+              a?.tokenAddress ?? ''
+            ).toLowerCase()}`;
+
+      const other = state[otherKey];
+      const isSame =
+        !!asset && !!other && getAssetKey(asset) === getAssetKey(other);
+
+      return {
+        ...state,
+        [currentKey]: asset,
+        [otherKey]: isSame ? undefined : other,
+      } as typeof state;
+    });
   },
   setAmount: (ioType, amount) => {
     set((state) => ({
