@@ -35,7 +35,7 @@ const CreateSwap = () => {
     loading,
     error,
     validSwap,
-    // inputTokenBalance,
+    inputTokenBalance,
     tokenPrices,
     isApproving,
     isSwapping,
@@ -233,7 +233,7 @@ const CreateSwap = () => {
             loading={loading.input}
             price={tokenPrices.input}
             error={error.inputError}
-            balance={undefined} // TODO: Add balance fetching
+            balance={inputTokenBalance} // TODO: Add balance fetching
           />
         </div>
         <div

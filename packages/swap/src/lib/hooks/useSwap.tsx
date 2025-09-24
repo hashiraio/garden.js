@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { swapStore } from '../store/swapStore';
 import { IOType } from '../constants/constants';
-import { Asset, Chain, isBitcoin, isSolana, isSui } from '@gardenfi/orderbook';
+import {
+  Asset,
+  Chain,
+  ChainAsset,
+  isBitcoin,
+  isSolana,
+  isSui,
+} from '@gardenfi/orderbook';
 import debounce from 'lodash.debounce';
 // import { assetInfoStore } from '../store/assetStore';
 import { validateBTCAddress } from '@gardenfi/core';
@@ -12,6 +19,8 @@ import { Environment } from '@gardenfi/utils';
 import { Errors } from '../constants/constants';
 import BigNumber from 'bignumber.js';
 import { formatAmount } from '../utils/utils';
+import { assetInfoStore } from '../store/assetStore';
+import orderInProgressStore from '../store/orderInProgressStore';
 // import { useNetworkFees } from './useNetworkFees';
 
 export const useSwap = () => {
@@ -47,31 +56,32 @@ export const useSwap = () => {
     setIsComparisonVisible,
     currentNetwork,
   } = swapStore();
-  // const { allAssets } = assetInfoStore();
+  const { balances } = assetInfoStore();
+  const { setIsOpen, setOrder } = orderInProgressStore();
   const { swap, getQuote, garden } = useGarden();
   const controller = useRef<AbortController | null>(null);
 
   // const { provider, account } = useBitcoinWallet();
-  // const inputBalance = useMemo(() => {
-  //   if (!inputAsset || !balances) return;
-  //   return balances[getOrderPair(inputAsset.chain, inputAsset.tokenAddress)];
-  // }, [inputAsset, balances]);
+  const inputBalance = useMemo(() => {
+    if (!inputAsset || !balances) return;
+    return balances[ChainAsset.from(inputAsset).toString()];
+  }, [inputAsset, balances]);
 
-  // const inputTokenBalance = useMemo(
-  //   () =>
-  //     inputBalance &&
-  //     inputAsset &&
-  //     (!isStarknet(inputAsset.chain) &&
-  //     !isSolana(inputAsset.chain) &&
-  //     !isSui(inputAsset.chain)
-  //       ? formatAmount(
-  //           Number(inputBalance),
-  //           inputAsset.decimals,
-  //           Math.min(inputAsset.decimals, 8),
-  //         )
-  //       : Number(inputBalance)),
-  //   [inputBalance, inputAsset],
-  // );
+  const inputTokenBalance = useMemo(
+    () =>
+      inputBalance &&
+      inputAsset &&
+      (!isStarknet(inputAsset.chain) &&
+      !isSolana(inputAsset.chain) &&
+      !isSui(inputAsset.chain)
+        ? formatAmount(
+            Number(inputBalance),
+            inputAsset.decimals,
+            Math.min(inputAsset.decimals, 8),
+          )
+        : Number(inputBalance)),
+    [inputBalance, inputAsset],
+  );
 
   // const isInsufficientBalance = useMemo(() => {
   //   if (!inputAmount || inputTokenBalance == null) return false;
@@ -400,7 +410,7 @@ export const useSwap = () => {
   }, [inputAsset, outputAsset, inputAmount, outputAmount, garden]);
 
   const handleSwapClick = async () => {
-    if (needsWalletConnection) {
+    if (needsWalletConnection || !garden) {
       return;
     }
     if (!validSwap || !swap || !inputAsset || !outputAsset) return;
@@ -453,12 +463,18 @@ export const useSwap = () => {
           // }
 
           clearSwapState();
+          setIsOpen(true);
+          setOrder(garden, res.val);
           return;
         }
+        setIsOpen(true);
+        setOrder(garden, res.val);
         setIsSwapping(false);
         clearSwapState();
         return;
       }
+      setIsOpen(true);
+      setOrder(garden, res.val);
       setIsSwapping(false);
       clearSwapState();
     } catch (error) {
@@ -600,7 +616,7 @@ export const useSwap = () => {
     isSwapping,
     isApproving,
     isBitcoinSwap,
-    // inputTokenBalance,
+    inputTokenBalance,
     needsWalletConnection,
     btcAddress,
     controller,

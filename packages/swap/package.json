@@ -42,6 +42,7 @@
     "framer-motion": "^11.18.1",
     "lodash.debounce": "^4.0.8",
     "react": "^18.3.1",
+    "react-qr-code": "^2.0.15",
     "starknet": "7.6.4",
     "zustand": "^5.0.2"
   },
