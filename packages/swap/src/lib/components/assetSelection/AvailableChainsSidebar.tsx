@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { viewPortStore } from '../../store/viewPortStore';
 import { swapStore } from '../../store/swapStore';
+import { BUFFER_HEIGHT, HEIGHTS } from '../../constants/constants';
 
 type SidebarProps = {
   show: boolean;
@@ -31,7 +32,11 @@ export const AvailableChainsSidebar = ({
   const { showFeesAndRateDetails, showBtcAddress } = swapStore();
 
   const height =
-    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 116;
+    (showFeesAndRateDetails
+      ? showBtcAddress
+        ? HEIGHTS.large
+        : HEIGHTS.medium
+      : HEIGHTS.small) - BUFFER_HEIGHT.medium;
 
   const animationConfig = {
     initial: { x: '100%', opacity: 0 },

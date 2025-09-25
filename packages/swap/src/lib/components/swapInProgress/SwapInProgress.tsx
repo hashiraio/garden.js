@@ -44,6 +44,7 @@ export const SwapInProgress = () => {
     if (!order) return;
     window.open(
       `${getApiEndpoint(currentNetwork).explorer}/order/${order.order_id}`,
+      '_blank',
     );
   };
 

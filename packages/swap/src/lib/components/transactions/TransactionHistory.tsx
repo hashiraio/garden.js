@@ -6,6 +6,7 @@ import { transactionHistoryStore } from '../../store/transactionHistoryStore';
 import { Transactions } from './Transactions';
 import { swapStore } from '../../store/swapStore';
 import { useAddresses } from '../../hooks/useAddresses';
+import { BUFFER_HEIGHT, HEIGHTS } from '../../constants/constants';
 
 type TransactionHistoryProps = {
   isOpen?: boolean;
@@ -73,7 +74,11 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   if (!isOpen) return null;
 
   const newHeight =
-    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 88;
+    (showFeesAndRateDetails
+      ? showBtcAddress
+        ? HEIGHTS.large
+        : HEIGHTS.medium
+      : HEIGHTS.small) - BUFFER_HEIGHT.small;
 
   return (
     <div className="flex flex-col h-full w-full gap-3 overflow-y-auto">

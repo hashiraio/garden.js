@@ -1,8 +1,8 @@
-import { GardenFullLogo, Typography } from '@gardenfi/garden-book';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { swapStore } from '../store/swapStore';
-import { tabs } from '../constants/constants';
+import { tabs, HEIGHTS } from '../constants/constants';
+import { GardenBranding } from './GardenBranding';
 
 type SwapWidgetBaseProps = {
   children: React.ReactNode;
@@ -10,15 +10,15 @@ type SwapWidgetBaseProps = {
 
 export const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
   const { showFeesAndRateDetails, showBtcAddress, activeTab } = swapStore();
-  const [height, setHeight] = useState(348);
+  const [height, setHeight] = useState(HEIGHTS.small);
 
   useEffect(() => {
     if (activeTab.id === tabs.swap.id) {
       const newHeight = showFeesAndRateDetails
         ? showBtcAddress
-          ? 496
-          : 408
-        : 348;
+          ? HEIGHTS.large
+          : HEIGHTS.medium
+        : HEIGHTS.small;
       setHeight(newHeight);
     }
   }, [showFeesAndRateDetails, showBtcAddress, activeTab.id]);
@@ -38,12 +38,7 @@ export const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
       <div className="flex-col justify-start gap-4 flex overflow-y-auto">
         {children}
       </div>
-      <div className="text-xs h-4 text-mid-grey flex items-center justify-center gap-1.5 px-2">
-        <Typography size="h5" weight="medium" className="!text-mid-grey">
-          Powered by
-        </Typography>
-        <GardenFullLogo width={58} />
-      </div>
+      <GardenBranding />
     </motion.div>
   );
 };

@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import { GardenSwapWidgetStyle } from '../types/types';
+import { GardenSwapWidgetStyles } from '../types/types';
 
 type WidgetConfigStoreState = {
-  style: GardenSwapWidgetStyle;
-  setStyle: (style: GardenSwapWidgetStyle) => void;
+  styles?: GardenSwapWidgetStyles;
+  setStyles: (styles: GardenSwapWidgetStyles) => void;
 };
 
 export const widgetConfigStore = create<WidgetConfigStoreState>((set) => ({
-  style: {},
-  setStyle: (style) => {
-    set({ style });
+  styles: undefined,
+  setStyles: (styles) => {
+    set({ styles });
   },
 }));

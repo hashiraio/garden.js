@@ -86,6 +86,7 @@ export class Garden extends Orderbook implements IGardenJS {
 
   constructor(config: GardenConfigWithHTLCs) {
     const { api, network } = resolveApiConfig(config.environment);
+    if (!api) throw new Error('API Key not found');
     super(new Url(api.baseurl));
     this.network = network;
     this._api = api;

@@ -100,3 +100,15 @@ export const MULTICALL_CONTRACT_ADDRESSES: Record<number, string> = {
   [citreaTestnet.id]: '0x8470Ee1FCD47e7F9B90486bB5D142430e5C1f409',
   [botanix.id]: '0xeaE7721d779276eb0f5837e2fE260118724a2Ba4',
 };
+
+export const HEIGHTS = {
+  small: 348,
+  medium: 408,
+  large: 496,
+};
+
+export const BUFFER_HEIGHT = {
+  small: 88,
+  medium: 116,
+  large: 216,
+};

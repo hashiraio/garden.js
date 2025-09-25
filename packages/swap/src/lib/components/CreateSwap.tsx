@@ -25,7 +25,7 @@ export const CreateSwap = () => {
     bitcoinAddress,
     bitcoinProvider,
   } = useAddresses();
-  const { style } = widgetConfigStore();
+  const { styles } = widgetConfigStore();
 
   const {
     outputAmount,
@@ -262,7 +262,7 @@ export const CreateSwap = () => {
       <InputAddressAndFeeRateDetails />
 
       <Button
-        style={{ backgroundColor: style.buttonColor }}
+        style={{ backgroundColor: styles?.buttonColor }}
         className="w-full mt-3 transition-colors duration-500"
         variant={buttonVariant}
         size="lg"

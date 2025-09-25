@@ -23,6 +23,21 @@ export const Header: React.FC = () => {
         <div
           className="flex justify-center cursor-pointer items-center gap-1 max-w-24 w-24 h-8 rounded-[38px] bg-white/30 relative"
           style={{ position: 'relative' }}
+          role="button"
+          tabIndex={0}
+          onClick={() =>
+            setActiveTab(
+              activeTab?.id === tabs.swap.id ? tabs.history : tabs.swap,
+            )
+          }
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setActiveTab(
+                activeTab?.id === tabs.swap.id ? tabs.history : tabs.swap,
+              );
+            }
+          }}
         >
           <span
             className="absolute top-0 left-0 h-full w-12 rounded-full bg-white z-0"
@@ -31,17 +46,15 @@ export const Header: React.FC = () => {
               transition: 'transform 0.3s ease-in-out',
             }}
           />
-          {Object.entries(tabs).map(([key, { Icon, id }]) => {
+          {Object.entries(tabs).map(([key, { Icon }]) => {
             return (
-              <button
+              <div
                 key={key}
-                className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-dark-grey h-full`}
-                onClick={() => setActiveTab(tabs[id])}
-                type="button"
+                className={`relative flex items-center justify-center px-4 py-1.5 w-12 rounded-[38px] overflow-hidden z-10 text-dark-grey h-full pointer-events-none`}
                 style={{ position: 'relative' }}
               >
                 <Icon className="h-4 w-4 " />
-              </button>
+              </div>
             );
           })}
         </div>

@@ -48,8 +48,6 @@ export const InputAddress = () => {
     );
   }, [storedBtcAddress, currentNetwork]);
 
-  console.log('Bool: ', showBtcAddress);
-
   return (
     <AnimatePresence mode="wait">
       {showBtcAddress && (

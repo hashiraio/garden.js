@@ -10,31 +10,37 @@ import { tabs } from '../constants/constants';
 import { SwapWidgetBase } from '../common/SwapWidgetBase';
 import { orderInProgressStore } from '../store/orderInProgressStore';
 import { SwapInProgress } from './swapInProgress/SwapInProgress';
-import { GardenSwapWidgetStyle } from '../types/types';
+import { GardenSwapWidgetStyles } from '../types/types';
 import { widgetConfigStore } from '../store/widgetConfigStore';
 
 export const SwapWidget = ({
   network,
-  style,
+  styles,
 }: {
   network: ApiConfig;
-  style: GardenSwapWidgetStyle;
+  styles?: GardenSwapWidgetStyles;
 }) => {
   const { network: networkType } = resolveApiConfig(network);
 
   const { setCurrentNetwork, activeTab } = swapStore();
   const { fetchAssets, fetchAndSetRPCs } = assetInfoStore();
-  const { setStyle } = widgetConfigStore();
+  const { setStyles } = widgetConfigStore();
 
   useEffect(() => {
     fetchAssets(networkType);
     setCurrentNetwork(networkType);
-    setStyle(style);
-  }, [fetchAssets, setCurrentNetwork, networkType]);
-
-  useEffect(() => {
     fetchAndSetRPCs();
-  }, [fetchAndSetRPCs]);
+    if (styles) {
+      setStyles(styles);
+    }
+  }, [
+    fetchAssets,
+    setCurrentNetwork,
+    networkType,
+    fetchAndSetRPCs,
+    styles,
+    setStyles,
+  ]);
 
   return (
     <>

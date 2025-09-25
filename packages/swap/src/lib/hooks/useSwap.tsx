@@ -18,7 +18,7 @@ import { Errors } from '../constants/constants';
 import BigNumber from 'bignumber.js';
 import { formatAmount } from '../utils/utils';
 import { assetInfoStore } from '../store/assetStore';
-import orderInProgressStore from '../store/orderInProgressStore';
+import { orderInProgressStore } from '../store/orderInProgressStore';
 
 export const useSwap = () => {
   const {

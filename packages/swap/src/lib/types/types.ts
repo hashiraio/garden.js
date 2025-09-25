@@ -1,4 +1,5 @@
 import { Asset, Chain, ChainAsset } from '@gardenfi/orderbook';
+import type { GardenProviderProps } from '@gardenfi/react-hooks';
 import { FC, SVGProps } from 'react';
 
 export interface AssetFromResponse {
@@ -66,14 +67,14 @@ export type Tab = {
   Icon: FC<SVGProps<SVGSVGElement>>;
 };
 
-import type { GardenProviderProps } from '@gardenfi/react-hooks';
-
-export type GardenSwapWidgetStyle = {
+export type GardenSwapWidgetStyles = {
   buttonColor?: string;
 };
 
-export type GardenSwapWidgetProps = Omit<GardenProviderProps, 'config'> & {
+export type GardenSwapWidgetProps = {
   config: GardenProviderProps['config'] & {
-    style?: GardenSwapWidgetStyle;
+    store: GardenProviderProps['store'];
+    setRedeemServiceEnabled?: GardenProviderProps['setRedeemServiceEnabled'];
+    styles?: GardenSwapWidgetStyles;
   };
 };

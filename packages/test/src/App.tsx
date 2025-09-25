@@ -14,15 +14,16 @@ const App = () => {
       <div>
         <GardenSwapWidget
           config={{
-            environment: Network.TESTNET,
             apiKey:
               'f242ea49332293424c96c562a6ef575a819908c878134dcb4fce424dc84ec796',
+            environment: Network.TESTNET,
+            store: localStorage,
             wallets: {
               evm: walletClient!,
               solana: solanaAnchorProvider!,
             },
+            styles: {},
           }}
-          store={localStorage}
         />
       </div>
     </div>

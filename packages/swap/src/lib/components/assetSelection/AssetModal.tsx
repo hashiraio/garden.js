@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { AvailableChainsSidebar } from './AvailableChainsSidebar';
 import { Network } from '@gardenfi/utils';
 import { formatAmount } from '../../utils/utils';
-import { IOType } from '../../constants/constants';
+import { IOType, HEIGHTS, BUFFER_HEIGHT } from '../../constants/constants';
 import { ChainAsset } from '@gardenfi/orderbook';
 import { useAddresses } from '../../hooks/useAddresses';
 
@@ -63,7 +63,11 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   const height =
-    (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 216;
+    (showFeesAndRateDetails
+      ? showBtcAddress
+        ? HEIGHTS.large
+        : HEIGHTS.medium
+      : HEIGHTS.small) - BUFFER_HEIGHT.large;
 
   // Chain ordering for display
   const orderedChains = useMemo(() => {

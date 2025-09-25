@@ -1,11 +1,5 @@
 import { create } from 'zustand';
 
-export const HEIGHTS = {
-  small: 342,
-  medium: 376,
-  large: 480,
-};
-
 type HeightStore = {
   showBtcAddress: boolean;
   showInputAddress: boolean;
