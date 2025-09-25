@@ -417,27 +417,39 @@ export const useSwap = () => {
 
       console.log('orderCreated ✅', res.val);
 
+      // Normalize orderId extraction for all cases
+      let orderId: string | undefined;
+
+      if (typeof res.val === 'string') {
+        orderId = res.val;
+      } else if (res.val && typeof res.val.order_id === 'string') {
+        orderId = res.val.order_id;
+      }
+
+      if (!orderId) {
+        setIsSwapping(false);
+        console.error('Order ID not found in swap response', res.val);
+        return;
+      }
+
+      // For Bitcoin swaps, fetch the order to ensure it's available
       if (isBitcoin(inputAsset.chain)) {
-        const order = await garden?.getOrder(res.val);
-        if (!order?.val || order?.error) {
-          console.error('failed to get order ❌', order?.error);
+        try {
+          const order = await garden?.getOrder(orderId);
+          if (!order?.val || order?.error) {
+            console.error('failed to get order ❌', order?.error);
+            setIsSwapping(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Error fetching order for Bitcoin swap', err);
           setIsSwapping(false);
           return;
         }
-        if (garden) {
-          clearSwapState();
-          setIsOpen(true);
-          setOrder(garden, res.val);
-          return;
-        }
-        setIsOpen(true);
-        setOrder(garden, res.val);
-        setIsSwapping(false);
-        clearSwapState();
-        return;
       }
+
       setIsOpen(true);
-      setOrder(garden, res.val);
+      setOrder(garden, orderId);
       setIsSwapping(false);
       clearSwapState();
     } catch (error) {
