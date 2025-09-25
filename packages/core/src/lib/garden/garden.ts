@@ -228,7 +228,9 @@ export class Garden extends Orderbook implements IGardenJS {
    * @param params SwapParams
    * @returns AsyncResult<Order, string>
    */
-  async createSwap(params: SwapParams): AsyncResult<string, string> {
+  async createSwap(
+    params: SwapParams,
+  ): AsyncResult<CreateOrderResponse | string, string> {
     const blockchainType = ChainAsset.from(params.fromAsset).blockchainType;
     const htlcValidation = await validateHTLCForSwap(
       blockchainType,
@@ -299,7 +301,7 @@ export class Garden extends Orderbook implements IGardenJS {
         }
         break;
       case BlockchainType.bitcoin:
-        return Ok(createOrderResponse.order_id);
+        return Ok(createOrderResponse);
       default:
         return Err(`Unsupported blockchain type for swap initiation`);
     }
