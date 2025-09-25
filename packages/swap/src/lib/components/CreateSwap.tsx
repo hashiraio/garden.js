@@ -12,7 +12,7 @@ import {
 } from '@gardenfi/orderbook';
 import { useSwap } from '../hooks/useSwap';
 import { assetInfoStore } from '../store/assetStore';
-import { useWallets } from '../hooks/useWallets';
+import { useAddresses } from '../hooks/useAddresses';
 import widgetConfigStore from '../store/widgetConfigStore';
 
 const CreateSwap = () => {
@@ -24,7 +24,7 @@ const CreateSwap = () => {
     suiAddress,
     bitcoinAddress,
     bitcoinProvider,
-  } = useWallets();
+  } = useAddresses();
   const { style } = widgetConfigStore();
 
   const {

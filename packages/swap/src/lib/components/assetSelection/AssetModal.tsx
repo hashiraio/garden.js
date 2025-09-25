@@ -16,7 +16,7 @@ import { Network } from '@gardenfi/utils';
 import { formatAmount } from '../../utils/utils';
 import { IOType } from '../../constants/constants';
 import { ChainAsset } from '@gardenfi/orderbook';
-import { useWallets } from '../../hooks/useWallets';
+import { useAddresses } from '../../hooks/useAddresses';
 
 type Props = {
   onSelect: (asset: ParsedAsset) => void;
@@ -45,7 +45,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
     starknetAddress,
     suiAddress,
     solanaAddress,
-  } = useWallets();
+  } = useAddresses();
 
   const [selectedChain, setSelectedChain] = useState<
     ParsedChainInfo | undefined

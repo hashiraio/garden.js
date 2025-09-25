@@ -1,7 +1,7 @@
 import { useGarden } from '@gardenfi/react-hooks';
 import { useEffect, useState } from 'react';
 
-export const useWallets = () => {
+export const useAddresses = () => {
   const { garden } = useGarden();
   const [provider, setProvider] = useState<any>(null);
 

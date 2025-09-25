@@ -11,7 +11,7 @@ import { formatAmount, formatAmountUsd } from '../../utils/utils';
 import { delayedFadeAnimation } from '../../constants/animations';
 import { swapStore } from '../../store/swapStore';
 import { SwapSavingsAndAddresses } from './../SwapSavingsAndAddresses';
-import { useWallets } from '../../hooks/useWallets';
+import { useAddresses } from '../../hooks/useAddresses';
 
 const RateDisplay = ({
   inputAsset,
@@ -57,7 +57,7 @@ export const FeesAndRateDetails = () => {
     networkFees,
     // showComparisonHandler,
   } = swapStore();
-  const { solanaAddress, bitcoinAddress, evmAddress } = useWallets();
+  const { solanaAddress, bitcoinAddress, evmAddress } = useAddresses();
 
   // const isBitcoinChains = outputAsset?.symbol.includes(BTC.symbol);
   // const formattedRate = useMemo(
