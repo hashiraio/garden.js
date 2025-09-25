@@ -2,6 +2,7 @@ import React from 'react';
 import { GardenProvider } from '@gardenfi/react-hooks';
 import { SwapWidget } from './components/SwapWidget';
 import type { GardenSwapWidgetProps } from './types/types';
+import '@gardenfi/garden-book/style.css';
 
 const GardenSwapWidget: React.FC<GardenSwapWidgetProps> = ({ config }) => {
   const { styles, store, setRedeemServiceEnabled, ...providerConfig } = config;

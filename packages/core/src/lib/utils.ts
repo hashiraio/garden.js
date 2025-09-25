@@ -348,19 +348,12 @@ export const withDefaultAffiliateFees = (
  *
  * @param blockchainType
  * @param htlcs
- * @param addresses
  * @returns
  */
 export const getAddresses = async (
   blockchainType: BlockchainType,
   htlcs: GardenHTLCModules,
-  redeemServiceEnabled: boolean,
-  addresses?: Partial<Record<BlockchainType, string>>,
 ) => {
-  if (redeemServiceEnabled && addresses && addresses[blockchainType]) {
-    return Ok(addresses[blockchainType]!);
-  }
-
   switch (blockchainType) {
     case BlockchainType.evm:
       if (!htlcs.evm)
