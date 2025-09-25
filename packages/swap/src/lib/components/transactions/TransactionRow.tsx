@@ -10,7 +10,7 @@ import {
 } from '../../utils/utils';
 import { swapStore } from '../../store/swapStore';
 import { getApiEndpoint, tabs } from '../../constants/constants';
-import orderInProgressStore from '../../store/orderInProgressStore';
+import { orderInProgressStore } from '../../store/orderInProgressStore';
 import { useGarden } from '@gardenfi/react-hooks';
 
 type TransactionProps = {

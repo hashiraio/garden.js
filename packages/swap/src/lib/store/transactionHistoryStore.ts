@@ -26,7 +26,7 @@ type TransactionHistoryStoreState = {
   ) => Promise<void>;
 };
 
-const transactionHistoryStore = create<TransactionHistoryStoreState>(
+export const transactionHistoryStore = create<TransactionHistoryStoreState>(
   (set, get) => ({
     transactions: [],
     isLoading: false,
@@ -125,5 +125,3 @@ const transactionHistoryStore = create<TransactionHistoryStoreState>(
     },
   }),
 );
-
-export default transactionHistoryStore;

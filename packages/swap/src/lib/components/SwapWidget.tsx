@@ -2,18 +2,18 @@ import React, { useEffect } from 'react';
 import { swapStore } from '../store/swapStore';
 import { assetInfoStore } from '../store/assetStore';
 import { Header } from '../common/Header';
-import TransactionHistory from './transactions/TransactionHistory';
-import CreateSwap from './CreateSwap';
+import { TransactionHistory } from './transactions/TransactionHistory';
+import { CreateSwap } from './CreateSwap';
 import { Modal } from '../common/ModalComponent';
 import { ApiConfig, resolveApiConfig } from '@gardenfi/core';
 import { tabs } from '../constants/constants';
-import SwapWidgetBase from '../common/SwapWidgetBase';
-import orderInProgressStore from '../store/orderInProgressStore';
+import { SwapWidgetBase } from '../common/SwapWidgetBase';
+import { orderInProgressStore } from '../store/orderInProgressStore';
 import { SwapInProgress } from './swapInProgress/SwapInProgress';
 import { GardenSwapWidgetStyle } from '../types/types';
-import widgetConfigStore from '../store/widgetConfigStore';
+import { widgetConfigStore } from '../store/widgetConfigStore';
 
-const SwapWidget = ({
+export const SwapWidget = ({
   network,
   style,
 }: {
@@ -48,10 +48,8 @@ const SwapWidget = ({
   );
 };
 
-const Swap = () => {
+export const Swap = () => {
   const { isOpen } = orderInProgressStore();
 
   return <>{isOpen ? <SwapInProgress /> : <CreateSwap />}</>;
 };
-
-export default SwapWidget;

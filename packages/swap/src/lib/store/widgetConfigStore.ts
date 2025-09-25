@@ -6,11 +6,9 @@ type WidgetConfigStoreState = {
   setStyle: (style: GardenSwapWidgetStyle) => void;
 };
 
-const widgetConfigStore = create<WidgetConfigStoreState>((set) => ({
+export const widgetConfigStore = create<WidgetConfigStoreState>((set) => ({
   style: {},
   setStyle: (style) => {
     set({ style });
   },
 }));
-
-export default widgetConfigStore;

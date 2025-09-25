@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { assetInfoStore } from '../../store/assetStore';
-import transactionHistoryStore from '../../store/transactionHistoryStore';
+import { transactionHistoryStore } from '../../store/transactionHistoryStore';
 import { getAssetFromSwap } from '../../utils/utils';
 import { useGarden } from '@gardenfi/react-hooks';
 import { Typography } from '@gardenfi/garden-book';
@@ -8,7 +8,7 @@ import { TransactionRow } from './TransactionRow';
 import { TransactionsSkeleton } from './TransactionSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const Transactions = () => {
+export const Transactions = () => {
   const { transactions, isLoading } = transactionHistoryStore();
   const { allAssets } = assetInfoStore();
   const { pendingOrders } = useGarden();
@@ -64,5 +64,3 @@ const Transactions = () => {
     </AnimatePresence>
   );
 };
-
-export default Transactions;

@@ -2,7 +2,6 @@ import React from 'react';
 import {
   ArrowNorthEastIcon,
   CloseIcon,
-  // DeleteIcon,
   Typography,
 } from '@gardenfi/garden-book';
 import { useCallback, useMemo } from 'react';
@@ -19,7 +18,7 @@ import { OrderStatus as OrderStatusEnum } from '@gardenfi/orderbook';
 import { BTC } from '../../store/swapStore';
 import { SwapInfo } from '../transactions/SwapInfo';
 import { getApiEndpoint } from '../../constants/constants';
-import orderInProgressStore from '../../store/orderInProgressStore';
+import { orderInProgressStore } from '../../store/orderInProgressStore';
 
 export const SwapInProgress = () => {
   const { order, setIsOpen } = orderInProgressStore();

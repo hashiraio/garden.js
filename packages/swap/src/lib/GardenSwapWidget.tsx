@@ -1,7 +1,7 @@
 import React from 'react';
 import { GardenProvider } from '@gardenfi/react-hooks';
+import { SwapWidget } from './components/SwapWidget';
 import type { GardenSwapWidgetProps } from './types/types';
-import SwapWidget from './components/SwapWidget';
 
 const GardenSwapWidget: React.FC<GardenSwapWidgetProps> = ({
   ...providerProps

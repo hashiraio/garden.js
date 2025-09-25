@@ -8,16 +8,16 @@ type OrderInProgressStoreState = {
   setIsOpen: (isOpen: boolean) => void;
 };
 
-const orderInProgressStore = create<OrderInProgressStoreState>((set) => ({
-  order: null,
-  isOpen: false,
-  setOrder: async (garden, orderId) => {
-    const order = await garden?.getOrder(orderId);
-    set({ order: order.val });
-  },
-  setIsOpen: (isOpen) => {
-    set({ isOpen });
-  },
-}));
-
-export default orderInProgressStore;
+export const orderInProgressStore = create<OrderInProgressStoreState>(
+  (set) => ({
+    order: null,
+    isOpen: false,
+    setOrder: async (garden, orderId) => {
+      const order = await garden?.getOrder(orderId);
+      set({ order: order.val });
+    },
+    setIsOpen: (isOpen) => {
+      set({ isOpen });
+    },
+  }),
+);

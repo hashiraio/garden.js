@@ -13,9 +13,9 @@ import {
 import { useSwap } from '../hooks/useSwap';
 import { assetInfoStore } from '../store/assetStore';
 import { useAddresses } from '../hooks/useAddresses';
-import widgetConfigStore from '../store/widgetConfigStore';
+import { widgetConfigStore } from '../store/widgetConfigStore';
 
-const CreateSwap = () => {
+export const CreateSwap = () => {
   const [loadingDisabled, setLoadingDisabled] = useState(false);
   const {
     evmAddress,
@@ -274,5 +274,3 @@ const CreateSwap = () => {
     </div>
   );
 };
-
-export default CreateSwap;

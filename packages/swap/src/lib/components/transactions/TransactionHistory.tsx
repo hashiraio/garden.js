@@ -2,18 +2,26 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@gardenfi/garden-book';
 import { useGarden } from '@gardenfi/react-hooks';
 import { BlockchainType } from '@gardenfi/orderbook';
-import transactionHistoryStore from '../../store/transactionHistoryStore';
-import Transactions from './Transactions';
+import { transactionHistoryStore } from '../../store/transactionHistoryStore';
+import { Transactions } from './Transactions';
 import { swapStore } from '../../store/swapStore';
+import { useAddresses } from '../../hooks/useAddresses';
 
 type TransactionHistoryProps = {
   isOpen?: boolean;
 };
 
-const TransactionHistory: React.FC<TransactionHistoryProps> = ({
+export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   isOpen = true,
 }) => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const {
+    evmAddress,
+    bitcoinAddress,
+    solanaAddress,
+    suiAddress,
+    starknetAddress,
+  } = useAddresses();
   const [connectedWallets, setConnectedWallets] = useState<
     Record<BlockchainType, string>
   >({
@@ -49,11 +57,11 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     if (!garden || !isOpen) return;
 
     const wallets: Record<BlockchainType, string> = {
-      bitcoin: garden?.htlcs?.bitcoin?.htlcActorAddress || '',
-      evm: garden?.htlcs.evm?.htlcActorAddress || '',
-      starknet: garden?.htlcs?.starknet?.htlcActorAddress || '',
-      solana: garden?.htlcs?.solana?.htlcActorAddress || '',
-      sui: garden?.htlcs?.sui?.htlcActorAddress || '',
+      bitcoin: bitcoinAddress || '',
+      evm: evmAddress || '',
+      starknet: starknetAddress || '',
+      solana: solanaAddress || '',
+      sui: suiAddress || '',
     };
 
     setConnectedWallets(wallets);
@@ -90,5 +98,3 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     </div>
   );
 };
-
-export default TransactionHistory;

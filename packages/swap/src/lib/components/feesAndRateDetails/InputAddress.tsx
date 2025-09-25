@@ -6,7 +6,6 @@ import { isBitcoin } from '@gardenfi/orderbook';
 import { AnimatePresence, motion } from 'motion/react';
 import { validateBTCAddress } from '@gardenfi/core';
 import { Environment } from '@gardenfi/utils';
-// import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
 import { swapStore } from '../../store/swapStore';
 
 export const InputAddress = () => {
@@ -21,7 +20,6 @@ export const InputAddress = () => {
     showBtcAddress,
   } = swapStore();
 
-  // const { account: walletBtcAddress } = useBitcoinWallet();
   const walletBtcAddress = '';
 
   const isRecoveryAddress = useMemo(

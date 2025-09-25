@@ -8,7 +8,7 @@ type SwapWidgetBaseProps = {
   children: React.ReactNode;
 };
 
-const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
+export const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
   const { showFeesAndRateDetails, showBtcAddress, activeTab } = swapStore();
   const [height, setHeight] = useState(348);
 
@@ -47,5 +47,3 @@ const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
     </motion.div>
   );
 };
-
-export default SwapWidgetBase;
