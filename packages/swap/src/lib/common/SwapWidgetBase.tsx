@@ -35,7 +35,9 @@ const SwapWidgetBase = ({ children }: SwapWidgetBaseProps) => {
       }}
       className={`mx-auto relative flex h-full overflow-hidden w-[424px] duration-300 delay-200 ease-in-out transition-all rounded-[20px] p-3 pb-4 max-w-[424px] bg-garden-grey flex-col justify-between gap-4 sm:max-w-[424px]`}
     >
-      <div className="flex-col justify-start gap-4 flex">{children}</div>
+      <div className="flex-col justify-start gap-4 flex overflow-y-auto">
+        {children}
+      </div>
       <div className="text-xs h-4 text-mid-grey flex items-center justify-center gap-1.5 px-2">
         <Typography size="h5" weight="medium" className="!text-mid-grey">
           Powered by

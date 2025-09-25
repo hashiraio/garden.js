@@ -108,3 +108,13 @@ function capitalizeWords(input: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 }
+
+export const formatAmountUsd = (
+  amount: string | number | bigint,
+  decimals: number,
+) => {
+  const num = formatAmount(amount, decimals);
+  return Number(num).toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  });
+};

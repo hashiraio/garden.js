@@ -5,15 +5,13 @@ import {
   KeyboardDownIcon,
   Typography,
 } from '@gardenfi/garden-book';
-
-// import { useBitcoinWallet } from '@gardenfi/wallet-connectors';
-import { Asset } from '@gardenfi/orderbook';
+import { Asset, isBitcoin, isSolana } from '@gardenfi/orderbook';
 import { motion, AnimatePresence } from 'framer-motion';
-// import { swapStore } from '../store/dum';
-import { formatAmount } from '../../utils/utils';
+import { formatAmount, formatAmountUsd } from '../../utils/utils';
 import { delayedFadeAnimation } from '../../constants/animations';
 import { swapStore } from '../../store/swapStore';
 import { SwapSavingsAndAddresses } from './../SwapSavingsAndAddresses';
+import { useWallets } from '../../hooks/useWallets';
 
 const RateDisplay = ({
   inputAsset,
@@ -52,54 +50,49 @@ export const FeesAndRateDetails = () => {
   const [, setIsHovered] = useState(false);
   const targetRef = useRef<HTMLDivElement>(null);
 
-  const formattedTokenPrice = useMemo(() => formatAmount(2000, 0, 2), []);
-
   const {
     inputAsset,
     outputAsset,
     // rate,
-    // networkFees,
+    networkFees,
     // showComparisonHandler,
-    // fiatTokenPrices,
   } = swapStore();
-  //   //   const { account: btcAddress } = useBitcoinWallet();
-  //   //   const { solanaAddress } = useSolanaWallet();
-  //   //   const { address } = useEVMWallet();
+  const { solanaAddress, bitcoinAddress, evmAddress } = useWallets();
 
-  //   const isBitcoinChains = outputAsset?.symbol.includes(BTC.symbol);
-  //   const formattedRate = useMemo(
-  //     () => formatAmount(rate, 0, isBitcoinChains ? 7 : 3),
-  //     [isBitcoinChains, rate],
-  //   );
+  // const isBitcoinChains = outputAsset?.symbol.includes(BTC.symbol);
+  // const formattedRate = useMemo(
+  //   () => formatAmount(rate, 0, isBitcoinChains ? 7 : 3),
+  //   [isBitcoinChains, rate],
+  // );
 
-  //   const formattedTokenPrice = useMemo(
-  //     () => formatAmount(fiatTokenPrices.input, 0, 2),
-  //     [fiatTokenPrices.input],
-  //   );
+  const formattedTokenPrice = useMemo(
+    () => formatAmount(inputAsset?.price ?? 0, 0, 2),
+    [inputAsset?.price],
+  );
 
-  //   const refundAddress = useMemo(
-  //     () =>
-  //       inputAsset
-  //         ? isBitcoin(inputAsset.chain)
-  //           ? btcAddress
-  //           : isSolana(inputAsset.chain)
-  //           ? solanaAddress
-  //           : address
-  //         : undefined,
-  //     [inputAsset, btcAddress, solanaAddress, address],
-  //   );
+  const refundAddress = useMemo(
+    () =>
+      inputAsset
+        ? isBitcoin(inputAsset.chain)
+          ? bitcoinAddress
+          : isSolana(inputAsset.chain)
+          ? solanaAddress
+          : evmAddress
+        : undefined,
+    [inputAsset, bitcoinAddress, solanaAddress, evmAddress],
+  );
 
-  //   const receiveAddress = useMemo(
-  //     () =>
-  //       outputAsset
-  //         ? isBitcoin(outputAsset.chain)
-  //           ? btcAddress
-  //           : isSolana(outputAsset.chain)
-  //           ? solanaAddress
-  //           : address
-  //         : undefined,
-  //     [outputAsset, btcAddress, solanaAddress, address],
-  //   );
+  const receiveAddress = useMemo(
+    () =>
+      outputAsset
+        ? isBitcoin(outputAsset.chain)
+          ? bitcoinAddress
+          : isSolana(outputAsset.chain)
+          ? solanaAddress
+          : evmAddress
+        : undefined,
+    [outputAsset, bitcoinAddress, solanaAddress, evmAddress],
+  );
 
   return (
     <div className="flex flex-col rounded-2xl bg-white/50 pb-4 mt-3 transition-all duration-200">
@@ -214,10 +207,10 @@ export const FeesAndRateDetails = () => {
       <AnimatePresence>
         {isDetailsExpanded && (
           <SwapSavingsAndAddresses
-            refundAddress={'jhgvfb'}
-            receiveAddress={'nbvcx'}
+            refundAddress={refundAddress}
+            receiveAddress={receiveAddress}
             showComparison={() => {}}
-            networkFeesValue={formatAmount(2000, 0, 2)}
+            networkFeesValue={Number(formatAmountUsd(networkFees, 0))}
           />
         )}
       </AnimatePresence>

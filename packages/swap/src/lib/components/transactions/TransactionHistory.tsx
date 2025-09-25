@@ -68,7 +68,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     (showFeesAndRateDetails ? (showBtcAddress ? 496 : 408) : 348) - 88;
 
   return (
-    <div className="flex flex-col h-full w-full gap-3">
+    <div className="flex flex-col h-full w-full gap-3 overflow-y-auto">
       <div
         className="scrollbar-hide flex flex-1 flex-col gap-5 overflow-y-auto h-full items-center rounded-2xl pb-6"
         style={{ minHeight: newHeight }}
