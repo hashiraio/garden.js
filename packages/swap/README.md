@@ -1,5 +1,7 @@
 # @gardenfi/swap
 
+[**Demo**](https://jwcgcg0804ocowwoogs4o8cc.staging.btcfi.wtf/)
+
 A drop-in cross-chain Swap Widget for React apps. It bundles `GardenProvider` and renders a full swap UI with quotes, order creation, and in-flight order handling.
 
 ## Install
