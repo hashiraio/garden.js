@@ -29,7 +29,11 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: [...Object.keys(pkg.dependencies || {}), 'src/test/**/*'],
+      external: [
+        ...Object.keys(pkg.dependencies || {}),
+        ...Object.keys(pkg.peerDependencies || {}),
+        'src/test/**/*',
+      ],
       output: {
         preserveModules: true,
       },
