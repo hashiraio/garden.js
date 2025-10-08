@@ -1,7 +1,7 @@
-import { web3, BN } from '@coral-xyz/anchor';
+import { web3 } from '@coral-xyz/anchor';
 import { hex } from '@coral-xyz/anchor/dist/cjs/utils/bytes';
 import { Order } from '@gardenfi/orderbook';
-
+import { BigNumber } from 'bignumber.js';
 /**
  * A Swap configuration in Solana
  */
@@ -9,8 +9,8 @@ export class SwapConfig {
   public swapId: number[];
   public redeemer: web3.PublicKey;
   public secretHash: number[];
-  public amount: BN;
-  public expiresIn: BN;
+  public amount: BigNumber;
+  public expiresIn: BigNumber;
 
   /**
    * @param swapId - A Unique 32-bit ID to represent this configuration in hex
@@ -45,8 +45,8 @@ export class SwapConfig {
       );
     }
     try {
-      this.amount = new BN(amount.toString(10), 10);
-      this.expiresIn = new BN(expiresIn);
+      this.amount = new BigNumber(amount.toString(10), 10);
+      this.expiresIn = new BigNumber(expiresIn);
     } catch (cause) {
       throw new Error('Error decoding amount. Invalid value for amount', {
         cause,
