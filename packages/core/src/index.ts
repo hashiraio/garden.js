@@ -90,9 +90,3 @@ export {
 } from './lib/constants';
 
 export type { Api } from './lib/constants';
-
-export {
-  RouteValidator,
-  buildRouteMatrix,
-} from './lib/routeValidator/routeValidator';
-export type { RoutePolicy } from './lib/routeValidator/routeValidator';

@@ -40,3 +40,21 @@ export {
   isDeadlinePassed,
   parseAction,
 } from './lib/orderStatus/orderStatus';
+
+export { AssetManager } from './lib/assetManager/AssetManager';
+export {
+  ApiChainData,
+  ApiChainsResponse,
+  AssetManagerState,
+  Assets,
+  BaseChainData,
+  ChainData,
+  Chains,
+  FiatResponse,
+} from './lib/assetManager/types';
+
+export {
+  RouteValidator,
+  buildRouteMatrix,
+} from './lib/assetManager/routeValidator/routeValidator';
+export type { RoutePolicy } from './lib/assetManager/routeValidator/routeValidator';
