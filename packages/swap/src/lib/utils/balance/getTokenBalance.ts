@@ -71,7 +71,7 @@ export const getSolanaTokenBalance = async (
     const publicKey =
       typeof address === 'string' ? new PublicKey(address) : address;
 
-    if (asset.tokenAddress === '') {
+    if (asset.token?.address === '') {
       // Native SOL balance in lamports (raw)
       const balance = await connection.getBalance(publicKey);
       return balance.toString();
@@ -79,10 +79,10 @@ export const getSolanaTokenBalance = async (
 
     let tokenMint: PublicKey;
     try {
-      tokenMint = new PublicKey(asset.tokenAddress);
+      tokenMint = new PublicKey(asset.token?.address || '');
     } catch (err) {
       console.error('Invalid token mint address', {
-        address: asset.tokenAddress,
+        address: asset.token?.address,
         error: err,
       });
       return '0';
@@ -117,7 +117,11 @@ export const getStarknetTokenBalance = async (
       nodeUrl: STARKNET_CONFIG[network as keyof typeof STARKNET_CONFIG].nodeUrl,
     });
 
-    const erc20Contract = new Contract(erc20ABI, asset.tokenAddress, provider);
+    const erc20Contract = new Contract(
+      erc20ABI,
+      asset.token?.address || '',
+      provider,
+    );
 
     const balance = await erc20Contract['balanceOf'](address);
     if (!balance) return '0';
@@ -209,7 +213,7 @@ export const getNativeBalance = async (address: string, asset: Asset) => {
     if (
       isBitcoin(asset.chain) ||
       !isEVM(asset.chain) ||
-      !isEvmNativeToken(asset.chain, asset.tokenAddress)
+      !isEvmNativeToken(asset.chain, asset.token?.address || '')
     )
       return 0;
     const _chain = evmToViemChainMap[asset.chain];
@@ -261,8 +265,8 @@ export const getSuiTokenBalance = async (
 
   try {
     if (
-      asset.tokenAddress === 'primary' ||
-      asset.tokenAddress === '0x2::sui::SUI'
+      asset.token?.address === 'primary' ||
+      asset.token?.address === '0x2::sui::SUI'
     ) {
       const BUFFER_FEE_IN_MIST = 5_000_000;
       const result = await suiRpcCall('suix_getBalance', [
@@ -286,8 +290,8 @@ export const getSuiTokenBalance = async (
       const token = Array.isArray(result)
         ? result.find(
             (b: any) =>
-              b.coinType === asset.tokenAddress ||
-              b.coinType === asset.tokenAddress.replace(/^0x/, '0x'),
+              b.coinType === asset.token?.address ||
+              b.coinType === asset.token?.address.replace(/^0x/, '0x'),
           )
         : undefined;
       if (!token) return '0';

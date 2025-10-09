@@ -95,8 +95,14 @@ export const BTC = {
   decimals: 8,
   symbol: 'BTC',
   logo: 'https://garden.imgix.net/token-images/bitcoin.svg',
-  tokenAddress: 'primary',
-  atomicSwapAddress: 'primary',
+  token: {
+    address: 'primary',
+    schema: 'primary',
+  },
+  htlc: {
+    address: 'primary',
+    schema: 'primary',
+  },
   chain:
     DEFAULT_NETWORK === Network.TESTNET
       ? Chains.bitcoin_testnet
@@ -170,7 +176,7 @@ export const swapStore = create<SwapState>((set) => ({
         a?.id && typeof a.id.toString === 'function'
           ? a.id.toString()
           : `${a?.chain ?? ''}:${(a?.symbol ?? '').toLowerCase()}:${(
-              a?.tokenAddress ?? ''
+              a?.token?.address ?? ''
             ).toLowerCase()}`;
 
       const other = state[otherKey];

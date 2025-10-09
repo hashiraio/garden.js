@@ -100,9 +100,15 @@ const parseAsset = (
     symbol: symbol,
     chain: chain,
     decimals: asset.decimals,
-    tokenAddress: asset.token?.address || '',
-    atomicSwapAddress: asset.htlc?.address || '',
-    logo: asset.icon,
+    token: {
+      address: asset.token?.address || '',
+      schema: asset.token?.schema || '',
+    },
+    htlc: {
+      address: asset.htlc?.address || '',
+      schema: asset.htlc?.schema || '',
+    },
+    icon: asset.icon,
     price: asset.price,
     min_amount: asset.min_amount,
     max_amount: asset.max_amount,
@@ -215,7 +221,7 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
     for (const asset of targetAssets) {
       if (!isEVM(asset.chain)) continue;
 
-      if (!asset.tokenAddress || asset.tokenAddress === '') {
+      if (!asset.token?.address || asset.token?.address === '') {
         await getNativeBalance(address, asset);
       }
       if (!tokensByChain[asset.chain]) tokensByChain[asset.chain] = [];
@@ -225,7 +231,7 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
       const balanceResults = await Promise.allSettled(
         Object.entries(tokensByChain).map(async ([chain, assets]) => {
           const chainBalances = await getBalanceMulticall(
-            assets.map((asset) => asset.tokenAddress) as Hex[],
+            assets.map((asset) => asset.token?.address) as Hex[],
             address as Hex,
             chain as EVMChains,
             workingRPCs,
@@ -235,17 +241,17 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
 
           for (const asset of assets!) {
             const orderKey = ChainAsset.from(asset).toString();
-            let balance = chainBalances[asset.tokenAddress];
+            let balance = chainBalances[asset.token?.address || ''];
 
             if (
               balance &&
               balance.gt(0) &&
-              isEvmNativeToken(chain as EVMChains, asset.tokenAddress)
+              isEvmNativeToken(chain as EVMChains, asset.token?.address || '')
             ) {
               const fee = await getLegacyGasEstimate(
                 chain as EVMChains,
                 address as `0x${string}`,
-                asset.atomicSwapAddress as `0x${string}`,
+                asset.htlc?.address as `0x${string}`,
               );
 
               if (fee) {
@@ -315,7 +321,7 @@ export const assetInfoStore = create<AssetStoreState>((set, get) => ({
       );
       const orderKey = ChainAsset.from(asset).toString();
 
-      if (isSolanaNativeToken(asset.chain, asset.tokenAddress)) {
+      if (isSolanaNativeToken(asset.chain, asset.token?.address || '')) {
         // Subtract estimated rent/fee in lamports, keep lamports (raw) in store
         const lamports = new BigNumber(balanceRaw);
         const estimatedFeeLamports = new BigNumber(3806080); // ~0.00380608 SOL
