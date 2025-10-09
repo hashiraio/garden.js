@@ -4,8 +4,6 @@ export type * from './lib/orderbook/orderbook.types';
 export { BlockchainType } from './lib/constants/asset.types';
 export type {
   Asset,
-  AssetCommon,
-  AssetToken,
   BitcoinChains,
   Chain,
   ChainsByBlockchainType,
