@@ -73,7 +73,9 @@ export const GardenProvider: FC<GardenProviderProps> = ({
         } else if (order.val && typeof order.val.order_id === 'string') {
           if (!ids.includes(order.val.order_id)) ids.push(order.val.order_id);
         }
-        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(ids));
+
+        const uniqueIds = Array.from(new Set(ids));
+        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(uniqueIds));
       } catch (e) {
         console.error('Failed to persist pending order id', e);
       }

@@ -16,13 +16,15 @@ interface PolicyResponse {
 
 class RouteValidator {
   private policy: RoutePolicy | null = null;
-
-  constructor(private apiBaseUrl: string, private apiKey: string) {}
+  constructor(
+    private readonly apiBaseUrl: string,
+    private readonly apiKey: string,
+  ) {}
 
   // Fetch policy from the API
   async loadPolicy(): Promise<void> {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/policy`, {
+      const response = await fetch(`${this.apiBaseUrl}/v2/policy`, {
         headers: {
           'garden-app-id': this.apiKey,
           accept: 'application/json',
@@ -31,163 +33,179 @@ class RouteValidator {
 
       const data: PolicyResponse = await response.json();
 
-      if (data.status === 'Ok') {
-        this.policy = data.result;
-      } else {
+      if (data.status !== 'Ok') {
         throw new Error(`API Error: ${data.error}`);
       }
+
+      // this.policy = data.result;
+      this.policy = {
+        default: 'open',
+        isolation_groups: ['arbitrum:seed <-> ethereum:seed'],
+        blacklist_pairs: ['solana:* <-> ethereum:*'],
+        whitelist_overrides: ['solana:sol -> ethereum:cbbtc'],
+      };
     } catch (error) {
       throw new Error(`Failed to load policy: ${error}`);
     }
   }
 
-  // Check if a route is valid based on the policy
   isValidRoute(fromAsset: ChainAsset, toAsset: ChainAsset): boolean {
-    if (!this.policy) {
-      throw new Error('Policy not loaded. Call loadPolicy() first.');
+    const policy = this.ensurePolicyLoaded();
+
+    if (fromAsset === toAsset) return false;
+
+    // Check if both assets are in the same isolation group
+    const fromGroup = this.findIsolationGroup(fromAsset);
+    const toGroup = this.findIsolationGroup(toAsset);
+
+    if (fromGroup !== null || toGroup !== null) {
+      return fromGroup === toGroup;
     }
 
-    // Can't swap to the same asset
-    if (fromAsset === toAsset) {
-      return false;
-    }
-
-    // Check isolation groups first (highest priority)
-    if (this.isInIsolationGroup(fromAsset, toAsset)) {
-      return this.isValidIsolationGroup(fromAsset, toAsset);
-    }
-
-    // Check whitelist overrides (bypass other restrictions)
-    if (this.isWhitelistOverride(fromAsset, toAsset)) {
+    // Check whitelist overrides
+    if (
+      this.matchesPatternList(fromAsset, toAsset, policy.whitelist_overrides)
+    ) {
       return true;
     }
 
-    // Check blacklist pairs
-    if (this.isBlacklisted(fromAsset, toAsset)) {
+    // Check blacklist
+    if (this.matchesPatternList(fromAsset, toAsset, policy.blacklist_pairs)) {
       return false;
     }
 
-    // Apply default policy
-    return this.policy.default === 'open';
+    return policy.default === 'open';
   }
 
-  // Get all valid destination assets for a given source asset
+  isAssetInIsolationGroup(asset: ChainAsset): boolean {
+    this.ensurePolicyLoaded();
+    return this.findIsolationGroup(asset) !== null;
+  }
+
   getValidDestinations(
     fromAsset: ChainAsset,
     allAssets: ChainAsset[],
   ): ChainAsset[] {
-    return allAssets.filter((toAsset) => this.isValidRoute(fromAsset, toAsset));
+    this.ensurePolicyLoaded();
+
+    const fromGroup = this.findIsolationGroup(fromAsset);
+
+    // If in isolation group, only return assets from the same group
+    if (fromGroup !== null) {
+      return allAssets.filter(
+        (asset) =>
+          asset !== fromAsset && this.findIsolationGroup(asset) === fromGroup,
+      );
+    }
+
+    // Otherwise, filter based on route validation
+    return allAssets.filter((toAsset) => {
+      if (fromAsset === toAsset) return false;
+      if (this.findIsolationGroup(toAsset) !== null) return false;
+      return this.isValidRoute(fromAsset, toAsset);
+    });
   }
 
-  // Get all possible routes from a list of assets
   getAllValidRoutes(
     assets: ChainAsset[],
   ): Array<{ from: ChainAsset; to: ChainAsset }> {
-    const routes: Array<{ from: ChainAsset; to: ChainAsset }> = [];
+    return assets.flatMap((fromAsset) =>
+      assets
+        .filter((toAsset) => this.isValidRoute(fromAsset, toAsset))
+        .map((toAsset) => ({ from: fromAsset, to: toAsset })),
+    );
+  }
 
-    for (const fromAsset of assets) {
-      for (const toAsset of assets) {
-        if (this.isValidRoute(fromAsset, toAsset)) {
-          routes.push({ from: fromAsset, to: toAsset });
-        }
+  private ensurePolicyLoaded(): RoutePolicy {
+    if (!this.policy) {
+      throw new Error('Policy not loaded. Call loadPolicy() first.');
+    }
+    return this.policy;
+  }
+
+  private findIsolationGroup(asset: ChainAsset): number | null {
+    if (!this.policy) return null;
+
+    for (let i = 0; i < this.policy.isolation_groups.length; i++) {
+      if (this.matchesIsolationGroup(asset, this.policy.isolation_groups[i])) {
+        return i;
       }
     }
-
-    return routes;
+    return null;
   }
 
-  // Private helper methods
-  private isInIsolationGroup(
-    fromAsset: ChainAsset,
-    toAsset: ChainAsset,
-  ): boolean {
-    return this.policy!.isolation_groups.some((group) => {
-      const assets = this.parseIsolationGroup(group);
-      return assets.includes(fromAsset) || assets.includes(toAsset);
-    });
+  private matchesIsolationGroup(asset: ChainAsset, group: string): boolean {
+    const patterns = this.parsePattern(group);
+    return patterns.some((pattern) => this.matchesAssetPattern(asset, pattern));
   }
 
-  private isValidIsolationGroup(
+  private matchesPatternList(
     fromAsset: ChainAsset,
     toAsset: ChainAsset,
+    patterns: string[],
   ): boolean {
-    return this.policy!.isolation_groups.some((group) => {
-      const assets = this.parseIsolationGroup(group);
-      return assets.includes(fromAsset) && assets.includes(toAsset);
-    });
-  }
-
-  private isWhitelistOverride(
-    fromAsset: ChainAsset,
-    toAsset: ChainAsset,
-  ): boolean {
-    return this.policy!.whitelist_overrides.some((override) =>
-      this.matchesPattern(fromAsset, toAsset, override),
+    return patterns.some((pattern) =>
+      this.matchesRoutePattern(fromAsset, toAsset, pattern),
     );
   }
 
-  private isBlacklisted(fromAsset: ChainAsset, toAsset: ChainAsset): boolean {
-    return this.policy!.blacklist_pairs.some((blacklist) =>
-      this.matchesPattern(fromAsset, toAsset, blacklist),
-    );
-  }
-
-  private parseIsolationGroup(group: string): ChainAsset[] {
-    // Parse "ethereum:SEED <-> arbitrum:SEED" format
-    const assets = group.split('<->').map((asset) => ChainAsset.from(asset));
-    return assets;
-  }
-
-  private matchesPattern(
+  private matchesRoutePattern(
     fromAsset: ChainAsset,
     toAsset: ChainAsset,
     pattern: string,
   ): boolean {
-    const [fromPattern, toPattern] = pattern.split('->').map((p) => p.trim());
+    const separator = pattern.includes('<->') ? '<->' : '->';
+    const [fromPattern, toPattern] = pattern
+      .split(separator)
+      .map((p) => p.trim());
 
-    return (
+    const forwardMatch =
       this.matchesAssetPattern(fromAsset, fromPattern) &&
-      this.matchesAssetPattern(toAsset, toPattern)
-    );
+      this.matchesAssetPattern(toAsset, toPattern);
+
+    if (separator === '<->') {
+      const reverseMatch =
+        this.matchesAssetPattern(fromAsset, toPattern) &&
+        this.matchesAssetPattern(toAsset, fromPattern);
+      return forwardMatch || reverseMatch;
+    }
+
+    return forwardMatch;
+  }
+
+  private parsePattern(pattern: string): string[] {
+    const separator = pattern.includes('<->') ? '<->' : '->';
+    return pattern.split(separator).map((p) => p.trim());
   }
 
   private matchesAssetPattern(asset: ChainAsset, pattern: string): boolean {
-    // Handle wildcard patterns
-    if (pattern === '*') return true;
+    const assetStr = asset.toString().toLowerCase();
+    const patternLower = pattern.toLowerCase();
 
-    if (pattern.includes('*')) {
-      // Handle patterns like "starknet:*" or "*:USDC"
-      if (pattern.endsWith(':*')) {
-        const chainPattern = pattern.slice(0, -2);
-        return asset.toString().startsWith(chainPattern + ':');
-      }
-      if (pattern.startsWith('*:')) {
-        const symbolPattern = pattern.slice(2);
-        return asset.toString().endsWith(':' + symbolPattern);
-      }
+    if (patternLower === '*') return true;
+
+    if (patternLower.endsWith(':*')) {
+      return assetStr.startsWith(patternLower.slice(0, -2) + ':');
     }
 
-    // Exact match
-    return asset.toString() === pattern;
+    if (patternLower.startsWith('*:')) {
+      return assetStr.endsWith(':' + patternLower.slice(2));
+    }
+
+    return assetStr === patternLower;
   }
 }
 
-// Helper function to build route matrix for UI
 function buildRouteMatrix(
   assets: ChainAsset[],
   validator: RouteValidator,
 ): Record<string, ChainAsset[]> {
-  const matrix: Record<string, ChainAsset[]> = {};
-
-  for (const fromAsset of assets) {
-    matrix[fromAsset.toString()] = validator.getValidDestinations(
-      fromAsset,
-      assets,
-    );
-  }
-
-  return matrix;
+  return Object.fromEntries(
+    assets.map((fromAsset) => [
+      fromAsset.toString(),
+      validator.getValidDestinations(fromAsset, assets),
+    ]),
+  );
 }
 
-// Export for use in your application
 export { RouteValidator, buildRouteMatrix, type RoutePolicy };

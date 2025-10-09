@@ -47,21 +47,40 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
       // Fetch pending orders from all addresses
       const orderPromises = addresses.map(async (address) => {
         try {
-          const result = await garden.getOrders({
-            address: address,
-            status: OrderLifecycle.pending,
-            per_page: 500,
-          });
+          const [pendingOrders, notInitiatedOrders] = await Promise.all([
+            garden.getOrders({
+              address: address,
+              status: OrderLifecycle.pending,
+              per_page: 500,
+            }),
+            garden.getOrders({
+              address: address,
+              status: OrderLifecycle.notInitiated,
+              per_page: 500,
+            }),
+          ]);
 
-          if (result.ok) {
-            return result.val.data;
+          const combinedOrders = [];
+
+          if (pendingOrders.ok) {
+            combinedOrders.push(...pendingOrders.val.data);
           } else {
             console.error(
-              `Failed to fetch orders for address ${address}:`,
-              result.error,
+              `Failed to fetch pending orders for address ${address}:`,
+              pendingOrders.error,
             );
-            return [];
           }
+
+          if (notInitiatedOrders.ok) {
+            combinedOrders.push(...notInitiatedOrders.val.data);
+          } else {
+            console.error(
+              `Failed to fetch notInitiated orders for address ${address}:`,
+              notInitiatedOrders.error,
+            );
+          }
+
+          return combinedOrders;
         } catch (error) {
           console.error(`Error fetching orders for address ${address}:`, error);
           return [];
@@ -74,10 +93,12 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
 
       // Extract order IDs and save to localStorage
       const orderIds = allOrders.map((order) => order.order_id);
+      // Ensure uniqueness
+      const uniqueOrderIds = Array.from(new Set(orderIds));
 
-      if (orderIds.length > 0) {
+      if (uniqueOrderIds.length > 0) {
         try {
-          store.setItem(PENDING_ORDERS_STORE, JSON.stringify(orderIds));
+          store.setItem(PENDING_ORDERS_STORE, JSON.stringify(uniqueOrderIds));
         } catch (e) {
           console.error(
             'Error saving initial pending order IDs to localStorage',
@@ -96,20 +117,24 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
     try {
       const existing = store.getItem(PENDING_ORDERS_STORE);
       const ids: string[] = existing ? JSON.parse(existing) : [];
+      // Ensure uniqueness when reading from storage
+      const uniqueIds = Array.from(new Set(ids));
 
-      if (ids.length === 0) {
+      if (uniqueIds.length === 0) {
         setPendingOrders([]);
         return;
       }
 
-      const results = await Promise.all(ids.map((id) => garden.getOrder(id)));
+      const results = await Promise.all(
+        uniqueIds.map((id) => garden.getOrder(id)),
+      );
 
       const orders: OrderWithStatus[] = [];
       const remainingIds: string[] = [];
 
       results.forEach((res, idx) => {
         if (!res.ok) {
-          remainingIds.push(ids[idx]);
+          remainingIds.push(uniqueIds[idx]);
           return;
         }
 
@@ -123,11 +148,14 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
         }
 
         orders.push(order);
-        remainingIds.push(ids[idx]);
+        remainingIds.push(uniqueIds[idx]);
       });
 
+      // Ensure uniqueness before saving
+      const uniqueRemainingIds = Array.from(new Set(remainingIds));
+
       try {
-        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(remainingIds));
+        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(uniqueRemainingIds));
       } catch (e) {
         console.error('Error persisting remaining pending order ids', e);
       }
