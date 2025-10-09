@@ -403,7 +403,7 @@ const AssetModal: React.FC<Props> = ({ onSelect }) => {
                         <div className="flex w-full items-center gap-2">
                           <div className={`w-10`}>
                             <TokenNetworkLogos
-                              tokenLogo={asset.logo}
+                              tokenLogo={asset.icon}
                               chainLogo={network?.iconUrl}
                             />
                           </div>

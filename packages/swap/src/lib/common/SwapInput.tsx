@@ -256,7 +256,7 @@ export const SwapInput: FC<SwapInputProps> = ({
           {asset ? (
             <TokenInfo
               symbol={asset.symbol}
-              tokenLogo={asset.logo || ''}
+              tokenLogo={asset.icon || ''}
               chainLogo={network?.iconUrl}
               onClick={handleOpenAssetSelector}
             />
