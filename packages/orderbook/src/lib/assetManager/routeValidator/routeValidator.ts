@@ -37,13 +37,7 @@ class RouteValidator {
         throw new Error(`API Error: ${data.error}`);
       }
 
-      // this.policy = data.result;
-      this.policy = {
-        default: 'open',
-        isolation_groups: ['arbitrum:seed <-> ethereum:seed'],
-        blacklist_pairs: ['solana:* <-> ethereum:*'],
-        whitelist_overrides: ['solana:sol -> ethereum:cbbtc'],
-      };
+      this.policy = data.result;
     } catch (error) {
       throw new Error(`Failed to load policy: ${error}`);
     }
