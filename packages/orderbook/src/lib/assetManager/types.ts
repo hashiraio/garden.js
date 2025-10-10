@@ -1,5 +1,4 @@
-import { Asset, Chain } from '@gardenfi/orderbook';
-
+import { Asset, Chain } from '../constants/asset.types';
 // ============================================
 // API Response Types
 // ============================================

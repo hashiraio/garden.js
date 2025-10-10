@@ -1,4 +1,4 @@
-import { ChainAsset } from '@gardenfi/orderbook';
+import { ChainAsset } from '../../chainAsset/chainAsset';
 
 // Types for the policy configuration
 interface RoutePolicy {

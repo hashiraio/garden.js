@@ -1,4 +1,3 @@
-import { Asset, Chain, ChainAsset } from '@gardenfi/orderbook';
 import { Fetcher, APIResponse, Url } from '@gardenfi/utils';
 import {
   RouteValidator,
@@ -6,6 +5,8 @@ import {
 } from './routeValidator/routeValidator';
 import { ApiChainData, Assets, ChainData, Chains } from './types';
 import { Config } from '../constants/asset';
+import { ChainAsset } from '../chainAsset/chainAsset';
+import { Asset, Chain } from '../constants/asset.types';
 
 // All supported chains from the Config
 const SUPPORTED_CHAINS = Object.keys(Config) as Chain[];
