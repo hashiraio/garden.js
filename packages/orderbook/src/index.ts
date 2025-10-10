@@ -46,10 +46,8 @@ export type {
   ApiChainData,
   ApiChainsResponse,
   AssetManagerState,
-  Assets,
   BaseChainData,
   ChainData,
-  Chains,
   FiatResponse,
 } from './lib/assetManager/types';
 
