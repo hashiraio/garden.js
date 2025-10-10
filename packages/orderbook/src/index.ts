@@ -42,7 +42,7 @@ export {
 } from './lib/orderStatus/orderStatus';
 
 export { AssetManager } from './lib/assetManager/AssetManager';
-export {
+export type {
   ApiChainData,
   ApiChainsResponse,
   AssetManagerState,
