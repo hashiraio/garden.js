@@ -7,6 +7,7 @@ import { ApiChainData, Assets, ChainData, Chains } from './types';
 import { Config } from '../constants/asset';
 import { ChainAsset } from '../chainAsset/chainAsset';
 import { Asset, Chain } from '../constants/asset.types';
+import { parseAssetNameSymbol } from './utils';
 
 // All supported chains from the Config
 const SUPPORTED_CHAINS = Object.keys(Config) as Chain[];
@@ -104,7 +105,7 @@ export class AssetManager {
       await this.initializeRouteValidator();
 
       // Fetch chains and assets data from the provided url
-      const url = this.url.endpoint('/v2/assets');
+      const url = this.url.endpoint('/v2/chains');
       const res = await Fetcher.get<APIResponse<ApiChainData[]>>(url);
 
       if (res.error) {
@@ -292,44 +293,28 @@ export class AssetManager {
       }
 
       const chainData: ChainData = {
+        ...apiChain,
         name: this.formatChainName(apiChain.chain),
         chain: chainIdentifier,
-        id: apiChain.id,
-        explorer_url: apiChain.explorer_url,
-        icon: apiChain.icon,
-        confirmation_target: apiChain.confirmation_target,
-        source_timelock: apiChain.source_timelock,
-        destination_timelock: apiChain.destination_timelock,
-        supported_htlc_schemas: apiChain.supported_htlc_schemas,
-        supported_token_schemas: apiChain.supported_token_schemas,
       };
 
       allChains[chainIdentifier] = chainData;
       let totalAssets = 0;
 
       for (const apiAsset of apiChain.assets) {
-        const atomicSwapAddress = apiAsset.htlc?.address || '';
-        const tokenAddress = apiAsset.token?.address || atomicSwapAddress;
         const tokenKey = ChainAsset.from(apiAsset.id).toString();
 
+        const { name, symbol } = parseAssetNameSymbol(
+          apiAsset.name,
+          apiAsset.id,
+        );
+
         const asset: Asset = {
+          ...apiAsset,
           id: ChainAsset.from(apiAsset.id),
           chain: chainIdentifier,
-          htlc: {
-            address: atomicSwapAddress,
-            schema: apiAsset.htlc?.schema || null,
-          },
-          token: {
-            address: tokenAddress,
-            schema: apiAsset.token?.schema || null,
-          },
-          decimals: apiAsset.decimals,
-          name: apiAsset.name,
-          symbol: ChainAsset.from(apiAsset.id).symbol.toUpperCase(),
-          icon: apiAsset.icon,
-          price: apiAsset.price,
-          min_amount: apiAsset.min_amount,
-          max_amount: apiAsset.max_amount,
+          name,
+          symbol,
         };
 
         allAssets[tokenKey] = asset;
