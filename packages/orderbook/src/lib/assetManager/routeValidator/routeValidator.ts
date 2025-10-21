@@ -1,5 +1,6 @@
 import { ApiKey, IAuth } from '@gardenfi/utils';
 import { ChainAsset } from '../../chainAsset/chainAsset';
+import NodeCache from 'node-cache';
 
 type RoutePolicy = {
   default: 'open' | 'closed';
@@ -34,10 +35,12 @@ type ParsedRule = {
 };
 
 class RouteValidator {
-  private policy: RoutePolicy | null = null;
-  private sortedIsolationRules: ParsedRule[] = [];
-  private sortedBlacklistRules: ParsedRule[] = [];
-  private sortedWhitelistRules: ParsedRule[] = [];
+  private static cache = new NodeCache({
+    stdTTL: 36000, // 10 hours in seconds
+    checkperiod: 3600, // Check for expired keys every hour
+  });
+  private static readonly POLICY_CACHE_KEY = 'route_policy';
+
   private auth: ApiKey | IAuth | undefined;
 
   constructor(
@@ -51,13 +54,26 @@ class RouteValidator {
     }
   }
 
-  async loadPolicy(): Promise<void> {
+  async loadPolicy(): Promise<RoutePolicy> {
+    const cachedPolicy = RouteValidator.cache.get<RoutePolicy>(
+      RouteValidator.POLICY_CACHE_KEY,
+    );
+
+    if (cachedPolicy) {
+      return cachedPolicy;
+    }
+
+    // Fetch from API if not in cache
     try {
-      if (!this.auth) return;
+      if (!this.auth) {
+        throw new Error('Authentication not configured');
+      }
+
       const headers = await this.auth.getAuthHeaders();
       if (headers.error) {
         throw new Error(`Failed to get auth headers: ${headers.error}`);
       }
+
       const response = await fetch(`${this.apiBaseUrl}/v2/policy`, {
         headers: {
           ...headers.val,
@@ -71,106 +87,131 @@ class RouteValidator {
         throw new Error(`API Error: ${data.error}`);
       }
 
-      this.policy = data.result;
+      // Cache the policy
+      RouteValidator.cache.set(RouteValidator.POLICY_CACHE_KEY, data.result);
 
-      this.preprocessRules();
+      return data.result;
     } catch (error) {
       throw new Error(`Failed to load policy: ${error}`);
     }
   }
 
-  isValidRoute(fromAsset: ChainAsset, toAsset: ChainAsset): boolean {
-    const policy = this.ensurePolicyLoaded();
+  async isValidRoute(
+    fromAsset: ChainAsset,
+    toAsset: ChainAsset,
+  ): Promise<boolean> {
+    const policy = await this.loadPolicy();
+    const { sortedIsolationRules, sortedBlacklistRules, sortedWhitelistRules } =
+      this.preprocessRules(policy);
 
     // Same asset check
     if (fromAsset.toString() === toAsset.toString()) return false;
 
     // Check whitelist overrides first (highest precedence)
-    if (this.matchesRuleList(fromAsset, toAsset, this.sortedWhitelistRules)) {
+    if (this.matchesRuleList(fromAsset, toAsset, sortedWhitelistRules)) {
       return true;
     }
 
     // Check isolation rules
     const isolationRule = this.findMatchingRule(
       fromAsset,
-      this.sortedIsolationRules,
+      sortedIsolationRules,
       'from',
     );
     if (isolationRule) {
-      // If source has isolation rules, destination must match those rules
-      const allowed = this.matchesRuleDestination(
-        toAsset,
-        isolationRule,
-        // fromAsset,
-      );
+      const allowed = this.matchesRuleDestination(toAsset, isolationRule);
       if (!allowed) return false;
     }
 
     // Check if destination has isolation rules that would block this route
     const destIsolationRule = this.findMatchingRule(
       toAsset,
-      this.sortedIsolationRules,
+      sortedIsolationRules,
       'to',
     );
     if (destIsolationRule) {
-      const allowed = this.matchesRuleSource(
-        fromAsset,
-        destIsolationRule,
-        // toAsset,
-      );
+      const allowed = this.matchesRuleSource(fromAsset, destIsolationRule);
       if (!allowed) return false;
     }
 
     // Check blacklist
-    if (this.matchesRuleList(fromAsset, toAsset, this.sortedBlacklistRules)) {
+    if (this.matchesRuleList(fromAsset, toAsset, sortedBlacklistRules)) {
       return false;
     }
 
     return policy.default === 'open';
   }
 
-  isAssetInIsolationGroup(asset: ChainAsset): boolean {
-    this.ensurePolicyLoaded();
-    return this.sortedIsolationRules.some(
+  async isAssetInIsolationGroup(asset: ChainAsset): Promise<boolean> {
+    const policy = await this.loadPolicy();
+    const { sortedIsolationRules } = this.preprocessRules(policy);
+
+    return sortedIsolationRules.some(
       (rule) =>
         this.matchesAssetPattern(asset, rule.fromPattern) ||
         this.matchesAssetPattern(asset, rule.toPattern),
     );
   }
 
-  getValidDestinations(
+  async getValidDestinations(
     fromAsset: ChainAsset,
     allAssets: ChainAsset[],
-  ): ChainAsset[] {
-    this.ensurePolicyLoaded();
+  ): Promise<ChainAsset[]> {
+    await this.loadPolicy();
 
-    return allAssets.filter((toAsset) => this.isValidRoute(fromAsset, toAsset));
+    const validDestinations: ChainAsset[] = [];
+    for (const toAsset of allAssets) {
+      if (await this.isValidRoute(fromAsset, toAsset)) {
+        validDestinations.push(toAsset);
+      }
+    }
+    return validDestinations;
   }
 
-  getAllValidRoutes(
+  async getAllValidRoutes(
     assets: ChainAsset[],
-  ): Array<{ from: ChainAsset; to: ChainAsset }> {
-    return assets.flatMap((fromAsset) =>
-      assets
-        .filter((toAsset) => this.isValidRoute(fromAsset, toAsset))
-        .map((toAsset) => ({ from: fromAsset, to: toAsset })),
-    );
+  ): Promise<Array<{ from: ChainAsset; to: ChainAsset }>> {
+    const routes: Array<{ from: ChainAsset; to: ChainAsset }> = [];
+
+    for (const fromAsset of assets) {
+      for (const toAsset of assets) {
+        if (await this.isValidRoute(fromAsset, toAsset)) {
+          routes.push({ from: fromAsset, to: toAsset });
+        }
+      }
+    }
+
+    return routes;
   }
 
-  private preprocessRules(): void {
-    if (!this.policy) return;
+  // Clear cache manually if needed
+  static clearCache(): void {
+    RouteValidator.cache.del(RouteValidator.POLICY_CACHE_KEY);
+  }
 
-    this.sortedIsolationRules = this.policy.isolation_groups
+  // Get cache stats
+  static getCacheStats(): NodeCache.Stats {
+    return RouteValidator.cache.getStats();
+  }
+
+  private preprocessRules(policy: RoutePolicy): {
+    sortedIsolationRules: ParsedRule[];
+    sortedBlacklistRules: ParsedRule[];
+    sortedWhitelistRules: ParsedRule[];
+  } {
+    const sortedIsolationRules = policy.isolation_groups
       .map((rule) => this.parseRule(rule))
       .sort((a, b) => b.specificity - a.specificity);
 
-    this.sortedBlacklistRules = this.policy.blacklist_pairs
+    const sortedBlacklistRules = policy.blacklist_pairs
       .map((rule) => this.parseRule(rule))
       .sort((a, b) => b.specificity - a.specificity);
 
-    this.sortedWhitelistRules = this.policy.whitelist_overrides
+    const sortedWhitelistRules = policy.whitelist_overrides
       .map((rule) => this.parseRule(rule))
       .sort((a, b) => b.specificity - a.specificity);
+
+    return { sortedIsolationRules, sortedBlacklistRules, sortedWhitelistRules };
   }
 
   private parseRule(pattern: string): ParsedRule {
@@ -196,7 +237,7 @@ class RouteValidator {
       const lower = pattern.toLowerCase();
       if (lower === Wildcard.WildCard) return 0;
       if (lower.includes(Wildcard.WildCard)) return 1; // Single wildcard
-      return 2; // Exact match
+      return 2; // exact match
     };
 
     return score(from) * 10 + score(to);
@@ -226,13 +267,10 @@ class RouteValidator {
   private matchesRuleDestination(
     toAsset: ChainAsset,
     rule: ParsedRule,
-    // fromAsset: ChainAsset,
   ): boolean {
-    // Check forward direction
     if (this.matchesAssetPattern(toAsset, rule.toPattern)) {
       return true;
     }
-    // Check bidirectional
     if (
       rule.direction === Direction.Bidirectional &&
       this.matchesAssetPattern(toAsset, rule.fromPattern)
@@ -242,12 +280,7 @@ class RouteValidator {
     return false;
   }
 
-  private matchesRuleSource(
-    fromAsset: ChainAsset,
-    rule: ParsedRule,
-    // toAsset: ChainAsset,
-  ): boolean {
-    // Check if fromAsset can reach toAsset based on isolation rule
+  private matchesRuleSource(fromAsset: ChainAsset, rule: ParsedRule): boolean {
     if (this.matchesAssetPattern(fromAsset, rule.fromPattern)) {
       return true;
     }
@@ -305,25 +338,22 @@ class RouteValidator {
 
     return assetStr === patternLower;
   }
-
-  private ensurePolicyLoaded(): RoutePolicy {
-    if (!this.policy) {
-      throw new Error('Policy not loaded. Call loadPolicy() first.');
-    }
-    return this.policy;
-  }
 }
 
-function buildRouteMatrix(
+async function buildRouteMatrix(
   assets: ChainAsset[],
   validator: RouteValidator,
-): Record<string, ChainAsset[]> {
-  return Object.fromEntries(
-    assets.map((fromAsset) => [
-      fromAsset.toString(),
-      validator.getValidDestinations(fromAsset, assets),
-    ]),
-  );
+): Promise<Record<string, ChainAsset[]>> {
+  const matrix: Record<string, ChainAsset[]> = {};
+
+  for (const fromAsset of assets) {
+    matrix[fromAsset.toString()] = await validator.getValidDestinations(
+      fromAsset,
+      assets,
+    );
+  }
+
+  return matrix;
 }
 
 export { RouteValidator, buildRouteMatrix, type RoutePolicy };

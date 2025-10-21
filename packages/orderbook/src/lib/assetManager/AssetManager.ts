@@ -15,12 +15,9 @@ const SUPPORTED_CHAINS = Object.keys(Config) as Chain[];
 /**
  * AssetManager
  *
- * A comprehensive manager for handling asset and chain data across the application.
- * Responsibilities:
- * - Fetching and caching asset/chain data from API
- * - Managing route validation between assets
- * - Managing asset selection state
- * - Building and maintaining route matrices for performance optimization
+ * It fetches asset data from our API, caches it locally, and provides methods
+ * to check if routes between assets are valid. Also builds a route matrix
+ * to make route lookups fast.
  */
 export class AssetManager {
   // Core data stores
@@ -127,7 +124,7 @@ export class AssetManager {
       this._chains = chains;
 
       // Build route matrix for performance
-      this.buildRouteMatrix();
+      await this.buildRouteMatrix();
 
       console.info('AssetManager initialized successfully ✅');
     } catch (error) {
@@ -146,7 +143,7 @@ export class AssetManager {
   /**
    * Check if a swap route from one asset to another is valid
    */
-  isRouteValid(from: Asset, to: Asset): boolean {
+  async isRouteValid(from: Asset, to: Asset): Promise<boolean> {
     if (!this._routeValidator || !from || !to || !from.id || !to.id) {
       console.warn('Missing routeValidator, from, or to. Returning true.');
       return true;
@@ -156,7 +153,10 @@ export class AssetManager {
       const fromChainAsset = ChainAsset.from(from.id);
       const toChainAsset = ChainAsset.from(to.id);
 
-      return this._routeValidator.isValidRoute(fromChainAsset, toChainAsset);
+      return await this._routeValidator.isValidRoute(
+        fromChainAsset,
+        toChainAsset,
+      );
     } catch (error) {
       console.error('Error in isRouteValid:', error);
       return true;
@@ -252,7 +252,7 @@ export class AssetManager {
   /**
    * Build route matrix for fast O(1) route lookups
    */
-  private buildRouteMatrix(): void {
+  private async buildRouteMatrix(): Promise<void> {
     if (!this._allAssets || !this._routeValidator) {
       return;
     }
@@ -268,7 +268,10 @@ export class AssetManager {
       })
       .filter((asset): asset is ChainAsset => asset !== null);
 
-    this._routeMatrix = buildRouteMatrix(allChainAssets, this._routeValidator);
+    this._routeMatrix = await buildRouteMatrix(
+      allChainAssets,
+      this._routeValidator,
+    );
   }
 
   /**
