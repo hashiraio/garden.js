@@ -38,17 +38,29 @@ class RouteValidator {
   private sortedIsolationRules: ParsedRule[] = [];
   private sortedBlacklistRules: ParsedRule[] = [];
   private sortedWhitelistRules: ParsedRule[] = [];
+  private auth: ApiKey | IAuth | undefined;
 
   constructor(
     private readonly apiBaseUrl: string,
-    private readonly auth: string | ApiKey | IAuth,
-  ) {}
+    private readonly apiKey: string | ApiKey | IAuth,
+  ) {
+    if (typeof this.apiKey === 'string') {
+      this.auth = new ApiKey(this.apiKey);
+    } else {
+      this.auth = this.apiKey;
+    }
+  }
 
   async loadPolicy(): Promise<void> {
     try {
+      if (!this.auth) return;
+      const headers = await this.auth.getAuthHeaders();
+      if (headers.error) {
+        throw new Error(`Failed to get auth headers: ${headers.error}`);
+      }
       const response = await fetch(`${this.apiBaseUrl}/v2/policy`, {
         headers: {
-          'garden-app-id': this.apiKey,
+          ...headers.val,
           accept: 'application/json',
         },
       });
@@ -89,7 +101,7 @@ class RouteValidator {
       const allowed = this.matchesRuleDestination(
         toAsset,
         isolationRule,
-        fromAsset,
+        // fromAsset,
       );
       if (!allowed) return false;
     }
@@ -104,7 +116,7 @@ class RouteValidator {
       const allowed = this.matchesRuleSource(
         fromAsset,
         destIsolationRule,
-        toAsset,
+        // toAsset,
       );
       if (!allowed) return false;
     }
@@ -214,7 +226,7 @@ class RouteValidator {
   private matchesRuleDestination(
     toAsset: ChainAsset,
     rule: ParsedRule,
-    fromAsset: ChainAsset,
+    // fromAsset: ChainAsset,
   ): boolean {
     // Check forward direction
     if (this.matchesAssetPattern(toAsset, rule.toPattern)) {
@@ -233,7 +245,7 @@ class RouteValidator {
   private matchesRuleSource(
     fromAsset: ChainAsset,
     rule: ParsedRule,
-    toAsset: ChainAsset,
+    // toAsset: ChainAsset,
   ): boolean {
     // Check if fromAsset can reach toAsset based on isolation rule
     if (this.matchesAssetPattern(fromAsset, rule.fromPattern)) {

@@ -90,7 +90,7 @@ export class AssetManager {
    * Initialize the AssetManager by fetching all required data
    */
   async initialize(): Promise<void> {
-    await Promise.all([this.fetchAndSetAssetsAndChains()]);
+    await this.fetchAndSetAssetsAndChains();
   }
 
   /**
