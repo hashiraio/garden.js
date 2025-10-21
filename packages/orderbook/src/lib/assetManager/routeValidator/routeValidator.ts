@@ -1,4 +1,4 @@
-import { ApiKey, IAuth } from '@gardenfi/utils';
+import { ApiKey, AsyncResult, Err, IAuth, Ok } from '@gardenfi/utils';
 import { ChainAsset } from '../../chainAsset/chainAsset';
 import NodeCache from 'node-cache';
 
@@ -54,24 +54,27 @@ class RouteValidator {
     }
   }
 
-  async loadPolicy(): Promise<RoutePolicy> {
+  /**
+   * Loads the current route policy, cached or via API.
+   */
+  async loadPolicy(): AsyncResult<RoutePolicy, string> {
     const cachedPolicy = RouteValidator.cache.get<RoutePolicy>(
       RouteValidator.POLICY_CACHE_KEY,
     );
 
     if (cachedPolicy) {
-      return cachedPolicy;
+      return Ok(cachedPolicy);
     }
 
     // Fetch from API if not in cache
     try {
       if (!this.auth) {
-        throw new Error('Authentication not configured');
+        return Err('Authentication not configured');
       }
 
       const headers = await this.auth.getAuthHeaders();
       if (headers.error) {
-        throw new Error(`Failed to get auth headers: ${headers.error}`);
+        return Err(`Failed to get auth headers: ${headers.error}`);
       }
 
       const response = await fetch(`${this.apiBaseUrl}/v2/policy`, {
@@ -84,35 +87,40 @@ class RouteValidator {
       const data: PolicyResponse = await response.json();
 
       if (data.status !== 'Ok') {
-        throw new Error(`API Error: ${data.error}`);
+        return Err(`API Error: ${data.error}`);
       }
 
       // Cache the policy
       RouteValidator.cache.set(RouteValidator.POLICY_CACHE_KEY, data.result);
 
-      return data.result;
+      return Ok(data.result);
     } catch (error) {
-      throw new Error(`Failed to load policy: ${error}`);
+      return Err(`Failed to load policy: ${error}`);
     }
   }
 
+  /**
+   * Checks if a given route is valid based on all route rules.
+   */
   async isValidRoute(
     fromAsset: ChainAsset,
     toAsset: ChainAsset,
   ): Promise<boolean> {
     const policy = await this.loadPolicy();
+    if (!policy.ok) {
+      return false;
+    }
     const { sortedIsolationRules, sortedBlacklistRules, sortedWhitelistRules } =
-      this.preprocessRules(policy);
+      this.preprocessRules(policy.val);
 
-    // Same asset check
     if (fromAsset.toString() === toAsset.toString()) return false;
 
-    // Check whitelist overrides first (highest precedence)
+    // Whitelist overrides everything
     if (this.matchesRuleList(fromAsset, toAsset, sortedWhitelistRules)) {
       return true;
     }
 
-    // Check isolation rules
+    // Isolation rules
     const isolationRule = this.findMatchingRule(
       fromAsset,
       sortedIsolationRules,
@@ -123,7 +131,7 @@ class RouteValidator {
       if (!allowed) return false;
     }
 
-    // Check if destination has isolation rules that would block this route
+    // Destination's isolation rules
     const destIsolationRule = this.findMatchingRule(
       toAsset,
       sortedIsolationRules,
@@ -139,12 +147,19 @@ class RouteValidator {
       return false;
     }
 
-    return policy.default === 'open';
+    // Default fallback
+    return policy.val.default === 'open';
   }
 
+  /**
+   * Returns true if asset is part of any isolation group rule.
+   */
   async isAssetInIsolationGroup(asset: ChainAsset): Promise<boolean> {
     const policy = await this.loadPolicy();
-    const { sortedIsolationRules } = this.preprocessRules(policy);
+    if (!policy.ok) {
+      return false;
+    }
+    const { sortedIsolationRules } = this.preprocessRules(policy.val);
 
     return sortedIsolationRules.some(
       (rule) =>
@@ -153,11 +168,17 @@ class RouteValidator {
     );
   }
 
+  /**
+   * Returns all valid destinations for a given source asset.
+   */
   async getValidDestinations(
     fromAsset: ChainAsset,
     allAssets: ChainAsset[],
   ): Promise<ChainAsset[]> {
-    await this.loadPolicy();
+    const policy = await this.loadPolicy();
+    if (!policy.ok) {
+      return [];
+    }
 
     const validDestinations: ChainAsset[] = [];
     for (const toAsset of allAssets) {
@@ -168,6 +189,9 @@ class RouteValidator {
     return validDestinations;
   }
 
+  /**
+   * Returns every valid route (from-to pair) among the provided assets.
+   */
   async getAllValidRoutes(
     assets: ChainAsset[],
   ): Promise<Array<{ from: ChainAsset; to: ChainAsset }>> {
@@ -184,16 +208,23 @@ class RouteValidator {
     return routes;
   }
 
-  // Clear cache manually if needed
+  /**
+   * Manually clear the cached route policy.
+   */
   static clearCache(): void {
     RouteValidator.cache.del(RouteValidator.POLICY_CACHE_KEY);
   }
 
-  // Get cache stats
+  /**
+   * Returns cache library statistics.
+   */
   static getCacheStats(): NodeCache.Stats {
     return RouteValidator.cache.getStats();
   }
 
+  /**
+   * Turns policy string rules into sorted ParsedRule objects.
+   */
   private preprocessRules(policy: RoutePolicy): {
     sortedIsolationRules: ParsedRule[];
     sortedBlacklistRules: ParsedRule[];
@@ -214,6 +245,9 @@ class RouteValidator {
     return { sortedIsolationRules, sortedBlacklistRules, sortedWhitelistRules };
   }
 
+  /**
+   * Parses a rule string (e.g. "eth:usdc->avalanche:usdt") into parts.
+   */
   private parseRule(pattern: string): ParsedRule {
     const bidirectional = pattern.includes(Direction.Bidirectional);
     const separator = bidirectional
@@ -232,6 +266,9 @@ class RouteValidator {
     };
   }
 
+  /**
+   * Gives a specificity score to a rule pattern for prioritizing.
+   */
   private calculateSpecificity(from: string, to: string): number {
     const score = (pattern: string): number => {
       const lower = pattern.toLowerCase();
@@ -243,6 +280,9 @@ class RouteValidator {
     return score(from) * 10 + score(to);
   }
 
+  /**
+   * Finds the first matching rule for an asset given the rule "side".
+   */
   private findMatchingRule(
     asset: ChainAsset,
     rules: ParsedRule[],
@@ -264,6 +304,9 @@ class RouteValidator {
     return null;
   }
 
+  /**
+   * Checks if a given toAsset matches the rule's destination side.
+   */
   private matchesRuleDestination(
     toAsset: ChainAsset,
     rule: ParsedRule,
@@ -280,6 +323,9 @@ class RouteValidator {
     return false;
   }
 
+  /**
+   * Checks if a given fromAsset matches the rule's source side.
+   */
   private matchesRuleSource(fromAsset: ChainAsset, rule: ParsedRule): boolean {
     if (this.matchesAssetPattern(fromAsset, rule.fromPattern)) {
       return true;
@@ -293,6 +339,9 @@ class RouteValidator {
     return false;
   }
 
+  /**
+   * Checks if any rule in a list matches fromAsset and toAsset.
+   */
   private matchesRuleList(
     fromAsset: ChainAsset,
     toAsset: ChainAsset,
@@ -301,6 +350,9 @@ class RouteValidator {
     return rules.some((rule) => this.matchesRule(fromAsset, toAsset, rule));
   }
 
+  /**
+   * Checks if a rule matches fromAsset and toAsset (forward or backward if bidirectional).
+   */
   private matchesRule(
     fromAsset: ChainAsset,
     toAsset: ChainAsset,
@@ -320,6 +372,9 @@ class RouteValidator {
     return forwardMatch;
   }
 
+  /**
+   * Checks if an asset string matches a rule's pattern (wildcards supported).
+   */
   private matchesAssetPattern(asset: ChainAsset, pattern: string): boolean {
     const assetStr = asset.toString().toLowerCase();
     const patternLower = pattern.toLowerCase();
@@ -340,6 +395,9 @@ class RouteValidator {
   }
 }
 
+/**
+ * Builds a fast lookup matrix for all valid destination assets per source asset.
+ */
 async function buildRouteMatrix(
   assets: ChainAsset[],
   validator: RouteValidator,

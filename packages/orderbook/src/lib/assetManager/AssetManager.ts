@@ -1,4 +1,11 @@
-import { Fetcher, APIResponse, Url } from '@gardenfi/utils';
+import {
+  Fetcher,
+  APIResponse,
+  Url,
+  Ok,
+  AsyncResult,
+  Err,
+} from '@gardenfi/utils';
 import {
   RouteValidator,
   buildRouteMatrix,
@@ -93,7 +100,7 @@ export class AssetManager {
   /**
    * Fetch and cache asset and chain data from API
    */
-  async fetchAndSetAssetsAndChains(): Promise<void> {
+  async fetchAndSetAssetsAndChains(): AsyncResult<string, string> {
     try {
       this._isLoading = true;
       this._error = null;
@@ -105,13 +112,9 @@ export class AssetManager {
       const url = this.url.endpoint('/v2/chains');
       const res = await Fetcher.get<APIResponse<ApiChainData[]>>(url);
 
-      if (res.error) {
-        throw new Error(res.error);
-      }
+      if (res.error) return Err(res.error);
 
-      if (!res.result) {
-        throw new Error('Failed to fetch chains data');
-      }
+      if (!res.result) return Err('Failed to fetch chains data');
 
       // Process and store data
       const { allChains, allAssets, assets, chains } = this.processApiData(
@@ -126,11 +129,9 @@ export class AssetManager {
       // Build route matrix for performance
       await this.buildRouteMatrix();
 
-      console.info('AssetManager initialized successfully ✅');
+      return Ok('AssetManager initialized successfully');
     } catch (error) {
-      console.error('Failed to fetch assets data ❌', error);
-      this._error = 'Failed to fetch assets data';
-      throw error;
+      return Err(`Failed to fetch assets data: ${error}`);
     } finally {
       this._isLoading = false;
     }
@@ -302,7 +303,6 @@ export class AssetManager {
       };
 
       allChains[chainIdentifier] = chainData;
-      let totalAssets = 0;
 
       for (const apiAsset of apiChain.assets) {
         const tokenKey = ChainAsset.from(apiAsset.id).toString();
@@ -322,12 +322,9 @@ export class AssetManager {
 
         allAssets[tokenKey] = asset;
         assets[tokenKey] = asset;
-        totalAssets++;
       }
 
-      if (totalAssets > 0) {
-        chains[chainIdentifier] = chainData;
-      }
+      chains[chainIdentifier] = chainData;
     }
 
     return { allChains, allAssets, assets, chains };

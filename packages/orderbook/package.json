@@ -30,6 +30,7 @@
     "@coral-xyz/anchor": "^0.31.1",
     "@gardenfi/utils": "workspace:*",
     "bufferutil": "^4.0.8",
+    "node-cache": "^5.1.2",
     "siwe": "^2.1.4",
     "utf-8-validate": "^6.0.3",
     "ws": "^8.14.2"
