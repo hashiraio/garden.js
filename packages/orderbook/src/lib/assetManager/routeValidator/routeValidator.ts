@@ -1,30 +1,37 @@
+import { ApiKey, IAuth } from '@gardenfi/utils';
 import { ChainAsset } from '../../chainAsset/chainAsset';
 
-interface RoutePolicy {
+type RoutePolicy = {
   default: 'open' | 'closed';
   isolation_groups: string[];
   blacklist_pairs: string[];
   whitelist_overrides: string[];
-}
+};
 
-interface PolicyResponse {
+type PolicyResponse = {
   status: 'Ok' | 'Error';
   result: RoutePolicy;
   error?: string;
-}
+};
 
 enum Direction {
   Forward = '->',
   Bidirectional = '<->',
 }
 
-interface ParsedRule {
+enum Wildcard {
+  WildCard = '*',
+  TokenWildcard = ':*',
+  ChainWildcard = '*:',
+}
+
+type ParsedRule = {
   pattern: string;
   fromPattern: string;
   toPattern: string;
   direction: Direction;
   specificity: number;
-}
+};
 
 class RouteValidator {
   private policy: RoutePolicy | null = null;
@@ -34,7 +41,7 @@ class RouteValidator {
 
   constructor(
     private readonly apiBaseUrl: string,
-    private readonly apiKey: string,
+    private readonly auth: string | ApiKey | IAuth,
   ) {}
 
   async loadPolicy(): Promise<void> {
@@ -155,20 +162,19 @@ class RouteValidator {
   }
 
   private parseRule(pattern: string): ParsedRule {
-    const bidirectional = pattern.includes('<->');
-    const separator = bidirectional ? '<->' : '->';
+    const bidirectional = pattern.includes(Direction.Bidirectional);
+    const separator = bidirectional
+      ? Direction.Bidirectional
+      : Direction.Forward;
     const [fromPattern, toPattern] = pattern
       .split(separator)
       .map((p) => p.trim());
 
-    const direction = pattern.includes('<->')
-      ? Direction.Bidirectional
-      : Direction.Forward;
     return {
       pattern,
       fromPattern,
       toPattern,
-      direction,
+      direction: separator,
       specificity: this.calculateSpecificity(fromPattern, toPattern),
     };
   }
@@ -176,8 +182,8 @@ class RouteValidator {
   private calculateSpecificity(from: string, to: string): number {
     const score = (pattern: string): number => {
       const lower = pattern.toLowerCase();
-      if (lower === '*') return 0;
-      if (lower.includes('*')) return 1; // Single wildcard
+      if (lower === Wildcard.WildCard) return 0;
+      if (lower.includes(Wildcard.WildCard)) return 1; // Single wildcard
       return 2; // Exact match
     };
 
@@ -273,14 +279,14 @@ class RouteValidator {
     const assetStr = asset.toString().toLowerCase();
     const patternLower = pattern.toLowerCase();
 
-    if (patternLower === '*') return true;
+    if (patternLower === Wildcard.WildCard) return true;
 
-    if (patternLower.endsWith(':*')) {
+    if (patternLower.endsWith(Wildcard.TokenWildcard)) {
       const chainPrefix = patternLower.slice(0, -1);
       return assetStr.startsWith(chainPrefix);
     }
 
-    if (patternLower.startsWith('*:')) {
+    if (patternLower.startsWith(Wildcard.ChainWildcard)) {
       const tokenSuffix = patternLower.slice(1);
       return assetStr.endsWith(tokenSuffix);
     }
