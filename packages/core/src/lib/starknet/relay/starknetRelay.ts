@@ -26,12 +26,14 @@ import {
   Ok,
   Url,
   hexToU32Array,
-  trim0x,
   with0x,
 } from '@gardenfi/utils';
 import { IStarknetHTLC } from '../starknetHTLC.types';
 import { starknetHtlcABI } from '../abi/starknetHtlcABI';
-import { formatStarknetSignature } from '../../utils';
+import {
+  formatStarknetSignature,
+  redeemOrderThroughRelayer,
+} from '../../utils';
 import { STARKNET_CONFIG } from './../../constants';
 
 const INITIATE_TYPE = {
@@ -223,29 +225,14 @@ export class StarknetRelay implements IStarknetHTLC {
 
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
-      const headers = await this.auth.getAuthHeaders();
-      if (!headers.ok) return Err(headers.error);
-
-      const res = await Fetcher.patch<APIResponse<string>>(
-        this.url
-          .endpoint('/v2/orders')
-          .endpoint(order.order_id)
-          .addSearchParams({ action: 'redeem' }),
-        {
-          body: JSON.stringify({
-            secret: trim0x(secret),
-          }),
-          headers: {
-            ...headers.val,
-            'Content-Type': 'application/json',
-          },
-          retryCount: 10,
-          retryDelay: 2000,
-        },
+      const redeemResult = await redeemOrderThroughRelayer(
+        order,
+        secret,
+        this.auth,
+        this.url,
       );
-
-      if (res.error) return Err(res.error);
-      return res.result ? Ok(res.result) : Err('Redeem: No result found');
+      if (redeemResult.error) return Err(redeemResult.error);
+      return Ok(redeemResult.val!);
     } catch (error) {
       return Err(String(error));
     }

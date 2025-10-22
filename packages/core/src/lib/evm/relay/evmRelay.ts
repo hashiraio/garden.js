@@ -3,13 +3,12 @@ import {
   checkAllowanceAndApprove,
   Ok,
   Err,
-  Fetcher,
-  trim0x,
   waitForTransactionReceipt,
-  APIResponse,
   IAuth,
   Url,
   with0x,
+  Fetcher,
+  APIResponse,
 } from '@gardenfi/utils';
 import { WalletClient, createPublicClient, getContract, http } from 'viem';
 import {
@@ -29,7 +28,7 @@ import {
   switchOrAddNetwork,
 } from './../../switchOrAddNetwork';
 import { nativeHTLCAbi } from '../abi/nativeHTLC';
-import { getAssetInfoFromOrder } from '../../utils';
+import { getAssetInfoFromOrder, redeemOrderThroughRelayer } from '../../utils';
 
 export class EvmRelay implements IEVMHTLC {
   private url: Url;
@@ -352,26 +351,16 @@ export class EvmRelay implements IEVMHTLC {
   // ---------------------- REDEEM ----------------------
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
-      const headers = await this.auth.getAuthHeaders();
-      if (!headers.ok) return Err(headers.error);
-      const res = await Fetcher.patch<APIResponse<string>>(
-        this.url
-          .endpoint('/v2/orders')
-          .endpoint(order.order_id)
-          .addSearchParams({ action: 'redeem' }),
-        {
-          body: JSON.stringify({
-            secret: trim0x(secret),
-          }),
-          headers: {
-            ...headers.val,
-            'Content-Type': 'application/json',
-          },
-        },
+      // Use the common redeem utility function
+      const redeemResult = await redeemOrderThroughRelayer(
+        order,
+        secret,
+        this.auth,
+        this.url,
       );
+      if (redeemResult.error) return Err(redeemResult.error);
 
-      if (res.error) return Err(res.error);
-
+      // EVM-specific: Wait for transaction receipt
       const viemChain =
         evmToViemChainMap[
           order.destination_swap.chain as keyof typeof evmToViemChainMap
@@ -382,12 +371,14 @@ export class EvmRelay implements IEVMHTLC {
         transport: http(),
       });
       const receipt = await evmProvider.waitForTransactionReceipt({
-        hash: res.result as `0x${string}`,
+        hash: redeemResult.val as `0x${string}`,
         confirmations: 1,
         timeout: 300000,
       });
       if (receipt && receipt.status === 'success') {
-        return Ok(res.result ? res.result : 'Redeem hash not found');
+        return Ok(
+          redeemResult.val ? redeemResult.val : 'Redeem hash not found',
+        );
       } else {
         return Err('Redeem failed: Transaction receipt not successful');
       }
@@ -396,7 +387,7 @@ export class EvmRelay implements IEVMHTLC {
     }
   }
 
-  // ---------------------- REDEEM ----------------------
+  // ---------------------- REFUND ----------------------
   async refund(): AsyncResult<string, string> {
     return Err('Refund not supported');
   }

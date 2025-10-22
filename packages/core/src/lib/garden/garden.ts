@@ -174,7 +174,7 @@ export class Garden extends Orderbook implements IGardenJS {
               )
             : undefined,
           sui: config.wallets.sui
-            ? new SuiRelay(api.baseurl, config.wallets.sui, network)
+            ? new SuiRelay(api.baseurl, config.wallets.sui, network, apiKey)
             : undefined,
           bitcoin: config.wallets.bitcoin
             ? new BitcoinHTLC(config.wallets.bitcoin, network)
