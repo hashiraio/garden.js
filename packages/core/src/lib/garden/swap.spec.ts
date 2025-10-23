@@ -14,6 +14,7 @@ import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { SwapParams } from './garden.types';
 import { loadTestConfig } from '../../../../../test-config-loader';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { TronWeb } from 'tronweb';
 
 describe('Garden swap tests', () => {
   const config = loadTestConfig();
@@ -22,6 +23,7 @@ describe('Garden swap tests', () => {
   const STARKNET_PRIVATE_KEY = config.STARKNET_PRIVATE_KEY;
   const STARKNET_ADDRESS = config.STARKNET_ADDRESS;
   const SOLANA_PRIV = config.SOLANA_PRIV;
+  const TRON_PRIVATE_KEY = config.TRON_PRIVATE_KEY;
   const DIGEST_KEY =
     '4b5d17d53a0d759b17ef2c186dda99e251f6b789b2d641ed296270a3840ef5b8';
   // const DIGEST_KEY = DigestKey.generateRandom().val;
@@ -54,6 +56,11 @@ describe('Garden swap tests', () => {
     '1',
     '0x3',
   );
+  const tronWallet = new TronWeb({
+    fullHost: 'https://api.shasta.trongrid.io',
+    privateKey: TRON_PRIVATE_KEY,
+  });
+
   const provider = new BitcoinProvider(Network.TESTNET);
   const bitcoinWallet = BitcoinWallet.fromPrivateKey(DIGEST_KEY, provider);
 
@@ -68,12 +75,18 @@ Solana Wallet Address:   ${user.publicKey.toString()}
 Starknet Wallet Address: ${starknetWallet.address}
 Bitcoin Wallet Address:  ${bitcoinWallet.getAddress()}
 Sui Wallet Address:      ${suiSigner.toSuiAddress()}
+Tron Wallet Address:     ${tronWallet.defaultAddress?.base58}
 ===============================
     `,
   );
 
   const garden = Garden.fromWallets({
-    environment: Network.TESTNET,
+    environment: {
+      network: Network.TESTNET,
+      baseurl: 'https://testnet.api.hashira.io',
+      auth: 'https://testnet.api.hashira.io',
+      relayer: 'https://testnet.api.hashira.io',
+    },
     digestKey: DIGEST_KEY!,
     apiKey: config.API_KEY,
     wallets: {
@@ -82,8 +95,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
       solana: userProvider,
       bitcoin: bitcoinWallet,
       sui: suiSigner,
+      tron: TRON_PRIVATE_KEY,
     },
-  }).setRedeemServiceEnabled(false);
+  }).setRedeemServiceEnabled(true);
 
   const setupEventListeners = (garden: Garden) => {
     garden?.on('error', (order, error) => {
@@ -123,9 +137,9 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(Assets.bitcoin_testnet.BTC);
-      const to = ChainAsset.from(Assets.base_sepolia.WBTC);
-      const sendAmount = 50000;
+      const from = ChainAsset.from('tron_shasta:usdt');
+      const to = ChainAsset.from('arbitrum_sepolia:WBTC');
+      const sendAmount = 107973822;
       const quote = await garden.quote.getQuote(from, to, sendAmount, false);
 
       const recieveAmount = quote.val?.[0].destination.amount;

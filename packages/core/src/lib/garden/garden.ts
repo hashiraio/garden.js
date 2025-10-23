@@ -54,6 +54,7 @@ import {
 } from '../utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
+import { TronRelay } from '../tron/relayer/tronRelay';
 
 class GardenEventBus
   extends EventBroker<GardenEvents>
@@ -179,6 +180,14 @@ export class Garden extends Orderbook implements IGardenJS {
           bitcoin: config.wallets.bitcoin
             ? new BitcoinHTLC(config.wallets.bitcoin, network)
             : undefined,
+          tron: config.wallets.tron
+            ? new TronRelay(api.baseurl, network, apiKey, {
+                fullHost: 'https://api.shasta.trongrid.io',
+                ...(typeof config.wallets.tron === 'string'
+                  ? { privateKey: config.wallets.tron }
+                  : { adapter: config.wallets.tron }),
+              })
+            : undefined,
         }
       : {};
 
@@ -195,6 +204,7 @@ export class Garden extends Orderbook implements IGardenJS {
       solana: this._htlcs.solana,
       sui: this._htlcs.sui,
       bitcoin: this._htlcs.bitcoin,
+      tron: this._htlcs.tron,
     } as const;
   }
 
@@ -300,6 +310,18 @@ export class Garden extends Orderbook implements IGardenJS {
           );
           if (!suiInitRes.ok)
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
+        }
+        break;
+      case BlockchainType.tron:
+        if (!this._htlcs.tron || !isEvmOrderResponse(createOrderResponse)) {
+          return Err('Order type does not match Tron blockchain type');
+        }
+        {
+          const tronInitRes = await this._htlcs.tron.initiate(
+            createOrderResponse,
+          );
+          if (!tronInitRes.ok)
+            return Err(`Tron HTLC initiation failed: ${tronInitRes.error}`);
         }
         break;
       case BlockchainType.bitcoin:
@@ -477,6 +499,13 @@ export class Garden extends Orderbook implements IGardenJS {
             'Please provide suiHTLC when initializing garden or pass Sui address in SwapParams',
           );
         return Ok(this._htlcs.sui.htlcActorAddress);
+      }
+      case BlockchainType.tron: {
+        if (!this._htlcs.tron)
+          return Err(
+            'Please provide tronHTLC when initializing garden or pass Tron address in SwapParams',
+          );
+        return Ok(this._htlcs.tron.htlcActorAddress);
       }
       default:
         return Err('Unsupported chain');
