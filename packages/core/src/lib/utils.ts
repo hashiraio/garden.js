@@ -392,6 +392,13 @@ export const getAddresses = async (
         );
       return Ok(htlcs.sui.htlcActorAddress);
     }
+    case BlockchainType.tron: {
+      if (!htlcs.tron)
+        return Err(
+          'Please provide tronHTLC when initializing garden or pass Tron address in SwapParams',
+        );
+      return Ok(htlcs.tron.htlcActorAddress);
+    }
     default:
       return Err('Unsupported chain');
   }
@@ -415,6 +422,7 @@ export const validateHTLCForSwap = async (
     },
     [BlockchainType.sui]: { htlc: htlcs.sui, name: 'Sui' },
     [BlockchainType.bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
+    [BlockchainType.tron]: { htlc: htlcs.tron, name: 'Tron' },
   };
 
   if (blockchainType === BlockchainType.bitcoin) {

@@ -30,6 +30,8 @@ import { ISuiHTLC } from '../sui/suiHTLC.types';
 import { WalletWithRequiredFeatures } from '@mysten/wallet-standard';
 import { IBitcoinHTLC } from '../bitcoin/bitcoinhtlc.types';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { ITronHTLC } from '../tron/tronHTLC.types';
+import { Adapter } from '@tronweb3/tronwallet-abstract-adapter';
 
 export type SwapParams = {
   /**
@@ -177,6 +179,7 @@ export type GardenHTLCModules = {
   solana?: ISolanaHTLC;
   sui?: ISuiHTLC;
   bitcoin?: IBitcoinHTLC;
+  tron?: ITronHTLC;
 };
 
 export type GardenWalletModules = {
@@ -185,6 +188,7 @@ export type GardenWalletModules = {
   solana?: AnchorProvider;
   sui?: WalletWithRequiredFeatures | Ed25519Keypair;
   bitcoin?: IBitcoinWallet;
+  tron?: Adapter | string;
 };
 
 export type GardenConfigWithWallets = GardenCoreConfig & {
