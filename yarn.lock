@@ -1006,6 +1006,7 @@ __metadata:
     "@types/ws": "npm:^8.5.7"
     bufferutil: "npm:^4.0.8"
     dotenv: "npm:^16.3.1"
+    node-cache: "npm:^5.1.2"
     siwe: "npm:^2.1.4"
     typescript: "npm:^5.2.2"
     utf-8-validate: "npm:^6.0.3"
