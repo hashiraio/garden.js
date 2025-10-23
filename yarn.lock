@@ -976,6 +976,7 @@ __metadata:
     "@mysten/sui": "npm:^1.37.1"
     "@mysten/wallet-standard": "npm:^0.16.9"
     "@solana/spl-token": "npm:^0.4.13"
+    "@tronweb3/tronwallet-abstract-adapter": "npm:^1.1.9"
     bignumber.js: "npm:^9.1.2"
     bip32: "npm:^4.0.0"
     bip39: "npm:^3.1.0"
@@ -5350,6 +5351,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tronweb3/tronwallet-abstract-adapter@npm:^1.1.9":
+  version: 1.1.9
+  resolution: "@tronweb3/tronwallet-abstract-adapter@npm:1.1.9"
+  dependencies:
+    eventemitter3: "npm:^4.0.0"
+    tronweb: "npm:6"
+  checksum: 10c0/e77a14b14bed58a1af7fef6df7ece92f9dafc13e37679b2f71848aff78724f8c61014bdceb220cc5e8b2b747f8a3ae3cf7aea336cef38df9a9d0801c97e111cb
+  languageName: node
+  linkType: hard
+
 "@tsconfig/node10@npm:^1.0.7":
   version: 1.0.11
   resolution: "@tsconfig/node10@npm:1.0.11"
@@ -9544,7 +9555,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter3@npm:^4.0.7":
+"eventemitter3@npm:^4.0.0, eventemitter3@npm:^4.0.7":
   version: 4.0.7
   resolution: "eventemitter3@npm:4.0.7"
   checksum: 10c0/5f6d97cbcbac47be798e6355e3a7639a84ee1f7d9b199a07017f1d2f1e2fe236004d14fa5dfaeba661f94ea57805385e326236a6debbc7145c8877fbc0297c6b
@@ -14842,7 +14853,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tronweb@npm:^6.0.4":
+"tronweb@npm:6, tronweb@npm:^6.0.4":
   version: 6.0.4
   resolution: "tronweb@npm:6.0.4"
   dependencies:

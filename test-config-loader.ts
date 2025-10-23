@@ -8,6 +8,7 @@ export interface TestConfig {
   STARKNET_ADDRESS: string;
   SOLANA_PRIV: number[];
   SUI_PRIVATE_KEY: string;
+  TRON_PRIVATE_KEY: string;
   BITCOIN_PRIVATE_KEY: string;
   BITCOIN_MNEMONIC: string;
   API_KEY: string;

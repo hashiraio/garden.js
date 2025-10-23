@@ -34,6 +34,7 @@
     "@mysten/sui": "^1.37.1",
     "@mysten/wallet-standard": "^0.16.9",
     "@solana/spl-token": "^0.4.13",
+    "@tronweb3/tronwallet-abstract-adapter": "^1.1.9",
     "bignumber.js": "^9.1.2",
     "bip32": "^4.0.0",
     "bip39": "^3.1.0",

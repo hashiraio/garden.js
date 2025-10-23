@@ -8,6 +8,7 @@ export enum BlockchainType {
   solana = 'solana',
   starknet = 'starknet',
   sui = 'sui',
+  tron = 'tron',
 }
 
 export type AddressSchema = {
@@ -48,3 +49,4 @@ export type BitcoinChains = ChainsByBlockchainType<BlockchainType.bitcoin>;
 export type SolanaChains = ChainsByBlockchainType<BlockchainType.solana>;
 export type StarknetChains = ChainsByBlockchainType<BlockchainType.starknet>;
 export type SuiChains = ChainsByBlockchainType<BlockchainType.sui>;
+export type TronChains = ChainsByBlockchainType<BlockchainType.tron>;
