@@ -501,6 +501,26 @@ export const Config = {
       },
     },
   },
+  tron_shasta: {
+    type: BlockchainType.tron,
+    network: Network.TESTNET,
+    USDT: {
+      id: 'tron_shasta:usdt',
+      name: 'Tether USD',
+      symbol: 'USDT',
+      decimals: 6,
+      icon: 'https://garden.imgix.net/token-images/usdt.svg',
+      chain: 'tron:1',
+      htlc: {
+        address: '0x0000000000000000000000000000000000000000',
+        schema: 'tron:htlc_erc20',
+      },
+      token: {
+        address: '0x0000000000000000000000000000000000000000',
+        schema: 'tron:erc20',
+      },
+    },
+  },
   bitcoin: {
     type: BlockchainType.bitcoin,
     network: Network.MAINNET,
