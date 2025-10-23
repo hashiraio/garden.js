@@ -5,11 +5,10 @@ import {
   Ok,
   AsyncResult,
   Err,
+  IAuth,
+  ApiKey,
 } from '@gardenfi/utils';
-import {
-  RouteValidator,
-  buildRouteMatrix,
-} from './routeValidator/routeValidator';
+import { RouteValidator } from './routeValidator/routeValidator';
 import { ApiChainData, Assets, ChainData, Chains } from './types';
 import { Config } from '../constants/asset';
 import { ChainAsset } from '../chainAsset/chainAsset';
@@ -28,62 +27,26 @@ const SUPPORTED_CHAINS = Object.keys(Config) as Chain[];
  */
 export class AssetManager {
   // Core data stores
-  private _allChains: Chains | null = null;
-  private _allAssets: Assets | null = null;
-  private _assets: Assets | null = null;
-  private _chains: Chains | null = null;
+  assets: Assets | null = null;
+  chains: Chains | null = null;
 
   // Route validation
-  private _routeValidator: RouteValidator | null = null;
-  private _routeMatrix: Record<string, ChainAsset[]> | null = null;
+  routeValidator: RouteValidator;
+  routeMatrix: Record<string, ChainAsset[]> | null = null;
 
   // Loading states
-  private _isLoading = false;
-  private _error: string | null = null;
+  isLoading = false;
+  error: string | null = null;
 
   // Configuration
   private readonly url: Url;
-  private apiKey: string;
+  private auth: IAuth;
 
-  constructor(url: string, apiKey: string) {
+  constructor(url: string, apiKey: IAuth | string) {
     this.url = new Url(url);
-    this.apiKey = apiKey;
-  }
-
-  // ============================================
-  // Getters
-  // ============================================
-
-  get allChains(): Chains | null {
-    return this._allChains;
-  }
-
-  get allAssets(): Assets | null {
-    return this._allAssets;
-  }
-
-  get assets(): Assets | null {
-    return this._assets;
-  }
-
-  get chains(): Chains | null {
-    return this._chains;
-  }
-
-  get routeValidator(): RouteValidator | null {
-    return this._routeValidator;
-  }
-
-  get routeMatrix(): Record<string, ChainAsset[]> | null {
-    return this._routeMatrix;
-  }
-
-  get isLoading(): boolean {
-    return this._isLoading;
-  }
-
-  get error(): string | null {
-    return this._error;
+    if (typeof apiKey === 'string') this.auth = new ApiKey(apiKey);
+    else this.auth = apiKey;
+    this.routeValidator = new RouteValidator(this.url.toString(), this.auth);
   }
 
   // ============================================
@@ -95,6 +58,7 @@ export class AssetManager {
    */
   async initialize(): Promise<void> {
     await this.fetchAndSetAssetsAndChains();
+    await this.routeValidator.loadPolicy();
   }
 
   /**
@@ -102,29 +66,27 @@ export class AssetManager {
    */
   async fetchAndSetAssetsAndChains(): AsyncResult<string, string> {
     try {
-      this._isLoading = true;
-      this._error = null;
+      this.isLoading = true;
+      this.error = null;
 
-      // Initialize route validator
-      await this.initializeRouteValidator();
+      const authHeaders = await this.auth.getAuthHeaders();
+      if (!authHeaders.ok) return Err('Failed to get auth headers');
 
       // Fetch chains and assets data from the provided url
       const url = this.url.endpoint('/v2/chains');
-      const res = await Fetcher.get<APIResponse<ApiChainData[]>>(url);
+      const res = await Fetcher.get<APIResponse<ApiChainData[]>>(url, {
+        headers: {
+          ...authHeaders.val,
+        },
+      });
 
-      if (res.error) return Err(res.error);
-
-      if (!res.result) return Err('Failed to fetch chains data');
+      if (!res.result) return Err(`Failed to fetch chains data: ${res.error}`);
 
       // Process and store data
-      const { allChains, allAssets, assets, chains } = this.processApiData(
-        res.result,
-      );
+      const { assets, chains } = this.processApiData(res.result);
 
-      this._allChains = allChains;
-      this._allAssets = allAssets;
-      this._assets = assets;
-      this._chains = chains;
+      this.assets = assets;
+      this.chains = chains;
 
       // Build route matrix for performance
       await this.buildRouteMatrix();
@@ -133,7 +95,7 @@ export class AssetManager {
     } catch (error) {
       return Err(`Failed to fetch assets data: ${error}`);
     } finally {
-      this._isLoading = false;
+      this.isLoading = false;
     }
   }
 
@@ -145,55 +107,38 @@ export class AssetManager {
    * Check if a swap route from one asset to another is valid
    */
   async isRouteValid(from: Asset, to: Asset): Promise<boolean> {
-    if (!this._routeValidator || !from || !to || !from.id || !to.id) {
-      console.warn('Missing routeValidator, from, or to. Returning true.');
-      return true;
-    }
-
-    try {
-      const fromChainAsset = ChainAsset.from(from.id);
-      const toChainAsset = ChainAsset.from(to.id);
-
-      return await this._routeValidator.isValidRoute(
-        fromChainAsset,
-        toChainAsset,
-      );
-    } catch (error) {
-      console.error('Error in isRouteValid:', error);
-      return true;
-    }
+    return await this.routeValidator.isValidRoute(
+      ChainAsset.from(from.id),
+      ChainAsset.from(to.id),
+    );
   }
 
   /**
    * Get all valid destination assets for a given source asset
    */
-  getValidDestinations(fromAsset: Asset): Asset[] {
+  getValidDestinations(asset: Asset): Asset[] {
     // Fallback if data not ready
-    if (!this._routeMatrix || !this._assets || !fromAsset.id) {
-      return Object.values(this._assets || {});
+    if (!this.routeMatrix || !this.assets || !asset.id) {
+      console.warn(
+        'Missing routeMatrix, assets, or asset. Returning all assets.',
+      );
+      return [];
     }
 
-    try {
-      const validChainAssets = this._routeMatrix[fromAsset.id.toString()];
+    const validChainAssets =
+      this.routeMatrix[asset.id.toString().toLowerCase()];
+    if (!validChainAssets) return [];
 
-      if (!validChainAssets) {
-        return Object.values(this._assets);
-      }
-
-      // Convert ChainAsset array back to Asset array
-      return validChainAssets
-        .map((chainAsset) => {
-          const assetId = chainAsset.toString();
-          return Object.values(this._assets!).find((asset) => {
-            const assetAssetId = ChainAsset.from(asset).toString();
-            return assetAssetId === assetId;
-          });
-        })
-        .filter(Boolean) as Asset[];
-    } catch (error) {
-      console.error('Error in getValidDestinations:', error);
-      return Object.values(this._assets || {});
-    }
+    // Convert ChainAsset array back to Asset array
+    return validChainAssets
+      .map((chainAsset) => {
+        const assetId = chainAsset.toString();
+        return Object.values(this.assets!).find((asset) => {
+          const assetAssetId = ChainAsset.from(asset).toString();
+          return assetAssetId === assetId;
+        });
+      })
+      .filter(Boolean) as Asset[];
   }
 
   // ============================================
@@ -204,26 +149,26 @@ export class AssetManager {
    * Get asset by chain and token address
    */
   getAsset(asset: string | Asset | ChainAsset): Asset | undefined {
-    if (!this._assets) return undefined;
+    if (!this.assets) return undefined;
     const tokenKey = ChainAsset.from(asset).toString();
-    return this._assets[tokenKey];
+    return this.assets[tokenKey];
   }
 
   /**
    * Get all assets for a specific chain
    */
   getAssetsByChain(chain: Chain): Asset[] {
-    if (!this._assets) return [];
-    return Object.values(this._assets).filter((asset) => asset.chain === chain);
+    if (!this.assets) return [];
+    return Object.values(this.assets).filter((asset) => asset.chain === chain);
   }
 
   /**
    * Search assets by symbol or name
    */
   searchAssets(query: string): Asset[] {
-    if (!this._assets) return [];
+    if (!this.assets) return [];
     const lowerQuery = query.toLowerCase();
-    return Object.values(this._assets).filter(
+    return Object.values(this.assets).filter(
       (asset) =>
         asset.symbol.toLowerCase().includes(lowerQuery) ||
         asset.name.toLowerCase().includes(lowerQuery),
@@ -234,8 +179,8 @@ export class AssetManager {
    * Get chain data by chain identifier
    */
   getChain(chain: Chain): ChainData | undefined {
-    if (!this._chains) return undefined;
-    return this._chains[chain];
+    if (!this.chains) return undefined;
+    return this.chains[chain];
   }
 
   // ============================================
@@ -243,22 +188,12 @@ export class AssetManager {
   // ============================================
 
   /**
-   * Initialize the route validator
-   */
-  private async initializeRouteValidator(): Promise<void> {
-    this._routeValidator = new RouteValidator(this.url.toString(), this.apiKey);
-    await this._routeValidator.loadPolicy();
-  }
-
-  /**
    * Build route matrix for fast O(1) route lookups
    */
-  private async buildRouteMatrix(): Promise<void> {
-    if (!this._allAssets || !this._routeValidator) {
-      return;
-    }
+  async buildRouteMatrix(): Promise<void> {
+    if (!this.assets || !this.routeValidator) return;
 
-    const allChainAssets = Object.values(this._allAssets)
+    const allChainAssets = Object.values(this.assets)
       .map((asset) => {
         if (!asset.id) return null;
         try {
@@ -269,9 +204,8 @@ export class AssetManager {
       })
       .filter((asset): asset is ChainAsset => asset !== null);
 
-    this._routeMatrix = await buildRouteMatrix(
+    this.routeMatrix = await this.routeValidator.buildRouteMatrix(
       allChainAssets,
-      this._routeValidator,
     );
   }
 
@@ -279,13 +213,9 @@ export class AssetManager {
    * Process raw API data into structured format
    */
   private processApiData(apiData: ApiChainData[]): {
-    allChains: Chains;
-    allAssets: Assets;
     assets: Assets;
     chains: Chains;
   } {
-    const allChains: Chains = {};
-    const allAssets: Assets = {};
     const assets: Assets = {};
     const chains: Chains = {};
 
@@ -301,8 +231,6 @@ export class AssetManager {
         name: this.formatChainName(apiChain.chain),
         chain: chainIdentifier,
       };
-
-      allChains[chainIdentifier] = chainData;
 
       for (const apiAsset of apiChain.assets) {
         const tokenKey = ChainAsset.from(apiAsset.id).toString();
@@ -320,14 +248,13 @@ export class AssetManager {
           symbol,
         };
 
-        allAssets[tokenKey] = asset;
         assets[tokenKey] = asset;
-      }
 
-      chains[chainIdentifier] = chainData;
+        if (!chains[chainIdentifier]) chains[chainIdentifier] = chainData;
+      }
     }
 
-    return { allChains, allAssets, assets, chains };
+    return { assets, chains };
   }
 
   /**
@@ -358,18 +285,5 @@ export class AssetManager {
    */
   async refresh(): Promise<void> {
     await this.initialize();
-  }
-
-  /**
-   * Clear all cached data
-   */
-  clear(): void {
-    this._allChains = null;
-    this._allAssets = null;
-    this._assets = null;
-    this._chains = null;
-    this._routeValidator = null;
-    this._routeMatrix = null;
-    this._error = null;
   }
 }

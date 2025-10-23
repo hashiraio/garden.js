@@ -51,8 +51,5 @@ export type {
   FiatResponse,
 } from './lib/assetManager/types';
 
-export {
-  RouteValidator,
-  buildRouteMatrix,
-} from './lib/assetManager/routeValidator/routeValidator';
+export { RouteValidator } from './lib/assetManager/routeValidator/routeValidator';
 export type { RoutePolicy } from './lib/assetManager/routeValidator/routeValidator';
