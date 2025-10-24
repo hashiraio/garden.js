@@ -63,6 +63,7 @@ export {
   getChainNameFromChainId,
   hyperliquid,
   hyperliquidTestnet,
+  alpenTestnet,
   switchOrAddNetwork,
 } from './lib/switchOrAddNetwork';
 
