@@ -368,10 +368,11 @@ export class Garden extends Orderbook implements IGardenJS {
             secret_hash: trim0x(secretHash),
           }
         : {}),
+      solver_id: params.solverId,
       affiliate_fees: withDefaultAffiliateFees(params.affiliateFee),
       slippage: 50,
     };
-
+    console.log('orderRequest', orderRequest);
     const createOrderRes = await super.createOrder<T>(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
 

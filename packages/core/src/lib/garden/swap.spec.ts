@@ -123,7 +123,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(Assets.bitcoin_testnet.BTC);
+      const from = ChainAsset.from(Assets.arbitrum_sepolia.WBTC);
       const to = ChainAsset.from(Assets.base_sepolia.WBTC);
       const sendAmount = 50000;
       const quote = await garden.quote.getQuote(from, to, sendAmount, false);
@@ -135,6 +135,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         toAsset: to.toString(),
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
+        solverId: quote.val?.[0].solver_id || '',
         addresses: {
           bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
@@ -181,6 +182,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         toAsset: to,
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
+        solverId: quote.val?.[0].solver_id || '',
         addresses: {
           bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
@@ -225,6 +227,7 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
         toAsset: from,
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount?.toString() ?? '',
+        solverId: quote.val?.[0].solver_id || '',
         addresses: {
           bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
