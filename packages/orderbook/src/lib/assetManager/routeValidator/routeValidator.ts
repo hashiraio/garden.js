@@ -359,9 +359,9 @@ class RouteValidator {
   private matchesAssetPattern(asset: ChainAsset, pattern: string): boolean {
     const [_chain, _symbol] = pattern.split(':');
 
-    let chainMatch =
+    const chainMatch =
       (_chain as string) === Wildcard.Any || _chain === asset.chain;
-    let assetMatch =
+    const assetMatch =
       (_symbol.toLowerCase() as string) === Wildcard.Any ||
       _symbol.toLowerCase() === asset.symbol.toLowerCase();
 
