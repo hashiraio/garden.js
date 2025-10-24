@@ -988,6 +988,14 @@ export const Config = {
       },
     },
   },
+  hypercore: {
+    type: BlockchainType.evm,
+    network: Network.MAINNET,
+  },
+  hypercore_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+  },
 } as const;
 
 export const Chains: Record<Chain, Chain> = Object.keys(Config).reduce(

@@ -147,6 +147,8 @@ export const evmToViemChainMap: Record<EVMChains, viemChain> = {
   bnbchain: bsc,
   bnbchain_testnet: bscTestnet,
   alpen_testnet: alpenTestnet,
+  hypercore: {} as viemChain,
+  hypercore_testnet: {} as viemChain,
 };
 
 export const getChainNameFromChainId = (chainId: number): EVMChains | null => {
