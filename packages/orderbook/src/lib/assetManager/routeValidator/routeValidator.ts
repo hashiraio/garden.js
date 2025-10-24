@@ -29,6 +29,11 @@ enum Wildcard {
   AnyChain = '*:',
 }
 
+enum RuleSide {
+  From = 'from',
+  To = 'to',
+}
+
 type ParsedRule = {
   pattern: string;
   fromPattern: string;
@@ -126,54 +131,48 @@ class RouteValidator {
     const policy = await this.loadPolicy();
     if (!policy.ok) return false;
 
+    // Can't swap to same asset
     if (fromAsset.toString() === toAsset.toString()) return false;
 
     const { sortedIsolationRules, sortedBlacklistRules, sortedWhitelistRules } =
       this.preprocessRules(policy.val);
 
-    // Whitelist overrides everything
-    if (this.matchesRuleList(fromAsset, toAsset, sortedWhitelistRules))
-      return true;
-
-    // Isolation rules
-    const isolationRule = this.findMatchingRule(
+    // Check if SOURCE is in an isolation group
+    const sourceIsolationRule = this.findMatchingRule(
       fromAsset,
       sortedIsolationRules,
-      'from',
+      RuleSide.From,
     );
-    if (isolationRule)
-      if (!this.matchesRuleDestination(toAsset, isolationRule)) return false;
+    if (sourceIsolationRule) {
+      // Source is isolated, can only go to destinations in its isolation group
+      if (!this.matchesRuleDestination(toAsset, sourceIsolationRule))
+        return false;
+    }
 
-    // Destination's isolation rules
+    // Check if DESTINATION is in an isolation group (only for bidirectional rules)
     const destIsolationRule = this.findMatchingRule(
       toAsset,
       sortedIsolationRules,
-      'to',
+      RuleSide.To,
     );
-    if (destIsolationRule)
+    if (
+      destIsolationRule &&
+      destIsolationRule.direction === Direction.Bidirectional
+    ) {
+      // Destination is isolated, can only be reached from sources in its isolation group
       if (!this.matchesRuleSource(fromAsset, destIsolationRule)) return false;
+    }
 
     // Check blacklist
-    if (this.matchesRuleList(fromAsset, toAsset, sortedBlacklistRules))
+    if (this.matchesRuleList(fromAsset, toAsset, sortedBlacklistRules)) {
+      // Check whitelist first (it overrides blacklist)
+      if (this.matchesRuleList(fromAsset, toAsset, sortedWhitelistRules))
+        return true;
       return false;
+    }
 
     // Default fallback
     return policy.val.default === 'open';
-  }
-
-  /**
-   * Returns true if asset is part of any isolation group rule.
-   */
-  async isAssetInIsolationGroup(asset: ChainAsset): Promise<boolean> {
-    const policy = await this.loadPolicy();
-    if (!policy.ok) return false;
-    const { sortedIsolationRules } = this.preprocessRules(policy.val);
-
-    return sortedIsolationRules.some(
-      (rule) =>
-        this.matchesAssetPattern(asset, rule.fromPattern) ||
-        this.matchesAssetPattern(asset, rule.toPattern),
-    );
   }
 
   /**
@@ -183,9 +182,6 @@ class RouteValidator {
     fromAsset: ChainAsset,
     allAssets: ChainAsset[],
   ): Promise<ChainAsset[]> {
-    const policy = await this.loadPolicy();
-    if (!policy.ok) return [];
-
     const validDestinations: ChainAsset[] = [];
     for (const toAsset of allAssets) {
       if (await this.isValidRoute(fromAsset, toAsset))
@@ -202,10 +198,13 @@ class RouteValidator {
   ): Promise<Array<{ from: ChainAsset; to: ChainAsset }>> {
     const routes: Array<{ from: ChainAsset; to: ChainAsset }> = [];
 
+    // Batch process to avoid redundant policy loads
     for (const fromAsset of assets) {
-      for (const toAsset of assets)
-        if (await this.isValidRoute(fromAsset, toAsset))
+      for (const toAsset of assets) {
+        if (await this.isValidRoute(fromAsset, toAsset)) {
           routes.push({ from: fromAsset, to: toAsset });
+        }
+      }
     }
 
     return routes;
@@ -275,18 +274,18 @@ class RouteValidator {
   private findMatchingRule(
     asset: ChainAsset,
     rules: ParsedRule[],
-    side: 'from' | 'to',
+    side: RuleSide,
   ): ParsedRule | null {
     for (const rule of rules) {
-      const pattern = side === 'from' ? rule.fromPattern : rule.toPattern;
+      const pattern =
+        side === RuleSide.From ? rule.fromPattern : rule.toPattern;
       if (this.matchesAssetPattern(asset, pattern)) return rule;
 
       // Check bidirectional
       if (rule.direction === Direction.Bidirectional) {
-        const altPattern = side === 'from' ? rule.toPattern : rule.fromPattern;
-        if (this.matchesAssetPattern(asset, altPattern)) {
-          return rule;
-        }
+        const altPattern =
+          side === RuleSide.From ? rule.toPattern : rule.fromPattern;
+        if (this.matchesAssetPattern(asset, altPattern)) return rule;
       }
     }
     return null;
@@ -358,26 +357,32 @@ class RouteValidator {
    * Checks if an asset string matches a rule's pattern (wildcards supported).
    */
   private matchesAssetPattern(asset: ChainAsset, pattern: string): boolean {
-    const patternLower = pattern.toLowerCase();
+    const [_chain, _symbol] = pattern.split(':');
 
-    if (patternLower === Wildcard.Any) return true;
-    else if (patternLower.endsWith(Wildcard.AnyToken))
-      return asset.chain.toLowerCase() === patternLower.slice(0, -2);
-    else if (patternLower.startsWith(Wildcard.AnyChain))
-      return asset.symbol.toLowerCase() === patternLower.slice(2);
-    else return asset.toString().toLowerCase() === patternLower;
+    let chainMatch =
+      (_chain as string) === Wildcard.Any || _chain === asset.chain;
+    let assetMatch =
+      (_symbol.toLowerCase() as string) === Wildcard.Any ||
+      _symbol.toLowerCase() === asset.symbol.toLowerCase();
+
+    return chainMatch && assetMatch;
   }
 
   async buildRouteMatrix(
     assets: ChainAsset[],
   ): Promise<Record<string, ChainAsset[]>> {
     const matrix: Record<string, ChainAsset[]> = {};
+
     for (const fromAsset of assets) {
-      matrix[fromAsset.toString()] = await this.getValidDestinations(
-        fromAsset,
-        assets,
-      );
+      const validDestinations: ChainAsset[] = [];
+      for (const toAsset of assets) {
+        if (await this.isValidRoute(fromAsset, toAsset)) {
+          validDestinations.push(toAsset);
+        }
+      }
+      matrix[fromAsset.toString()] = validDestinations;
     }
+
     return matrix;
   }
 }
