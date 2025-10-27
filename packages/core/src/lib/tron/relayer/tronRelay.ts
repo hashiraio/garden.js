@@ -17,10 +17,7 @@ import {
 import { ITronHTLC } from '../tronHTLC.types';
 import { redeemOrderThroughRelayer } from '../../utils';
 import { TronWeb } from 'tronweb';
-import {
-  Adapter,
-  SignedTransaction,
-} from '@tronweb3/tronwallet-abstract-adapter';
+import { Adapter } from '@tronweb3/tronwallet-abstract-adapter';
 import { TypedDataField } from 'tronweb/lib/esm/utils';
 
 export type TronRelayOptions = {
@@ -29,6 +26,7 @@ export type TronRelayOptions = {
   adapter?: Adapter;
   solidityNode?: string;
   eventServer?: string;
+  htlcContractAddress?: string;
 };
 
 export class TronRelay implements ITronHTLC {
@@ -51,7 +49,6 @@ export class TronRelay implements ITronHTLC {
       'options:',
       options,
     );
-    // FIX: Use the actual relayerUrl parameter instead of hardcoding
     this.url =
       typeof relayerUrl === 'string' ? new Url(relayerUrl) : relayerUrl;
     this.auth = auth;
@@ -59,7 +56,6 @@ export class TronRelay implements ITronHTLC {
       fullHost: options.fullHost,
       ...(options.solidityNode ? { solidityNode: options.solidityNode } : {}),
       ...(options.eventServer ? { eventServer: options.eventServer } : {}),
-      // FIX: Set private key if provided
       ...(options.privateKey ? { privateKey: options.privateKey } : {}),
     });
     this.options = options;
@@ -106,7 +102,7 @@ export class TronRelay implements ITronHTLC {
     console.log('[initiate] Initiating order:', order);
     if (isTronOrderResponse(order)) {
       console.log('[initiate] Detected TronOrderResponse');
-      return this.initiateWithCreateOrderResponse(order);
+      return this.initiateDirectContractCall(order);
     }
     console.log(
       '[initiate] Non-Tron order, returning order_id:',
@@ -115,6 +111,229 @@ export class TronRelay implements ITronHTLC {
     return Ok(order.order_id);
   }
 
+  /**
+   * NEW METHOD: Direct contract call for initiate without relayer signature
+   */
+  private async initiateDirectContractCall(
+    order: EvmOrderResponse,
+  ): AsyncResult<string, string> {
+    console.log('[initiateDirectContractCall] Starting direct contract call');
+
+    if (!this.htlcActorAddress || this.htlcActorAddress === '') {
+      console.log('[initiateDirectContractCall] No HTLC actor address found');
+      return Err('No HTLC actor address found');
+    }
+
+    // Execute approval transaction if present
+    if (order.approval_transaction) {
+      console.log(
+        '[initiateDirectContractCall] approval_transaction detected, running executeApprovalTransaction',
+      );
+      const approvalResult = await this.executeApprovalTransaction(order);
+      if (approvalResult.error) {
+        console.log(
+          '[initiateDirectContractCall] Approval transaction failed:',
+          approvalResult.error,
+        );
+        return Err(approvalResult.error);
+      }
+      console.log(
+        '[initiateDirectContractCall] Approval transaction succeeded:',
+        approvalResult.val,
+      );
+    }
+
+    // Check if initiate_transaction is available (contains contract address and calldata)
+    if (!order.initiate_transaction) {
+      console.log(
+        '[initiateDirectContractCall] No initiate_transaction found in order',
+      );
+      return Err(
+        'No initiate transaction data available for direct contract call',
+      );
+    }
+
+    const {
+      to: contractAddress,
+      data: callData,
+      value,
+      gas_limit,
+    } = order.initiate_transaction;
+
+    console.log('[initiateDirectContractCall] Contract call details:', {
+      contractAddress,
+      callData,
+      value,
+      gas_limit,
+      from: this.htlcActorAddress,
+    });
+
+    try {
+      // Remove '0x' prefix from callData if present
+      const rawCallData = callData.startsWith('0x')
+        ? callData.slice(2)
+        : callData;
+
+      console.log(
+        '[initiateDirectContractCall] Raw call data (hex):',
+        rawCallData,
+      );
+
+      // CRITICAL FIX: Use transactionBuilder.triggerSmartContract correctly
+      // The second parameter should be the function signature string, not encoded data
+      // OR we need to construct the transaction manually with the encoded data
+
+      // Convert hex addresses to Tron base58 format if needed
+      const contractAddressHex = this.tronweb.address.toHex(contractAddress);
+      const ownerAddressHex = this.tronweb.address.toHex(this.htlcActorAddress);
+
+      console.log('[initiateDirectContractCall] Converted addresses:', {
+        contractAddressHex,
+        ownerAddressHex,
+      });
+
+      // Build raw transaction using TronWeb's transaction builder
+      // We need to manually construct a TriggerSmartContract transaction
+      const tx = await this.tronweb.transactionBuilder.triggerSmartContract(
+        contractAddressHex,
+        'triggersmartcontract()', // Dummy function, we'll replace the data
+        {
+          feeLimit: parseInt(gas_limit),
+          callValue: value ? parseInt(value) : 0,
+        },
+        [],
+        ownerAddressHex,
+      );
+
+      // Now manually inject the correct callData into the transaction
+      if (
+        tx &&
+        tx.transaction &&
+        tx.transaction.raw_data &&
+        tx.transaction.raw_data.contract
+      ) {
+        const contract = tx.transaction.raw_data.contract[0];
+        if (contract && contract.parameter && contract.parameter.value) {
+          // Replace the data field with our actual callData
+          contract.parameter.value.data = rawCallData;
+          console.log(
+            '[initiateDirectContractCall] Injected callData into transaction',
+          );
+        }
+      }
+
+      console.log('[initiateDirectContractCall] Transaction built:', tx);
+
+      if (!tx || !tx.transaction) {
+        console.error(
+          '[initiateDirectContractCall] Failed to build transaction',
+        );
+        return Err('Failed to build initiate transaction');
+      }
+
+      // Sign the transaction
+      let signedTx;
+      if (this.options.adapter) {
+        console.log('[initiateDirectContractCall] Signing with adapter');
+        signedTx = await this.options.adapter.signTransaction(tx.transaction);
+      } else if (this.options.privateKey) {
+        console.log('[initiateDirectContractCall] Signing with private key');
+        signedTx = await this.tronweb.trx.sign(
+          tx.transaction,
+          this.options.privateKey,
+        );
+      } else {
+        console.error(
+          '[initiateDirectContractCall] No signing method available',
+        );
+        return Err('No signing method available (no adapter or private key)');
+      }
+
+      console.log('[initiateDirectContractCall] Transaction signed:', signedTx);
+
+      // Broadcast the transaction directly to the blockchain
+      console.log(
+        '[initiateDirectContractCall] Broadcasting transaction to blockchain',
+      );
+      const broadcastResult = await this.tronweb.trx.sendRawTransaction(
+        signedTx,
+      );
+
+      console.log(
+        '[initiateDirectContractCall] Broadcast result:',
+        broadcastResult,
+      );
+
+      if (!broadcastResult.result) {
+        console.error(
+          '[initiateDirectContractCall] Transaction broadcast failed:',
+          broadcastResult,
+        );
+        return Err(
+          String(broadcastResult.message) ||
+            String(broadcastResult.code) ||
+            'Transaction broadcast failed',
+        );
+      }
+
+      const txid = broadcastResult.txid;
+      console.log(
+        '[initiateDirectContractCall] Transaction successful, txid:',
+        txid,
+      );
+
+      // Optionally: Wait for transaction confirmation
+      // const receipt = await this.waitForTransactionConfirmation(txid);
+
+      return Ok(txid);
+    } catch (e) {
+      console.error('[initiateDirectContractCall] Exception occurred:', e);
+      return Err(`Direct contract call failed: ${String(e)}`);
+    }
+  }
+
+  /**
+   * Optional: Wait for transaction confirmation on-chain
+   */
+  private async waitForTransactionConfirmation(
+    txid: string,
+    maxAttempts: number = 30,
+    delayMs: number = 3000,
+  ): Promise<any> {
+    console.log('[waitForTransactionConfirmation] Waiting for txid:', txid);
+
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        const txInfo = await this.tronweb.trx.getTransactionInfo(txid);
+
+        if (txInfo && Object.keys(txInfo).length > 0) {
+          console.log(
+            '[waitForTransactionConfirmation] Transaction confirmed:',
+            txInfo,
+          );
+          return txInfo;
+        }
+
+        console.log(
+          `[waitForTransactionConfirmation] Attempt ${
+            i + 1
+          }/${maxAttempts}, waiting...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } catch (e) {
+        console.log(
+          '[waitForTransactionConfirmation] Error checking transaction:',
+          e,
+        );
+      }
+    }
+
+    throw new Error('Transaction confirmation timeout');
+  }
+
+  /**
+   * LEGACY METHOD: Keep for backward compatibility
+   */
   private async initiateWithCreateOrderResponse(
     order: EvmOrderResponse,
   ): AsyncResult<string, string> {
@@ -179,8 +398,6 @@ export class TronRelay implements ITronHTLC {
           '[initiateWithCreateOrderResponse] Using adapter for signing typed_data:',
           typed_data,
         );
-        // FIX: For adapter signing, we need to use signTypedData if available
-        // or construct the transaction properly
         if (
           'signTypedData' in this.options.adapter &&
           typeof this.options.adapter.signTypedData === 'function'
@@ -191,13 +408,11 @@ export class TronRelay implements ITronHTLC {
             typed_data.message,
           );
         } else {
-          // Fallback: build transaction from initiate_transaction if available
           if (!order.initiate_transaction) {
             return Err(
               'Adapter does not support typed data signing and no initiate_transaction provided',
             );
           }
-          // Explicitly cast order as TronOrderResponse to avoid never type
           const tronOrder = order as TronOrderResponse;
           const tx = await this.tronweb.transactionBuilder.triggerSmartContract(
             tronOrder.initiate_transaction.to,
@@ -238,9 +453,7 @@ export class TronRelay implements ITronHTLC {
           typed_data.types,
         );
 
-        // Try different signing approaches based on TronWeb version
         try {
-          // Method 1: Try with _signTypedData (TronWeb v5+)
           signature = this.tronweb.trx._signTypedData(
             typed_data.domain,
             typed_data.types as Record<string, TypedDataField[]>,
@@ -253,7 +466,6 @@ export class TronRelay implements ITronHTLC {
             signError,
           );
 
-          // Method 2: Use signMessageV2 or construct manually
           if ('signMessageV2' in this.tronweb.trx) {
             const typedDataStr = JSON.stringify({
               types: typed_data.types,
@@ -347,7 +559,6 @@ export class TronRelay implements ITronHTLC {
     }
 
     try {
-      // Build the transaction
       const txResult =
         await this.tronweb.transactionBuilder.triggerSmartContract(
           order.initiate_transaction.to,
@@ -385,8 +596,6 @@ export class TronRelay implements ITronHTLC {
 
       console.log('[initiateWithTransaction] Transaction signed');
 
-      // Extract signature from signed transaction
-      console.log('signedTx :', signedTx);
       const signature = signedTx.signature?.[0];
 
       console.log(
@@ -403,7 +612,7 @@ export class TronRelay implements ITronHTLC {
           .toString(),
       );
       console.log('body :', JSON.stringify({ signature }));
-      // Submit to relayer
+
       const res = await Fetcher.patch<APIResponse<string>>(
         this.url
           .endpoint('/v2/orders')
@@ -438,113 +647,73 @@ export class TronRelay implements ITronHTLC {
   }
 
   /**
-   * Execute ERC20/TRC20 approval transaction if required.
+   * Execute TRC20 approval transaction (raw calldata passthrough)
    */
   private async executeApprovalTransaction(
     order: EvmOrderResponse,
   ): AsyncResult<string, string> {
     console.log('[executeApprovalTransaction] order:', order);
+
     if (!this.htlcActorAddress || this.htlcActorAddress === '') {
-      console.log('[executeApprovalTransaction] No HTLC actor address found');
       return Err('No HTLC actor address found');
     }
-    if (!order.approval_transaction) {
-      console.log(
-        '[executeApprovalTransaction] No approval transaction required',
-      );
+
+    const approvalTx = order.approval_transaction;
+    if (!approvalTx) {
       return Ok('No approval transaction required');
     }
 
-    console.log(
-      '[executeApprovalTransaction] Triggering approval transaction',
-      {
-        to: order.approval_transaction.to,
-        data: order.approval_transaction.data,
-      },
-    );
-
     try {
-      // FIX: Properly build the transaction with correct parameters
-      const txResult =
-        await this.tronweb.transactionBuilder.triggerSmartContract(
-          order.approval_transaction.to,
-          order.approval_transaction.data,
-          {
-            feeLimit: parseInt(order.approval_transaction.gas_limit),
-            callValue: parseInt(order.approval_transaction.value || '0'),
-          },
-          [],
-          this.htlcActorAddress,
-        );
+      console.log('[executeApprovalTransaction] Sending approval transaction', {
+        to: approvalTx.to,
+        data: approvalTx.data,
+      });
 
-      if (!txResult || !txResult.transaction) {
+      const tx = await this.tronweb.transactionBuilder.triggerSmartContract(
+        approvalTx.to,
+        '', // no function name, use data
+        {
+          feeLimit: Number(approvalTx.gas_limit),
+          callValue: 0,
+        },
+        [], // empty params
+        this.htlcActorAddress,
+      );
+      if (!tx || !tx.transaction) {
         console.error(
           '[executeApprovalTransaction] Failed to build transaction',
         );
         return Err('Failed to build approval transaction');
       }
+      tx.transaction.raw_data.contract[0].parameter.value.data =
+        approvalTx.data;
 
       console.log(
-        '[executeApprovalTransaction] Approval transaction built:',
-        txResult.transaction,
+        '[executeApprovalTransaction] Transaction built:',
+        tx.transaction,
       );
 
+      // ---- Sign & Broadcast ----
       let signedTx;
       if (this.options.adapter) {
-        // Use adapter to sign
-        signedTx = await this.options.adapter.signTransaction(
-          txResult.transaction,
-        );
-        // Adapter may return different format, need to broadcast it
-        const broadcastResult = await this.tronweb.trx.sendRawTransaction(
-          signedTx,
-        );
-        if (!broadcastResult.result) {
-          console.error(
-            '[executeApprovalTransaction] Approval transaction broadcast failed:',
-            broadcastResult,
-          );
-          return Err(broadcastResult.message || 'Broadcast failed');
-        }
-        console.log(
-          '[executeApprovalTransaction] Approval transaction succeeded, txid:',
-          broadcastResult.txid,
-        );
-        return Ok(broadcastResult.txid);
+        signedTx = await this.options.adapter.signTransaction(tx.transaction);
       } else {
-        // Use TronWeb to sign
         signedTx = await this.tronweb.trx.sign(
-          txResult.transaction,
+          tx.transaction,
           this.options.privateKey,
         );
-        console.log(
-          '[executeApprovalTransaction] Signed approval transaction:',
-          signedTx,
-        );
-
-        const receipt = await this.tronweb.trx.sendRawTransaction(signedTx);
-        console.log(
-          '[executeApprovalTransaction] Approval transaction receipt:',
-          receipt,
-        );
-
-        if (!receipt.result) {
-          console.error(
-            '[executeApprovalTransaction] Approval transaction failed:',
-            receipt.message || receipt.code,
-          );
-          return Err(
-            (receipt.message || receipt.code || 'Transaction failed') as string,
-          );
-        }
-        console.log(
-          '[executeApprovalTransaction] Approval transaction succeeded, txid:',
-          receipt.txid,
-        );
-        return Ok(receipt.txid);
       }
+
+      const broadcast = await this.tronweb.trx.sendRawTransaction(signedTx);
+      console.log('[executeApprovalTransaction] Broadcast result:', broadcast);
+
+      if (!broadcast.result) {
+        return Err(broadcast.message || 'Broadcast failed');
+      }
+
+      return Ok(broadcast.txid);
     } catch (e) {
-      console.error('[executeApprovalTransaction] Exception occurred:', e);
+      console.error('[executeApprovalTransaction] Exception:', e);
       return Err(`Approval transaction failed: ${String(e)}`);
     }
   }

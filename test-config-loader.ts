@@ -12,6 +12,7 @@ export interface TestConfig {
   BITCOIN_PRIVATE_KEY: string;
   BITCOIN_MNEMONIC: string;
   API_KEY: string;
+  STAGING_API_KEY: string;
   TEST_RPC_URL: string;
   TEST_ORDERBOOK_STAGE: string;
   TEST_STAGE_AUTH: string;

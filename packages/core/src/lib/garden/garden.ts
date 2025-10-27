@@ -41,9 +41,9 @@ import { EvmRelay } from '../evm/relay/evmRelay';
 import { StarknetRelay } from '../starknet/relay/starknetRelay';
 import { SolanaRelay } from '../solana/relayer/solanaRelay';
 import { SuiRelay } from '../sui/relay/suiRelay';
+import { TronRelay } from '../tron/relayer/tronRelay';
 import { resolveApiKey, resolveDigestKey } from './utils';
 import { Executor } from './executor/executor';
-
 import {
   isValidBitcoinPubKey,
   resolveApiConfig,
@@ -54,7 +54,6 @@ import {
 } from '../utils';
 import { BitcoinWallet } from '../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../bitcoin/provider/provider';
-import { TronRelay } from '../tron/relayer/tronRelay';
 
 class GardenEventBus
   extends EventBroker<GardenEvents>
@@ -396,11 +395,6 @@ export class Garden extends Orderbook implements IGardenJS {
 
     const createOrderRes = await super.createOrder<T>(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
-
-    const sourceType = ChainAsset.from(params.fromAsset).blockchainType;
-    if (createOrderRes.val.type !== sourceType) {
-      return Err('Order response type does not match source blockchain type');
-    }
 
     return Ok(createOrderRes.val);
   }

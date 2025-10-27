@@ -88,7 +88,7 @@ Tron Wallet Address:     ${tronWallet.defaultAddress?.base58}
       relayer: 'https://testnet.api.hashira.io',
     },
     digestKey: DIGEST_KEY!,
-    apiKey: config.API_KEY,
+    apiKey: config.STAGING_API_KEY,
     wallets: {
       evm: evmWallet,
       starknet: starknetWallet,
