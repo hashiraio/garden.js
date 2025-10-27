@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateInternalkey } from './internalKey';
-import { GardenHTLC } from './htlc';
+import { BitcoinHTLC } from './bitcoinHtlc';
 import { IBitcoinWallet } from './wallet/wallet.interface';
 
 describe('htlc', () => {
@@ -11,7 +11,7 @@ describe('htlc', () => {
   });
 
   it('test', async () => {
-    const test = await GardenHTLC.from(
+    const test = await BitcoinHTLC.from(
       {} as IBitcoinWallet,
       99000,
       '3a728f1df9c9971c7fb5c586d2b919f297b21852a46f14a161c33afc4bddb0f8',

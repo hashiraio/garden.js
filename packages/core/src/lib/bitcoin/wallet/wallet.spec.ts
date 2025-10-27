@@ -12,18 +12,19 @@ import { BitcoinProvider } from '../provider/provider';
 import { BitcoinPaths } from '../paths';
 import { getScript, getSignerFromPk, regTestUtils } from '../../testUtils';
 import { BWErrors } from '../errors';
+import { loadTestConfig } from '../../../../../../test-config-loader';
 
 describe.only('BitcoinWallet', () => {
   console.log(
     'TO RUN THIS TEST SUITE, YOU MUST HAVE A REGTEST INDEXER RUNNING ON PORT 30000',
   );
-  const mnemonic = generateMnemonic();
+  const config = loadTestConfig();
+  const mnemonic = config.BITCOIN_MNEMONIC || generateMnemonic();
   const network = BitcoinNetwork.Regtest;
   const provider = new BitcoinProvider(network, 'http://localhost:30000');
   const bitcoinWallet = BitcoinWallet.fromMnemonic(mnemonic, provider);
 
-  const privateKey =
-    '89ebc2e1a9cba4e37f2215ff748f378ea5265ccdf8c4dde0f633d5d0e8b3efbe';
+  const privateKey = config.BITCOIN_PRIVATE_KEY;
 
   const randomAddress = 'bcrt1qgq57nkntck34snuwlxj7fffyutezuuz7xr56rq';
 

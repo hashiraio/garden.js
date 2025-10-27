@@ -1,4 +1,8 @@
-import { MatchedOrder } from '@gardenfi/orderbook';
+import {
+  isSuiOrderResponse,
+  Order,
+  SuiOrderResponse,
+} from '@gardenfi/orderbook';
 import {
   APIResponse,
   AsyncResult,
@@ -23,6 +27,7 @@ import {
   WalletWithRequiredFeatures,
 } from '@mysten/wallet-standard';
 import { SUI_CONFIG } from '../../constants';
+import { getAssetInfoFromOrder } from '../../utils';
 
 export class SuiRelay implements ISuiHTLC {
   private client: SuiClient;
@@ -47,7 +52,14 @@ export class SuiRelay implements ISuiHTLC {
       : this.account.toSuiAddress();
   }
 
-  async initiate(order: MatchedOrder): AsyncResult<string, string> {
+  // ---------------------- INITIATE ----------------------
+  async initiate(order: Order | SuiOrderResponse): AsyncResult<string, string> {
+    if (!order) {
+      return Err('Order is required');
+    }
+    if (isSuiOrderResponse(order)) {
+      return this.initiateWithCreateOrderResponse(order);
+    }
     try {
       const { source_swap } = order;
 
@@ -55,6 +67,17 @@ export class SuiRelay implements ISuiHTLC {
       const registryId = source_swap.asset;
       const solverAddress = source_swap.redeemer;
       const secretHash = source_swap.secret_hash;
+
+      const assetInfo = await getAssetInfoFromOrder(
+        source_swap.asset,
+        this.url,
+      );
+
+      if (!assetInfo.ok) {
+        return Err(assetInfo.error);
+      }
+
+      const { tokenAddress } = assetInfo.val;
 
       const tx = new Transaction();
       tx.setSender(this.htlcActorAddress);
@@ -65,7 +88,7 @@ export class SuiRelay implements ISuiHTLC {
         target: `${SUI_CONFIG[this.network].packageId}::${
           SUI_CONFIG[this.network].moduleName
         }::initiate`,
-        typeArguments: [source_swap.token_address],
+        typeArguments: [tokenAddress],
         arguments: [
           tx.object(registryId),
           tx.pure.address(this.htlcActorAddress),
@@ -128,16 +151,71 @@ export class SuiRelay implements ISuiHTLC {
     }
   }
 
-  async redeem(
-    order: MatchedOrder,
-    secret: string,
+  // ---------------------- INITIATE WITH CREATE ORDER RESPONSE ----------------------
+  private async initiateWithCreateOrderResponse(
+    order: SuiOrderResponse,
   ): AsyncResult<string, string> {
+    const { ptb_bytes } = order;
+    const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+    const gasPrice = await client.getReferenceGasPrice();
+    const estimatedGasBudget = 10000000;
+
+    const transaction = Transaction.fromKind(new Uint8Array(ptb_bytes));
+    transaction.setSender(this.htlcActorAddress);
+    transaction.setGasPrice(gasPrice);
+    transaction.setGasBudget(estimatedGasBudget);
+
+    try {
+      let initResult:
+        | SuiSignAndExecuteTransactionOutput
+        | SuiTransactionBlockResponse
+        | undefined;
+      if ('features' in this.account) {
+        initResult = await this.account.features[
+          SuiSignAndExecuteTransaction
+        ]?.signAndExecuteTransaction({
+          transaction: transaction,
+          account: this.account.accounts[0],
+          chain: `sui:${this.network}`,
+        });
+      } else {
+        initResult = await this.client.signAndExecuteTransaction({
+          signer: this.account,
+          transaction: transaction,
+          options: {
+            showEffects: true,
+          },
+        });
+      }
+
+      if (!initResult) {
+        return Err('Failed to initiate');
+      }
+
+      const tx = await this.client.waitForTransaction({
+        digest: initResult.digest,
+        options: {
+          showEffects: true,
+        },
+      });
+      if (tx.effects?.status.status === 'failure') {
+        return Err(`Failed to initiate: ${tx.effects?.status.error}`);
+      }
+
+      return Ok(tx.digest);
+    } catch (error) {
+      return Err(String(error));
+    }
+  }
+
+  // ---------------------- REDEEM ----------------------
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
       const res = await Fetcher.post<APIResponse<string>>(
         this.url.endpoint('redeem'),
         {
           body: JSON.stringify({
-            order_id: order.create_order.create_id,
+            order_id: order.order_id,
             secret: secret,
             perform_on: 'Destination',
           }),
@@ -156,6 +234,7 @@ export class SuiRelay implements ISuiHTLC {
     }
   }
 
+  // ---------------------- REFUND ----------------------
   async refund(): AsyncResult<string, string> {
     return Err('Refund is taken care of by the relayer');
   }

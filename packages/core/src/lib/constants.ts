@@ -1,46 +1,31 @@
-import { SupportedAssets } from '@gardenfi/orderbook';
+import { ChainAsset, Assets } from '@gardenfi/orderbook';
 import { Environment, Network } from '@gardenfi/utils';
 
 export type Api = {
-  orderbook: string;
+  baseurl: string;
   auth: string;
-  quote: string;
   info: string;
-  evmRelay: string;
-  starknetRelay: string;
-  solanaRelay: string;
-  suiRelay: string;
+  relayer: string;
 };
+
 export const API: Record<Environment, Api> = {
   mainnet: {
-    orderbook: 'https://api.garden.finance/orders',
+    baseurl: 'https://api.garden.finance',
     auth: 'https://api.garden.finance/auth',
-    quote: 'https://api.garden.finance/quote',
     info: 'https://api.garden.finance/info',
-    evmRelay: 'https://api.garden.finance/relayer',
-    solanaRelay: 'https://solana-relayer.garden.finance/',
-    starknetRelay: 'https://api.garden.finance/starknet',
-    suiRelay: 'https://sui-relayer-mainnet.garden.finance/',
+    relayer: 'https://relayer.garden.finance',
   },
   testnet: {
-    orderbook: 'https://testnet.api.garden.finance/orders',
+    baseurl: 'https://testnet.api.garden.finance',
     auth: 'https://testnet.api.garden.finance/auth',
-    quote: 'https://testnet.api.garden.finance/quote',
     info: 'https://testnet.api.garden.finance/info',
-    evmRelay: 'https://testnet.api.garden.finance/relayer',
-    solanaRelay: 'https://solana-relay.garden.finance',
-    starknetRelay: 'https://testnet.api.garden.finance/starknet',
-    suiRelay: 'https://testnet.api.garden.finance/sui',
+    relayer: 'https://testnet.api.garden.finance/relayer',
   },
   localnet: {
-    orderbook: '',
+    baseurl: '',
     auth: '',
-    quote: '',
     info: '',
-    evmRelay: '',
-    starknetRelay: '',
-    solanaRelay: '',
-    suiRelay: '',
+    relayer: '',
   },
 } as const;
 
@@ -101,6 +86,5 @@ export const SUI_CONFIG: Record<
 } as const;
 
 export const DEFAULT_AFFILIATE_ASSET = {
-  chain: SupportedAssets.mainnet.base_cbBTC.chain,
-  asset: SupportedAssets.mainnet.base_cbBTC.atomicSwapAddress,
+  asset: ChainAsset.from(Assets.base.cBBTC),
 };

@@ -6,6 +6,7 @@ import {
   Strategies,
   StrategiesResponse,
 } from './quote.types';
+import { AssetLike, ChainAsset } from '@gardenfi/orderbook';
 import { APIResponse, Url } from '@gardenfi/utils';
 import { constructOrderPair } from '../utils';
 
@@ -23,18 +24,15 @@ export class Quote implements IQuote {
     isExactOut = false,
     options,
   }: QuoteParamsForAssets) {
-    const orderpair = constructOrderPair(
-      fromAsset.chain,
-      fromAsset.atomicSwapAddress,
-      toAsset.chain,
-      toAsset.atomicSwapAddress,
-    );
+    const from = ChainAsset.from(fromAsset);
+    const to = ChainAsset.from(toAsset);
 
-    return this.getQuote(orderpair, amount, isExactOut, options);
+    return this.getQuote(from, to, amount, isExactOut, options);
   }
 
   async getQuote(
-    orderpair: string,
+    from: AssetLike,
+    to: AssetLike,
     amount: number,
     isExactOut = false,
     options?: {
@@ -44,16 +42,18 @@ export class Quote implements IQuote {
   ) {
     try {
       const params: Record<string, string> = {
-        order_pair: orderpair,
-        amount: amount.toString(),
-        exact_out: isExactOut.toString(),
+        from: from.toString(),
+        to: to.toString(),
+        ...(isExactOut
+          ? { to_amount: amount.toString() }
+          : { from_amount: amount.toString() }),
         ...(options?.affiliateFee !== undefined && {
           affiliate_fee: options.affiliateFee.toString(),
         }),
       };
 
-      const url = this.quoteUrl.endpoint('/').addSearchParams(params);
-      const res = await Fetcher.get<APIResponse<QuoteResponse>>(url, {
+      const url = this.quoteUrl.endpoint('/v2/quote').addSearchParams(params);
+      const res = await Fetcher.get<APIResponse<QuoteResponse[]>>(url, {
         retryCount: 0,
         ...options?.request,
       });

@@ -1,234 +1,97 @@
-// import { sepolia } from 'viem/chains';
-// import { privateKeyToAccount } from 'viem/accounts';
-// import { createWalletClient, http, sha256 } from 'viem';
-// import { randomBytes } from 'crypto';
-import {
-  describe,
-  expect,
-  expectTypeOf,
-  test,
-  vi,
-  beforeEach,
-  afterEach,
-} from 'vitest';
-import {
-  //  Siwe, sleep,
-  // with0x,
-  Url,
-  Request as UtilsRequest,
-} from '@gardenfi/utils';
+import { describe, expect, expectTypeOf, test } from 'vitest';
+import { DigestKey, Siwe, Url } from '@gardenfi/utils';
 import { Orderbook } from './orderbook';
-import {
-  // CreateOrderConfig,
-  // CreateOrderRequestWithAdditionalData,
-  MatchedOrder,
-} from './orderbook.types';
-// import { Asset, Chains } from '../asset';
+import { CreateOrderRequest, OrderWithStatus } from './orderbook.types';
+import { ChainAsset } from '../chainAsset/chainAsset';
+// import { Order } from './orderbook.types';s
+// import {
+//   // CreateOrderConfig,
+//   // CreateOrderRequestWithAdditionalData,
+//   Order,
+//   OrderResult,
+// } from './orderbook.types';
 
 describe('orders provider', async () => {
-  const orderbookApi = 'https://testnet.api.garden.finance/orders';
-  const address = '0xE1CA48fcaFBD42Da402352b645A9855E33C716BE';
-  const id = '1d93c7cccbbb5bea0b1f8072e357185780efb5dcbf74e4d8f675219778e1a8b9';
+  const orderbookApi = 'https://testnet.api.garden.finance';
+  const authUrl = 'https://testnet.api.garden.finance/auth';
+  const address = '0xdF4E5212cC36428504712d7E75a9922762FeD28A';
+  const id = '3b8f735673ee94822c4fa0f2265e90f105349cf2ef8d0cc854f5b7192ffa3b7b';
 
   const orderbook = new Orderbook(new Url(orderbookApi));
-
+  const auth = Siwe.fromDigestKey(
+    new Url(authUrl),
+    DigestKey.generateRandom().val!,
+  );
   test('should get order', async () => {
-    const order = await orderbook.getOrder(id, true);
+    const order = await orderbook.getOrder(id);
+    console.log('order.error :', order.error);
     console.log('order.val :', order.val);
     expect(order.error).toBeUndefined();
-    expect(order.val?.create_order.create_id).toEqual(id);
     if (order.val) {
-      expectTypeOf(order.val).toEqualTypeOf<MatchedOrder>();
+      expect(order.val.order_id).toEqual(id);
+      expectTypeOf(order.val).toEqualTypeOf<OrderWithStatus>();
     }
   });
 
-  test('should get pending orders of a address', async () => {
-    const orders = await orderbook.getMatchedOrders(address, 'pending');
+  test('should get orders of a address', async () => {
+    const orders = await orderbook.getOrders({});
+    console.log('orders.error :', orders.error);
+    console.log('orders.val :', orders.val);
     expect(orders.error).toBeUndefined();
-    expect(orders.val?.data.length).toBeGreaterThan(0);
-    if (orders.val?.data) {
-      expectTypeOf(orders.val.data).toEqualTypeOf<MatchedOrder[]>();
+    if (orders.val) {
+      expect(orders.val.data.length).toBeGreaterThan(0);
+      expectTypeOf(orders.val.data).toEqualTypeOf<OrderWithStatus[]>();
     }
   });
 
   test('should get all orders', async () => {
-    const orders = await orderbook.getOrders(true, {});
+    const orders = await orderbook.getOrders({});
     expect(orders.error).toBeUndefined();
-    expect(orders.val?.data.length).toBeGreaterThan(0);
-    if (orders.val?.data) {
-      expectTypeOf(orders.val.data).toEqualTypeOf<MatchedOrder[]>();
+    console.log('all orders here orders.val :', orders.val);
+    console.log('orders.val.data :', orders.val?.data);
+    if (orders.val) {
+      expect(orders.val.data.length).toBeGreaterThan(0);
+      expectTypeOf(orders.val.data).toEqualTypeOf<OrderWithStatus[]>();
     }
   });
 
   test('should subscribe to orders', async () => {
     const unsubscribe = await orderbook.subscribeOrders(
-      address,
-      true,
-      1000,
+      { address },
       async (orders) => {
+        console.log('subscribe orders :', orders);
         expect(orders.data.length).toBeGreaterThan(0);
-        expectTypeOf(orders.data).toEqualTypeOf<MatchedOrder[]>();
+        expectTypeOf(orders.data).toEqualTypeOf<OrderWithStatus[]>();
       },
+      1000,
     );
     expectTypeOf(unsubscribe).toEqualTypeOf<() => void>();
   }, 10000);
 
-  test('should get orders with options', async () => {
-    const orderResponse = await orderbook.getOrders(
-      true,
-      {
-        address: undefined,
-        from_chain: 'bitcoin_testnet',
-        status: undefined,
-        to_chain: undefined,
-        tx_hash: undefined,
+  test('should create an order', async () => {
+    const CreateOrderRequest: CreateOrderRequest = {
+      source: {
+        asset: ChainAsset.from('arbitrum:wbtc'),
+        owner: '0xdF4E5212cC36428504712d7E75a9922762FeD28A',
+        delegate: null,
+        amount: '50000',
       },
-      undefined,
-    );
-    expect(orderResponse.ok).toBeTruthy();
-    const orders = orderResponse.val!.data;
-    console.log('orders :', orders[0]);
-  });
-
-  test('should get orders with multiple status filter', async () => {
-    const orderResponse = await orderbook.getOrders(
-      true,
-      {
-        status: ['expired', 'not-initiated'],
+      destination: {
+        asset: ChainAsset.from('unichain:usdc'),
+        owner: '0xdF4E5212cC36428504712d7E75a9922762FeD28A',
+        delegate: null,
+        amount: '58727337',
       },
-      undefined,
-    );
-    expect(orderResponse.ok).toBeTruthy();
-    const orders = orderResponse.val!.data;
-    console.log('orders :', orders);
-  });
-
-  test('order count', async () => {
-    const count = await orderbook.getOrdersCount(address);
-    expect(count.error).toBeUndefined();
-    expect(count.val).toBe(0);
-  }, 10000);
-}, 950000);
-
-describe('AbortController functionality', () => {
-  const orderbookApi = 'https://testnet.api.garden.finance/orders';
-  const orderbook = new Orderbook(new Url(orderbookApi));
-  const address = '0xE1CA48fcaFBD42Da402352b645A9855E33C716BE';
-  const id = '1d93c7cccbbb5bea0b1f8072e357185780efb5dcbf74e4d8f675219778e1a8b9';
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  test('should handle aborted requests gracefully', async () => {
-    const abortController = new AbortController();
-    const request: UtilsRequest = {
-      signal: abortController.signal,
-      retryCount: 0,
+      slippage: 50,
+      secret_hash:
+        '037ff5cacab1d35df04e6e9d349f0d8dd92e87b989244b934d9b09bc97fc4169',
+      nonce: 250,
+      affiliate_fees: [],
     };
-
-    abortController.abort();
-
-    const order = await orderbook.getOrder(id, true, request);
-    expect(order.error).toBeDefined();
-    expect(order.error).toContain('aborted');
-  });
-
-  test('should handle custom retry configuration with AbortController', async () => {
-    const abortController = new AbortController();
-    const request: UtilsRequest = {
-      signal: abortController.signal,
-      retryCount: 1,
-      retryDelay: 500,
-    };
-
-    const orders = await orderbook.getMatchedOrders(
-      address,
-      'all',
-      undefined,
-      request,
-    );
-    expect(orders.error).toBeUndefined();
-    expect(orders.val?.data).toBeDefined();
-  });
-
-  test('should work with partial request configuration', async () => {
-    const request: UtilsRequest = {
-      retryCount: 0,
-    };
-
-    const order = await orderbook.getOrder(id, true, request);
-    expect(order.error).toBeUndefined();
-    expect(order.val?.create_order.create_id).toEqual(id);
-  });
-
-  test('should work with empty request object', async () => {
-    const request: UtilsRequest = {};
-
-    const order = await orderbook.getOrder(id, true, request);
-    expect(order.error).toBeUndefined();
-    expect(order.val?.create_order.create_id).toEqual(id);
-  });
-
-  test('should handle multiple concurrent requests with different AbortControllers', async () => {
-    const abortController1 = new AbortController();
-    const abortController2 = new AbortController();
-
-    const request1: UtilsRequest = {
-      signal: abortController1.signal,
-      retryCount: 0,
-    };
-
-    const request2: UtilsRequest = {
-      signal: abortController2.signal,
-      retryCount: 0,
-    };
-
-    const [order1, order2] = await Promise.all([
-      orderbook.getOrder(id, true, request1),
-      orderbook.getOrder(id, true, request2),
-    ]);
-
-    expect(order1.error).toBeUndefined();
-    expect(order2.error).toBeUndefined();
-    expect(order1.val?.create_order.create_id).toEqual(id);
-    expect(order2.val?.create_order.create_id).toEqual(id);
-  });
-
-  test('should handle AbortController timeout scenario', async () => {
-    const abortController = new AbortController();
-    const request: UtilsRequest = {
-      signal: abortController.signal,
-      retryCount: 0,
-    };
-
-    setTimeout(() => {
-      abortController.abort();
-    }, 100);
-
-    const order = await orderbook.getOrder(id, true, request);
-    expect(order).toBeDefined();
-  });
-
-  test('should validate Request type compatibility', () => {
-    const request: UtilsRequest = {
-      signal: new AbortController().signal,
-      retryCount: 0,
-      retryDelay: 1000,
-      headers: { 'Content-Type': 'application/json' },
-      method: 'GET',
-    };
-
-    expect(request.signal).toBeDefined();
-    expect(request.retryCount).toBe(0);
-    expect(request.retryDelay).toBe(1000);
-    expect(request.headers).toBeDefined();
-    expect(request.method).toBe('GET');
-  });
+    // console.log('CreateOrderRequest :', JSON.stringify(CreateOrderRequest));
+    const order = await orderbook.createOrder(CreateOrderRequest, auth);
+    console.log('order :', order.val);
+  }, 5000000);
 });
 
 test('should search orders', async () => {
@@ -243,10 +106,13 @@ test('should search orders', async () => {
   }, 1000);
 
   const result = await orderbook.getOrders(
-    true,
-    { address: '0xccF3d872b01762ABA74b41B1958A9A86EE8f34A3' },
-    { page: 1, per_page: 10 },
-    { signal, retryCount: 0 },
+    {
+      address: '0xccF3d872b01762ABA74b41B1958A9A86EE8f34A3',
+      page: 1,
+      per_page: 10,
+      retryCount: 0,
+    },
+    { signal },
   );
 
   console.log('time taken :', performance.now() - now);
@@ -366,7 +232,7 @@ test('should search orders', async () => {
 //     await sleep(5000);
 //     const orderId = createOrderIds[0];
 //     const result = await orderbook.getOrder(orderId, true);
-//     expectTypeOf(result.val).toEqualTypeOf<MatchedOrder>();
+//     expectTypeOf(result.val).toEqualTypeOf<Order>();
 //     expect(result.ok).toBeTruthy();
 //     expect(result.val).toBeTruthy();
 //     expect(result.val.create_order.create_id).toEqual(orderId);

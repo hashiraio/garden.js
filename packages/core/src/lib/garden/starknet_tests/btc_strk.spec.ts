@@ -1,15 +1,15 @@
 import { Garden } from '../garden';
-import { EthereumLocalnet, SupportedAssets } from '@gardenfi/orderbook';
-import { Environment, sleep, with0x } from '@gardenfi/utils';
+import { EthereumLocalnet, Assets } from '@gardenfi/orderbook';
+import { Environment, sleep, with0x, Network } from '@gardenfi/utils';
 import { RpcProvider, Account } from 'starknet';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createWalletClient, http, WalletClient } from 'viem';
 import { Quote } from '@gardenfi/core';
 import { StarknetRelay } from '../../starknet/relay/starknetRelay';
-import { BitcoinNetwork } from '../../bitcoin/provider/provider.interface';
 import { BitcoinWallet } from '../../bitcoin/wallet/wallet';
 import { BitcoinProvider } from '../../bitcoin/provider/provider';
+import { loadTestConfig } from '../../../../../../test-config-loader';
 // import axios from 'axios';
 // import { promisify } from 'util';
 // import { exec } from 'child_process';
@@ -56,29 +56,16 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
   //   const STARKNET_NODE_URL = 'http://localhost:8547/rpc';
   //   const QUOTE_SERVER_URL = 'http://localhost:6969';
   //   const STARKNET_RELAY_URL = 'http://localhost:4436';
-  // const API_KEY =
-  //   'AAAAAGghjwU6Os1DVFgmUXj0GcNt5jTJPbBmXKw7xRARW-qivNy4nfpKVgMNebmmxig2o3v-6M4l_ZmCgLp3vKywfVXDYBcL3M4c';
-
+  const config = loadTestConfig();
   const RELAYER_URL = 'https://orderbook-stage.hashira.io';
   const STARKNET_NODE_URL = 'https://starknet-mainnet.public.blastapi.io';
   const QUOTE_SERVER_URL = 'https://quote-staging.hashira.io';
   const STARKNET_RELAY_URL = 'https://starknet-relayer.hashira.io';
-  //   const API_KEY =
-  //     'AAAAAGnCHgI6OtNjaHxlzdsgXaIseznp7jFo1eU7QKEYhopsgu1EAVZOPgAHGNJJSYdVclaWkOhORmKpS14PqjyFu1-5sdtTmMob';
-
   // Wallet configurations
-  const EVM_PRIVATE_KEY =
-    '0x8fe869193b5010d1ee36e557478b43f2ade908f23cac40f024d4aa1cd1578a61';
-  //   const STARKNET_PRIVATE_KEY =
-  //     '0x00000000000000000000000000000000c10662b7b247c7cecf7e8a30726cff12';
-  //   const STARKNET_ADDRESS =
-  //     '0x0260a8311b4f1092db620b923e8d7d20e76dedcc615fb4b6fdf28315b81de201';
-
+  const EVM_PRIVATE_KEY = config.EVM_PRIVATE_KEY;
   //testnet
-  const STARKNET_PRIVATE_KEY =
-    '0x0440c893bd4cbc2c151d579c9d721eec4d316306f871368baa89033e3f6820b9';
-  const STARKNET_ADDRESS =
-    '0x0390cf09b3537e450170bdcce49a789facb727f21eabd8e1d25b8cf1869e8e93';
+  const STARKNET_PRIVATE_KEY = config.STARKNET_PRIVATE_KEY;
+  const STARKNET_ADDRESS = config.STARKNET_ADDRESS;
 
   // Global variables
   let garden: Garden;
@@ -115,11 +102,11 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
     //   'http://localhost:30000',
     // );
     const bitcoinProvider = new BitcoinProvider(
-      BitcoinNetwork.Testnet,
+      Network.TESTNET,
       'https://48.217.250.147:18443',
     );
     btcWallet = BitcoinWallet.fromPrivateKey(
-      'af530c3d2212740a8428193fce82bfddcf7e83bee29a2b9b2f25b5331bae1bf5',
+      config.BITCOIN_PRIVATE_KEY,
       bitcoinProvider,
       { pkType: 'p2wpkh', pkPath: "m/84'/0'/0'/0/0" },
     );
@@ -138,16 +125,16 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
     //   btcWallet,
     // });
     garden = new Garden({
-      api: RELAYER_URL,
-      environment: Environment.TESTNET,
+      environment: Network.TESTNET,
       digestKey:
         '7fb6d160fccb337904f2c630649950cc974a24a2931c3fdd652d3cd43810a857',
-      quote: new Quote(QUOTE_SERVER_URL),
+      apiKey: config.API_KEY,
       htlc: {
         starknet: new StarknetRelay(
           STARKNET_RELAY_URL,
           starknetWallet,
-          'http://localhost:8547/rpc',
+          STARKNET_NODE_URL,
+          Network.TESTNET,
         ),
       },
     });
@@ -158,7 +145,7 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
     garden.on('error', (order, error) => {
       console.log(
         'error while executing ❌, orderId :',
-        order.create_order.create_id,
+        order.order_id,
         'error :',
         error,
       );
@@ -166,7 +153,7 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
     garden.on('success', (order, action, result) => {
       console.log(
         'executed ✅, orderId :',
-        order.create_order.create_id,
+        order.order_id,
         'action :',
         action,
         'result :',
@@ -179,18 +166,18 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
     garden.on('onPendingOrdersChanged', (orders) => {
       console.log('pending orders :', orders.length);
       orders.forEach((order) => {
-        console.log('pending order :', order.create_order.create_id);
+        console.log('pending order :', order.order_id);
       });
     });
     garden.on('rbf', (order, result) => {
-      console.log('rbf :', order.create_order.create_id, result);
+      console.log('rbf :', order.order_id, result);
     });
   };
   it('should create and execute a BTC-Starknet swap', async () => {
     console.log('\n------ CREATING SWAP ORDER ------');
     const order = {
-      fromAsset: SupportedAssets.testnet.bitcoin_testnet_BTC,
-      toAsset: SupportedAssets.testnet.starknet_testnet_ETH,
+      fromAsset: Assets.bitcoin_testnet.BTC,
+      toAsset: Assets.starknet_sepolia.WBTC,
       sendAmount: '10000',
       receiveAmount: '23380000000000',
       additionalData: {
@@ -201,7 +188,7 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
     };
     // console.log('Order Parameters:', JSON.stringify(order, null, 2));
 
-    const result = await garden.swap(order);
+    const result = await garden.createSwap(order);
     if (!result.ok) {
       console.log('\n------ SWAP ERROR ------');
       console.log('Error:', result.error);
@@ -258,7 +245,7 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
       await sleep(2000); // Wait for confirmations
 
       console.log('HTLC Funding Success');
-      console.log('Swap ID:', result.val.source_swap.swap_id);
+      console.log('Swap ID:', result.val);
       console.log('--------------------------------');
     } catch (error) {
       console.log('\n------ HTLC FUNDING ERROR ------');
@@ -276,7 +263,7 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
       garden.on('success', (order, action, result) => {
         if (action === 'Redeem') {
           console.log('\n------ REDEMPTION SUCCESSFUL ------');
-          console.log('Order ID:', order.create_order.create_id);
+          console.log('Order ID:', order.order_id);
           console.log('Transaction Hash:', result);
           console.log('----------------------------------\n');
           resolve(true);
@@ -286,9 +273,6 @@ describe('Bitcoin to StarkNet Integration Tests', () => {
 
     // Setup other event listeners
     setupEventListeners();
-
-    // Start execution
-    await garden.execute();
 
     // Wait for redemption to complete or timeout after 150 seconds
     await Promise.race([

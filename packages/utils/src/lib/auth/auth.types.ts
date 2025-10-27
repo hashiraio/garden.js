@@ -9,7 +9,7 @@ export type SiweOpts = {
 
 export enum AuthHeaderEnum {
   Authorization = 'Authorization',
-  ApiKey = 'api-key',
+  ApiKey = 'garden-app-id',
 }
 
 export type AuthHeader =

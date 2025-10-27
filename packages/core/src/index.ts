@@ -12,11 +12,10 @@ export type {
   GardenHTLCModules,
   GardenConfigWithWallets,
   GardenConfigWithHTLCs,
+  ApiConfig,
 } from './lib/garden/garden.types';
-export { OrderActions } from './lib/garden/garden.types';
 
 export { EvmRelay } from './lib/evm/relay/evmRelay';
-export type { IEVMRelay } from './lib/evm/relay/evmRelay.types';
 export type { IEVMHTLC } from './lib/evm/htlc.types';
 
 export { StarknetRelay } from './lib/starknet/relay/starknetRelay';
@@ -27,25 +26,11 @@ export { SolanaRelay } from './lib/solana/relayer/solanaRelay';
 export type { ISolanaHTLC } from './lib/solana/htlc/ISolanaHTLC';
 export { SolanaHTLC } from './lib/solana/htlc/solanaHTLC';
 
-export { BlockNumberFetcher } from './lib/blockNumberFetcher/blockNumber';
-export type { IBlockNumberFetcher } from './lib/blockNumberFetcher/blockNumber';
-
-export { OrderStatus, SwapStatus } from './lib/orderStatus/status';
-
-export {
-  parseAction,
-  ParseOrderStatus,
-  ParseSwapStatus,
-  isExpired,
-  isOrderExpired,
-  filterDeadlineExpiredOrders,
-  parseActionFromStatus,
-} from './lib/orderStatus/orderStatusParser';
-
 export { SecretManager } from './lib/secretManager/secretManager';
 export type {
   ISecretManager,
   Secret,
+  SecretManagerEvents,
 } from './lib/secretManager/secretManager.types';
 export {
   checkAllowanceAndApprove as checkStarknetAllowanceAndApprove,
@@ -55,13 +40,14 @@ export {
 
 export { Quote } from './lib/quote/quote';
 export type {
+  StrategiesResponse,
+  BaseQuoteParams,
   IQuote,
-  QuoteResponse,
-  Strategies,
+  QuoteOptions,
   QuoteParamsForAssets,
   QuoteParamsForOrderPair,
-  QuoteOptions,
-  BaseQuoteParams,
+  QuoteResponse,
+  Strategies,
 } from './lib/quote/quote.types';
 
 export {
@@ -72,20 +58,41 @@ export {
 } from './lib/utils';
 
 export {
+  botanixMainnet,
   evmToViemChainMap,
-  switchOrAddNetwork,
-  hyperliquidTestnet,
+  getChainNameFromChainId,
   hyperliquid,
-  botanixMainnet as botanix,
+  hyperliquidTestnet,
+  switchOrAddNetwork,
 } from './lib/switchOrAddNetwork';
 
 export { BitcoinNetwork } from './lib/bitcoin/provider/provider.interface';
 export { BitcoinProvider } from './lib/bitcoin/provider/provider';
 export { BitcoinWallet } from './lib/bitcoin/wallet/wallet';
-export type { IBitcoinProvider } from './lib/bitcoin/provider/provider.interface';
+export type {
+  UrgencyToFeeRateKey,
+  Urgency,
+  IBitcoinProvider,
+  FeeRates,
+  BitcoinTxType,
+  BitcoinTx,
+  BitcoinUTXO,
+  FeeRateKeys,
+} from './lib/bitcoin/provider/provider.interface';
+
 export {
+  DEFAULT_AFFILIATE_ASSET,
   API,
   STARKNET_CONFIG,
+  SUI_CONFIG,
   SolanaRelayerAddress,
   solanaProgramAddress,
 } from './lib/constants';
+
+export type { Api } from './lib/constants';
+
+export {
+  RouteValidator,
+  buildRouteMatrix,
+} from './lib/routeValidator/routeValidator';
+export type { RoutePolicy } from './lib/routeValidator/routeValidator';

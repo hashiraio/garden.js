@@ -1,5 +1,5 @@
-import { MatchedOrder } from '@gardenfi/orderbook';
-import { AsyncResult, Err, Ok } from '@gardenfi/utils';
+import { Order } from '@gardenfi/orderbook';
+import { AsyncResult, Err, Ok, Url } from '@gardenfi/utils';
 import { ISuiHTLC } from '../suiHTLC.types';
 import {
   getFullnodeUrl,
@@ -16,19 +16,23 @@ import {
   SuiSignAndExecuteTransactionOutput,
   type WalletWithRequiredFeatures,
 } from '@mysten/wallet-standard';
+import { getAssetInfoFromOrder } from '../../utils';
 
 export class SuiHTLC implements ISuiHTLC {
   private client: SuiClient;
   private account: WalletWithRequiredFeatures | Ed25519Keypair;
   private network: Network;
+  private url: Url;
 
   constructor(
     account: WalletWithRequiredFeatures | Ed25519Keypair,
     network: Network,
+    url: Url,
   ) {
     this.client = new SuiClient({ url: getFullnodeUrl(network) });
     this.account = account;
     this.network = network;
+    this.url = url;
   }
 
   get htlcActorAddress(): string {
@@ -42,7 +46,7 @@ export class SuiHTLC implements ISuiHTLC {
    * @param order Order to initiate HTLC for
    * @returns Transaction ID
    */
-  async initiate(order: MatchedOrder): AsyncResult<string, string> {
+  async initiate(order: Order): AsyncResult<string, string> {
     try {
       const { source_swap } = order;
 
@@ -50,6 +54,15 @@ export class SuiHTLC implements ISuiHTLC {
       const registryId = source_swap.asset;
       const solverAddress = source_swap.redeemer;
       const secretHash = source_swap.secret_hash;
+
+      const assetInfo = await getAssetInfoFromOrder(
+        source_swap.asset,
+        this.url,
+      );
+
+      if (!assetInfo.ok) {
+        return Err(assetInfo.error);
+      }
 
       const tx = new Transaction();
       tx.setSender(this.htlcActorAddress);
@@ -60,7 +73,7 @@ export class SuiHTLC implements ISuiHTLC {
         target: `${SUI_CONFIG[this.network].packageId}::${
           SUI_CONFIG[this.network].moduleName
         }::initiate`,
-        typeArguments: [source_swap.token_address],
+        typeArguments: [assetInfo.val?.tokenAddress],
         arguments: [
           tx.object(registryId),
           tx.pure.address(this.htlcActorAddress),
@@ -131,14 +144,20 @@ export class SuiHTLC implements ISuiHTLC {
    * @param secret Secret to redeem HTLC with
    * @returns Transaction ID
    */
-  async redeem(
-    order: MatchedOrder,
-    secret: string,
-  ): AsyncResult<string, string> {
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
       const { destination_swap } = order;
 
       const registryId = destination_swap.asset;
+
+      const assetInfo = await getAssetInfoFromOrder(
+        destination_swap.asset,
+        this.url,
+      );
+
+      if (!assetInfo.ok) {
+        return Err(assetInfo.error);
+      }
 
       const tx = new Transaction();
       tx.setSender(this.htlcActorAddress);
@@ -147,7 +166,7 @@ export class SuiHTLC implements ISuiHTLC {
         target: `${SUI_CONFIG[this.network].packageId}::${
           SUI_CONFIG[this.network].moduleName
         }::redeem`,
-        typeArguments: [destination_swap.token_address],
+        typeArguments: [assetInfo.val?.tokenAddress],
         arguments: [
           tx.object(registryId),
           tx.pure.vector('u8', Buffer.from(destination_swap.swap_id, 'hex')),
@@ -212,11 +231,20 @@ export class SuiHTLC implements ISuiHTLC {
    * @param order Order to refund HTLC for
    * @returns Refund transaction ID
    */
-  async refund(order: MatchedOrder): AsyncResult<string, string> {
+  async refund(order: Order): AsyncResult<string, string> {
     try {
       const { source_swap } = order;
 
       const registryId = source_swap.asset;
+
+      const assetInfo = await getAssetInfoFromOrder(
+        source_swap.asset,
+        this.url,
+      );
+
+      if (!assetInfo.ok) {
+        return Err(assetInfo.error);
+      }
 
       const tx = new Transaction();
       tx.setSender(this.htlcActorAddress);
@@ -225,7 +253,7 @@ export class SuiHTLC implements ISuiHTLC {
         target: `${SUI_CONFIG[this.network].packageId}::${
           SUI_CONFIG[this.network].moduleName
         }::refund`,
-        typeArguments: [source_swap.token_address],
+        typeArguments: [assetInfo.val?.tokenAddress],
         arguments: [
           tx.object(registryId),
           tx.pure.vector('u8', Buffer.from(source_swap.swap_id, 'hex')),

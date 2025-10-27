@@ -3,10 +3,11 @@ import { arbitrumSepolia, sepolia } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createWalletClient, http } from 'viem';
 import { describe, expect, it } from 'vitest';
+import { loadTestConfig } from '../../../../../test-config-loader';
 
 describe('secret manager', () => {
-  const pk =
-    '0x8fe869193b5010d1ee36e557478b43f2ade908f23cac40f024d4aa1cd1578a61';
+  const config = loadTestConfig();
+  const pk = config.EVM_PRIVATE_KEY;
   const account = privateKeyToAccount(pk as `0x${string}`);
   console.log('account :', account.address);
 

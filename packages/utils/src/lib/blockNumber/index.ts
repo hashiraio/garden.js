@@ -1,1 +1,0 @@
-export { fetchEVMBlockNumber } from './blockNumber';

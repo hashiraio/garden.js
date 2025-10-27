@@ -114,6 +114,22 @@ export class Fetcher {
     return await defaultRetrier(init).retry(() => this._post(input, init));
   }
 
+  private static async _patch<T>(
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<T> {
+    return await this.parse<T>(
+      await fetch(input, {
+        method: 'PATCH',
+        ...init,
+      }),
+    );
+  }
+
+  static async patch<T>(input: RequestInfo | URL, init?: Request): Promise<T> {
+    return await defaultRetrier(init).retry(() => this._patch(input, init));
+  }
+
   /**
    * Parses the response and returns the result as the specified type.
    *

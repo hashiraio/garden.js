@@ -1,4 +1,4 @@
-import { MatchedOrder } from '@gardenfi/orderbook';
+import { EvmOrderResponse, Order } from '@gardenfi/orderbook';
 import { AsyncResult } from '@gardenfi/utils';
 
 export interface IEVMHTLC {
@@ -13,7 +13,7 @@ export interface IEVMHTLC {
    * @param order - The matched order.
    * @returns A promise resolving to the transaction hash of the initiation.
    */
-  initiate(order: MatchedOrder): AsyncResult<string, string>;
+  initiate(order: Order | EvmOrderResponse): AsyncResult<string, string>;
 
   /**
    * Redeems funds from the HTLC contract to the actor's address.
@@ -21,12 +21,12 @@ export interface IEVMHTLC {
    * @param secret - The secret required to unlock the htlc.
    * @returns A promise resolving to the transaction hash of the redemption.
    */
-  redeem(order: MatchedOrder, secret: string): AsyncResult<string, string>;
+  redeem(order: Order, secret: string): AsyncResult<string, string>;
 
   /**
    * Refunds funds from the HTLC contract back to the actor's address upon expiration.
    * @param order - The matched order.
    * @returns A promise resolving to the transaction hash of the refund.
    */
-  refund(order: MatchedOrder): AsyncResult<string, string>;
+  refund(order: Order): AsyncResult<string, string>;
 }

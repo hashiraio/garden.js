@@ -1,17 +1,14 @@
 import * as anchor from '@coral-xyz/anchor';
-import { DigestKey, Environment, Siwe, Url } from '@gardenfi/utils';
+import { DigestKey, Network, Siwe, Url } from '@gardenfi/utils';
 import { beforeAll, describe, expect, it, beforeEach } from 'vitest';
-import { MatchedOrder, SupportedAssets } from '@gardenfi/orderbook';
+import { SupportedAssets, Order } from '@gardenfi/orderbook';
 import { web3 } from '@coral-xyz/anchor';
 import { BitcoinNetwork, BitcoinProvider, BitcoinWallet } from '@gardenfi/core';
-import { Orderbook } from '@gardenfi/orderbook';
 import { Garden } from '../../../garden/garden';
-import { BlockNumberFetcher } from '../../../blockNumberFetcher/blockNumber';
-import { Quote } from '../../../quote/quote';
 import { SolanaRelay } from '../../relayer/solanaRelay';
-import { API } from '../../../constants';
-import { SolanaRelayerAddress } from '../../constants';
+import { API, SolanaRelayerAddress } from '../../../constants';
 import { skip } from 'node:test';
+import { loadTestConfig } from '../../../../../../../test-config-loader';
 
 // Shared constants Testnet
 const TEST_RPC_URL = 'https://api.devnet.solana.com';
@@ -20,72 +17,8 @@ const TEST_STAGE_AUTH = 'https://testnet.api.hashira.io/auth';
 const TEST_BLOCKFETCHER_URL = 'https://info-stage.hashira.io';
 const TEST_STAGE_QUOTE = 'https://testnet.api.hashira.io/quote';
 
-const PRIV = [
-  73,
-  87,
-  221,
-  5,
-  63,
-  180,
-  104,
-  26,
-  64,
-  41,
-  225,
-  50,
-  165,
-  84,
-  157,
-  74,
-  187,
-  105,
-  53,
-  112,
-  214,
-  236,
-  175,
-  55,
-  86,
-  247,
-  214,
-  120,
-  101,
-  90,
-  62,
-  178,
-  103,
-  156,
-  200,
-  13,
-  24,
-  181,
-  121,
-  93,
-  15,
-  85,
-  202,
-  164,
-  4,
-  30,
-  165,
-  77,
-  244,
-  66,
-  207,
-  78,
-  179,
-  255,
-  45,
-  233,
-  17,
-  131,
-  203,
-  187,
-  120,
-  110,
-  176,
-  172,
-];
+const config = loadTestConfig();
+const PRIV = config.SOLANA_PRIV;
 
 // Timeout constants
 const EXECUTE_TIMEOUT = 90 * 60 * 1000; //90 minutes
@@ -102,23 +35,22 @@ function setupGarden(
   const auth = Siwe.fromDigestKey(new Url(TEST_STAGE_AUTH), digestKey.val!);
 
   return new Garden({
-    environment: Environment.TESTNET,
-    digestKey: digestKey.val!,
+    environment: {
+      network: Network.TESTNET,
+    },
+    apiKey: config.API_KEY,
     htlc: {
       solana: new SolanaRelay(
         solanaProvider,
-        new Url(API.testnet.solanaRelay),
-        SolanaRelayerAddress.testnet,
+        new Url(API.testnet.evmRelay),
+        '6eksgdCnSjUaGQWZ6iYvauv1qzvYPF33RTGTM1ZuyENx',
+        {
+          native: '6eksgdCnSjUaGQWZ6iYvauv1qzvYPF33RTGTM1ZuyENx',
+          spl: '2WXpY8havGjfRxme9LUxtjFHTh1EfU3ur4v6wiK4KdNC',
+        },
+        auth,
       ),
     },
-    blockNumberFetcher: new BlockNumberFetcher(
-      TEST_BLOCKFETCHER_URL,
-      Environment.TESTNET,
-    ),
-    orderbook: new Orderbook(new Url(TEST_ORDERBOOK_STAGE)),
-    btcWallet: btcWallet,
-    quote: new Quote(TEST_STAGE_QUOTE),
-    auth: auth,
   });
 }
 
@@ -130,18 +62,16 @@ function setupGardenListeners(
   resolver: () => void,
   orderId?: string,
 ): void {
-  garden.on('error', (order: MatchedOrder, error: string) => {
-    console.log(
-      `❌ Error executing order ${order.create_order.create_id}: ${error}`,
-    );
+  garden.on('error', (order: Order, error: string) => {
+    console.log(`❌ Error executing order ${order.order_id}: ${error}`);
   });
 
-  garden.on('success', (order: MatchedOrder, action: string) => {
+  garden.on('success', (order: Order, action: string) => {
     console.log(
-      `✅ Successfully executed ${action} for order ${order.create_order.create_id}`,
+      `✅ Successfully executed ${action} for order ${order.order_id}`,
     );
     // If this is the order we're waiting for, or if we're not looking for a specific order
-    if (!orderId || order.create_order.create_id === orderId) {
+    if (!orderId || order.order_id === orderId) {
       resolver(); // Resolve the promise to end the test early
     }
   });
@@ -150,18 +80,16 @@ function setupGardenListeners(
     console.log(`📝 Log [${id}]: ${message}`);
   });
 
-  garden.on('onPendingOrdersChanged', (orders: MatchedOrder[]) => {
+  garden.on('onPendingOrdersChanged', (orders: Order[]) => {
     console.log(`⏳Pending orders: ${orders.length}`);
     orders.forEach((order) => {
-      console.log(`Pending order: ${order.create_order.create_id}`);
+      console.log(`Pending order: ${order.order_id}`);
     });
   });
 
-  garden.on('rbf', (order: MatchedOrder, result: unknown) => {
+  garden.on('rbf', (order: Order, result: unknown) => {
     console.log(
-      `🔄 RBF for order ${order.create_order.create_id}: ${JSON.stringify(
-        result,
-      )}`,
+      `🔄 RBF for order ${order.order_id}: ${JSON.stringify(result)}`,
     );
   });
 }
@@ -184,19 +112,6 @@ async function executeWithTimeout(
 
     // Setup the event listerns
     setupGardenListeners(garden, resolve, orderId);
-
-    // Stop the test after timeout
-    const timeout = setTimeout(() => {
-      console.log('Test execution timed out but continuing...');
-      resolveOnce();
-    }, timeoutMs);
-
-    // Calling exectue method
-    garden.execute().catch((error) => {
-      console.error('Error during garden execution:', error);
-      clearTimeout(timeout);
-      resolveOnce();
-    });
   });
 }
 
@@ -232,7 +147,7 @@ describe('==========SOL <--> BTC===========', () => {
 
   skip('SOL -> BTC Swap', () => {
     let garden: Garden;
-    let order: MatchedOrder;
+    let order: Order;
 
     const digestKeyRes = DigestKey.generateRandom();
 
@@ -248,8 +163,8 @@ describe('==========SOL <--> BTC===========', () => {
         //TODO: Get the exact amount and set to recieve amout
         // 1. Create Order
         const orderObj = {
-          fromAsset: SupportedAssets.testnet.solana_testnet_SOL,
-          toAsset: SupportedAssets.testnet.bitcoin_testnet_BTC,
+          fromAsset: SupportedAssets.testnet.solana_testnet.SOL,
+          toAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
           sendAmount: '59337016',
           receiveAmount: '8000',
           additionalData: {
@@ -263,11 +178,11 @@ describe('==========SOL <--> BTC===========', () => {
         expect(result.error).toBeFalsy();
         expect(result.val).toBeTruthy();
 
-        order = result.val!;
-        console.log('✅ Order created:', order.create_order.create_id);
+        // order = result.val!;
+        console.log('✅ Order created:', result.val);
 
         // 2. Execute order
-        await executeWithTimeout(garden, order.create_order.create_id);
+        await executeWithTimeout(garden, result.val);
       },
       CREATE_ORDER_TIMEOUT + EXECUTE_TIMEOUT,
     );
@@ -275,7 +190,7 @@ describe('==========SOL <--> BTC===========', () => {
 
   describe('BTC -> SOL Swap', () => {
     let garden: Garden;
-    let order: MatchedOrder;
+    let order: Order;
 
     const digestKeyRes = DigestKey.generateRandom();
 
@@ -289,8 +204,8 @@ describe('==========SOL <--> BTC===========', () => {
       'Should create, match and execute BTC -> SOL swap',
       async () => {
         const orderObj = {
-          fromAsset: SupportedAssets.testnet.bitcoin_testnet_BTC,
-          toAsset: SupportedAssets.testnet.solana_testnet_SOL,
+          fromAsset: SupportedAssets.testnet.bitcoin_testnet.BTC,
+          toAsset: SupportedAssets.testnet.solana_testnet.SOL,
           sendAmount: '10000',
           receiveAmount: '10000',
           additionalData: {
@@ -304,13 +219,10 @@ describe('==========SOL <--> BTC===========', () => {
         expect(result.error).toBeFalsy();
         expect(result.val).toBeTruthy();
 
-        order = result.val!;
-        console.log(
-          'Order created successfully:: ',
-          order.create_order.create_id,
-        );
+        // order = result.val!;
+        console.log('Order created successfully:: ', result.val);
 
-        await executeWithTimeout(garden, order.create_order.create_id);
+        await executeWithTimeout(garden, result.val);
       },
       CREATE_ORDER_TIMEOUT + EXECUTE_TIMEOUT,
     );

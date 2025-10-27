@@ -9,12 +9,25 @@ import {
   AsyncResult,
   Err,
   Fetcher,
+  IAuth,
   Ok,
   Url,
+  Network,
 } from '@gardenfi/utils';
 import { ISolanaHTLC } from '../htlc/ISolanaHTLC';
-import { isSolanaNativeToken, MatchedOrder } from '@gardenfi/orderbook';
-import { waitForSolanaTxConfirmation } from '../../utils';
+import {
+  isSolanaNativeToken,
+  Order,
+  SolanaOrderResponse,
+  isSolanaOrderResponse,
+  ChainAsset,
+  ChainAssetString,
+} from '@gardenfi/orderbook';
+import {
+  getAssetInfoFromOrder,
+  waitForSolanaTxConfirmation,
+} from '../../utils';
+import { SolanaRelayerAddress, solanaProgramAddress } from '../../constants';
 import * as Spl from '@solana/spl-token';
 
 /**
@@ -30,31 +43,53 @@ export class SolanaRelay implements ISolanaHTLC {
   private splProgram?: Program<SolanaSplSwaps>;
   private nativeProgram?: Program<SolanaNativeSwaps>;
   private relayer: web3.PublicKey;
+  private auth: IAuth;
 
   /**
    * Creates a new instance of SolanaRelay.
    * @param {AnchorProvider} provider - An abstraction of RPC connection and a Wallet
    * @param {Url} endpoint - API endpoint of the relayer node
-   * @param {string} relayer - On-chain address of the relayer in base58 format
-   * @param {string} splProgramAddress - On-chain address of the SPL token swap program
-   * @param {string} nativeProgramAddress - On-chain address of the native token swap program
+   * @param {Network} network - Chain network for selecting default relayer and program addresses
+   * @param {IAuth} auth - Auth provider for relayer endpoints
+   * @param {object} [overrides] - Optional overrides for relayer/program addresses
+   * @param {string} [overrides.relayer] - Custom relayer address (base58)
+   * @param {{native?: string; spl?: string}} [overrides.programAddress] - Custom program addresses
    * @throws {Error} If any required parameters are missing or invalid
    */
   constructor(
     private provider: AnchorProvider,
     private url: Url,
-    relayer: string,
-    programAddress: {
-      native?: string;
-      spl?: string;
+    network: Network,
+    auth: IAuth,
+    overrides?: {
+      relayer?: string;
+      programAddress?: {
+        native?: string;
+        spl?: string;
+      };
     },
   ) {
     if (!provider) throw new Error('Provider is required');
     if (!url) throw new Error('Endpoint URL is required');
-    if (!relayer) throw new Error('Relayer address is required');
+    if (network === undefined || network === null)
+      throw new Error('Network is required');
+
+    // Resolve defaults from constants based on network, allowing user overrides
+    const defaultPrograms =
+      network === Network.MAINNET
+        ? solanaProgramAddress.mainnet
+        : solanaProgramAddress.staging;
+
+    const resolvedPrograms = {
+      native: overrides?.programAddress?.native ?? defaultPrograms.native,
+      spl: overrides?.programAddress?.spl ?? defaultPrograms.spl,
+    };
+
+    const resolvedRelayer = overrides?.relayer ?? SolanaRelayerAddress[network];
 
     try {
-      this.relayer = new web3.PublicKey(relayer);
+      this.relayer = new web3.PublicKey(resolvedRelayer);
+      this.auth = auth;
     } catch (cause) {
       throw new Error(
         'Error decoding relayer public key. Ensure it is base58 encoded.',
@@ -63,24 +98,24 @@ export class SolanaRelay implements ISolanaHTLC {
     }
 
     // Initialize SPL program
-    const splIdlWithAddress = programAddress.spl
+    const splIdlWithAddress = resolvedPrograms.spl
       ? {
           ...rawSplIdl,
           metadata: {
             ...(rawSplIdl.metadata ?? {}),
           },
-          address: programAddress.spl,
+          address: resolvedPrograms.spl,
         }
       : undefined;
 
     // Initialize Native program
-    const nativeIdlWithAddress = programAddress.native
+    const nativeIdlWithAddress = resolvedPrograms.native
       ? {
           ...rawNativeIdl,
           metadata: {
             ...(rawNativeIdl.metadata ?? {}),
           },
-          address: programAddress.native,
+          address: resolvedPrograms.native,
         }
       : undefined;
 
@@ -118,16 +153,45 @@ export class SolanaRelay implements ISolanaHTLC {
   }
 
   /**
-   * Determines if the given order is for a native Solana token (SOL).
-   * @param {MatchedOrder} order - The matched order to check
-   * @returns {boolean} True if it's a native token, false if it's an SPL token
-   * @private
+   * Initiates a swap by creating a new swap account and locking funds.
+   * Automatically detects whether to use SPL or native token handling.
+   * @param {Order} order - The matched order containing swap details
+   * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
+   *   - Ok with the transaction ID on success
+   *   - Err with an error message on failure
    */
-  private isNativeToken(order: MatchedOrder): boolean {
-    return isSolanaNativeToken(
-      order.source_swap.chain,
-      order.source_swap.token_address,
-    );
+  async initiate(
+    order: Order | SolanaOrderResponse,
+  ): AsyncResult<string, string> {
+    if (!order) {
+      return Err('Order is required');
+    }
+
+    if (isSolanaOrderResponse(order)) {
+      return this.initiateWithCreateOrderResponse(order);
+    }
+
+    try {
+      const asset = ChainAsset.fromString(
+        order.source_swap.asset as ChainAssetString,
+      );
+      const isNative = isSolanaNativeToken(asset.chain, asset.symbol);
+
+      if (isNative) {
+        if (!this.nativeProgram)
+          return Err('Native program is not initialized');
+        return await this.initiateNativeSwap(order);
+      } else {
+        if (!this.splProgram) return Err('SPL program is not initialized');
+        return await this.initiateSplSwap(order);
+      }
+    } catch (error) {
+      return Err(
+        `Error initiating swap: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   /**
@@ -193,7 +257,7 @@ export class SolanaRelay implements ISolanaHTLC {
   /**
    * Initiates a swap directly via HTLC (without relayer).
    * @param {web3.Transaction} transaction - The transaction to send
-   * @param {MatchedOrder} order - The matched order
+   * @param {Order} order - The matched order
    * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
@@ -201,7 +265,7 @@ export class SolanaRelay implements ISolanaHTLC {
    */
   private async initiateViaHTLC(
     transaction: web3.Transaction,
-    order: MatchedOrder,
+    order: Order,
   ): AsyncResult<string, string> {
     if (!order) return Err('Order is required');
 
@@ -228,36 +292,14 @@ export class SolanaRelay implements ISolanaHTLC {
   }
 
   /**
-   * Creates a PDA (Program Derived Address) for the swap account.
-   * @param {Buffer} secretHash - The secret hash buffer
-   * @param {web3.PublicKey} programId - The program ID to use for PDA derivation
-   * @returns {web3.PublicKey} The derived PDA
-   * @private
-   */
-  private createSwapPDA(
-    secretHash: Buffer,
-    programId: web3.PublicKey,
-  ): web3.PublicKey {
-    const pdaSeeds = [
-      Buffer.from('swap_account'),
-      this.provider.publicKey.toBuffer(),
-      secretHash,
-    ];
-
-    return web3.PublicKey.findProgramAddressSync(pdaSeeds, programId)[0];
-  }
-
-  /**
    * Initiates a swap for SPL tokens.
-   * @param {MatchedOrder} order - The matched order containing swap details
+   * @param {Order} order - The matched order containing swap details
    * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
    * @private
    */
-  private async initiateSplSwap(
-    order: MatchedOrder,
-  ): AsyncResult<string, string> {
+  private async initiateSplSwap(order: Order): AsyncResult<string, string> {
     if (!this.splProgram) return Err('SPL program is not initialized');
     try {
       const { redeemer, secretHash, amount, expiresIn } =
@@ -271,7 +313,17 @@ export class SolanaRelay implements ISolanaHTLC {
         null,
       );
 
-      const mint = new web3.PublicKey(order.source_swap.token_address);
+      const assetInfo = await getAssetInfoFromOrder(
+        order.source_swap.asset,
+        this.url,
+      );
+
+      if (!assetInfo.ok) {
+        return Err(assetInfo.error);
+      }
+      const { tokenAddress } = assetInfo.val;
+
+      const mint = new web3.PublicKey(tokenAddress);
       const accounts = {
         initiator: this.provider.publicKey,
         mint,
@@ -283,7 +335,7 @@ export class SolanaRelay implements ISolanaHTLC {
       };
 
       const tx = await txBuilder.accounts(accounts).transaction();
-      return this.sendSplViaRelayer(tx, order.create_order.create_id);
+      return this.sendSplViaRelayer(tx, order.order_id);
     } catch (error) {
       return Err(
         `Error initiating SPL swap: ${
@@ -295,15 +347,13 @@ export class SolanaRelay implements ISolanaHTLC {
 
   /**
    * Initiates a swap for native tokens (SOL).
-   * @param {MatchedOrder} order - The matched order containing swap details
+   * @param {Order} order - The matched order containing swap details
    * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
    * @private
    */
-  private async initiateNativeSwap(
-    order: MatchedOrder,
-  ): AsyncResult<string, string> {
+  private async initiateNativeSwap(order: Order): AsyncResult<string, string> {
     if (!this.nativeProgram) return Err('Native program is not initialized');
     try {
       const { redeemer, secretHash, amount, expiresIn } =
@@ -324,76 +374,112 @@ export class SolanaRelay implements ISolanaHTLC {
     }
   }
 
-  /**
-   * Initiates a swap by creating a new swap account and locking funds.
-   * Automatically detects whether to use SPL or native token handling.
-   * @param {MatchedOrder} order - The matched order containing swap details
-   * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
-   *   - Ok with the transaction ID on success
-   *   - Err with an error message on failure
-   */
-  async initiate(order: MatchedOrder): AsyncResult<string, string> {
-    if (!order) {
-      return Err('Order is required');
+  private async initiateWithCreateOrderResponse(
+    order: SolanaOrderResponse,
+  ): AsyncResult<string, string> {
+    if (!this.relayer) {
+      return Err('No relayer address');
+    }
+    const { versioned_tx, versioned_tx_gasless } = order;
+
+    if (versioned_tx_gasless === null) {
+      try {
+        const buffer = Buffer.from(versioned_tx, 'base64');
+        const transaction = web3.VersionedTransaction.deserialize(buffer);
+
+        const txHash = await this.provider.sendAndConfirm(transaction);
+
+        const isConfirmed = await waitForSolanaTxConfirmation(
+          this.provider.connection,
+          txHash,
+        );
+        return isConfirmed
+          ? Ok(txHash)
+          : Err('Failed to initiate HTLC transaction');
+      } catch (err) {
+        return Err(`Error in non-gasless flow: ${err}`);
+      }
+    }
+
+    const headers = await this.auth.getAuthHeaders();
+    if (!headers.ok) {
+      return Err(headers.error);
     }
 
     try {
-      // Determine token type and route to appropriate handler
-      const isNative = this.isNativeToken(order);
-
-      if (isNative) {
-        if (!this.nativeProgram)
-          return Err('Native program is not initialized');
-        return await this.initiateNativeSwap(order);
-      } else {
-        if (!this.splProgram) return Err('SPL program is not initialized');
-        return await this.initiateSplSwap(order);
-      }
-    } catch (error) {
-      return Err(
-        `Error initiating swap: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+      const transaction = web3.VersionedTransaction.deserialize(
+        Buffer.from(versioned_tx_gasless, 'base64'),
       );
+
+      const signedTx = await this.provider.wallet.signTransaction(transaction);
+
+      const signatureBuffer = signedTx.signatures[0];
+      if (!signatureBuffer) {
+        return Err('No signature found after signing transaction');
+      }
+      const signatureBase64 = Buffer.from(signedTx.serialize()).toString(
+        'base64',
+      );
+
+      const res = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'initiate' }),
+        {
+          body: JSON.stringify({ signature: signatureBase64 }),
+          headers: {
+            ...headers.val,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (res.error) {
+        return Err(`Initiate: Error from relayer: ${res.error}`);
+      }
+
+      if (!res.result) {
+        return Err('Initiate: No transaction hash returned from relayer');
+      }
+
+      return Ok(res.result);
+    } catch (error) {
+      return Err(`Error initiating with create order response: ${error}`);
     }
   }
 
   /**
    * Redeems a swap by providing the secret.
-   * @param {MatchedOrder} order - Matched order object containing swap details
+   * @param {Order} order - Matched order object containing swap details
    * @param {string} secret - Secret key in hex format
    * @returns {Promise<AsyncResult<string, string>>} A promise that resolves to either:
    *   - Ok with the transaction ID on success
    *   - Err with an error message on failure
    */
-  async redeem(
-    order: MatchedOrder,
-    secret: string,
-  ): AsyncResult<string, string> {
+  async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
+      const headers = await this.auth.getAuthHeaders();
+      if (!headers.ok) return Err(headers.error);
+
       const _secret = validateSecret(secret);
-
-      const relayRequest = {
-        order_id: order.create_order.create_id,
-        secret: Buffer.from(_secret).toString('hex'),
-        // perform_on: 'destination',
-      };
-
-      const res: APIResponse<string> = await Fetcher.post(
-        this.url.endpoint('redeem'),
+      const res: APIResponse<string> = await Fetcher.patch<APIResponse<string>>(
+        this.url
+          .endpoint('/v2/orders')
+          .endpoint(order.order_id)
+          .addSearchParams({ action: 'redeem' }),
         {
-          body: JSON.stringify(relayRequest),
+          body: JSON.stringify({
+            secret: Buffer.from(_secret).toString('hex'),
+          }),
           headers: {
+            ...headers.val,
             'Content-Type': 'application/json',
           },
         },
       );
-      if (res.error) {
+      if (res.error || !res.result) {
         return Err(`Redeem: Error from relayer: ${res.error}`);
-      }
-
-      if (!res.result) {
-        return Err('Redeem: No transaction hash returned from relayer');
       }
 
       const txHash = res.result;
@@ -406,13 +492,12 @@ export class SolanaRelay implements ISolanaHTLC {
       return isConfirmed
         ? Ok(txHash)
         : Err('Redeem: Timed out waiting for confirmation');
-    } catch (e) {
-      console.error('Redeem: Caught exception:', e);
-      return Err(
-        `Error redeeming: ${e instanceof Error ? e.message : String(e)}`,
-      );
+    } catch (error) {
+      console.error('Redeem: Caught exception:', error);
+      return Err(`Error redeeming: ${error}`);
     }
   }
+
   /**
    * DO NOT CALL THIS FUNCTION. Refund is automatically taken care of by the relayer!
    * This method exists only to satisfy the ISolanaHTLC interface but is not intended for direct use.

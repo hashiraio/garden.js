@@ -1,202 +1,280 @@
-export type AssetCommon = {
-  name: string;
-  decimals: number;
-  symbol: string;
-  chain: Chain;
-  logo?: string;
-  atomicSwapAddress: string;
-};
+// import { Network } from '@gardenfi/utils';
+// import { CreateOrderRequest } from './orderbook/orderbook.types';
+// import { ChainAsset } from './chainAsset/chainAsset';
+// import {
+//   SOLSolanaLocalnetAsset,
+//   WBTCArbitrumLocalnetAsset,
+//   WBTCEthereumLocalnetAsset,
+//   bitcoinRegtestAsset,
+//   STRKStarknetLocalnetAsset,
+//   ETHStarknetLocalnetAsset,
+// } from './constants/localnetConstants';
 
-export type AssetToken = AssetCommon & {
-  tokenAddress: string;
-};
+// export type AssetCommon = {
+//   name: string;
+//   decimals: number;
+//   symbol: string;
+//   chain: Chain;
+//   logo?: string;
+//   atomicSwapAddress: string;
+// };
 
-export type Asset = AssetToken;
+// // export const ChainsConfig = {
+// //   bitcoin: {
+// //     type: BlockchainType.bitcoin,
+// //     network: Network.MAINNET,
+// //   },
+// //   bitcoin_testnet: {
+// //     type: BlockchainType.bitcoin,
+// //     network: Network.TESTNET,
+// //   },
+// //   bitcoin_regtest: {
+// //     type: BlockchainType.bitcoin,
+// //     network: Network.LOCALNET,
+// //   },
+// //   ethereum: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   base: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   arbitrum: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   ethereum_sepolia: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   arbitrum_localnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.LOCALNET,
+// //   },
+// //   arbitrum_sepolia: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   ethereum_localnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.LOCALNET,
+// //   },
+// //   base_sepolia: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   solana: {
+// //     type: BlockchainType.solana,
+// //     network: Network.MAINNET,
+// //   },
+// //   solana_testnet: {
+// //     type: BlockchainType.solana,
+// //     network: Network.TESTNET,
+// //   },
+// //   solana_localnet: {
+// //     type: BlockchainType.solana,
+// //     network: Network.LOCALNET,
+// //   },
+// //   bera_testnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   citrea_testnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   bera: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   monad_testnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   starknet: {
+// //     type: BlockchainType.starknet,
+// //     network: Network.MAINNET,
+// //   },
+// //   starknet_sepolia: {
+// //     type: BlockchainType.starknet,
+// //     network: Network.TESTNET,
+// //   },
+// //   starknet_devnet: {
+// //     type: BlockchainType.starknet,
+// //     network: Network.LOCALNET,
+// //   },
+// //   hyperliquid_testnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   hyperliquid: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   unichain: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   corn: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   botanix: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// //   bnbchain: { type: BlockchainType.evm, network: Network.MAINNET },
+// //   bnbchain_testnet: {
+// //     type: BlockchainType.evm,
+// //     network: Network.TESTNET,
+// //   },
+// //   sui: {
+// //     type: BlockchainType.sui,
+// //     network: Network.MAINNET,
+// //   },
+// //   sui_testnet: {
+// //     type: BlockchainType.sui,
+// //     network: Network.TESTNET,
+// //   },
+// //   core: {
+// //     type: BlockchainType.evm,
+// //     network: Network.MAINNET,
+// //   },
+// // } as const;
 
-export enum BlockchainType {
-  Bitcoin = 'Bitcoin',
-  EVM = 'EVM',
-  Solana = 'Solana',
-  Starknet = 'Starknet',
-  Sui = 'Sui',
-}
+// // export const Chains = Object.keys(ChainsConfig).reduce((acc, key) => {
+// //   acc[key as Chain] = key as Chain;
+// //   return acc;
+// // }, {} as Record<Chain, Chain>);
 
-export enum NetworkType {
-  mainnet = 'mainnet',
-  testnet = 'testnet',
-  localnet = 'localnet',
-}
+// // export type Chain = keyof typeof ChainsConfig;
 
-export type Network = {
-  [networkName: string]: {
-    chainId: number;
-    fillerAddresses: string[];
-    networkLogo: string;
-    explorer: string;
-    networkType: NetworkType;
-    assets?: Asset[];
-  };
-};
+// export type EvmChain = {
+//   [K in Chain]: (typeof ChainsConfig)[K] extends {
+//     type: BlockchainType.evm;
+//   }
+//     ? K
+//     : never;
+// }[Chain];
 
-export const Chains = {
-  bitcoin: 'bitcoin',
-  bitcoin_testnet: 'bitcoin_testnet',
-  bitcoin_regtest: 'bitcoin_regtest',
-  ethereum: 'ethereum',
-  base: 'base',
-  arbitrum: 'arbitrum',
-  ethereum_sepolia: 'ethereum_sepolia',
-  arbitrum_localnet: 'arbitrum_localnet',
-  arbitrum_sepolia: 'arbitrum_sepolia',
-  ethereum_localnet: 'ethereum_localnet',
-  base_sepolia: 'base_sepolia',
-  solana: 'solana',
-  solana_testnet: 'solana_testnet',
-  solana_localnet: 'solana_localnet',
-  bera_testnet: 'bera_testnet',
-  citrea_testnet: 'citrea_testnet',
-  bera: 'bera',
-  monad_testnet: 'monad_testnet',
-  starknet: 'starknet',
-  starknet_sepolia: 'starknet_sepolia',
-  starknet_devnet: 'starknet_devnet',
-  hyperliquid_testnet: 'hyperliquid_testnet',
-  hyperliquid: 'hyperliquid',
-  unichain: 'unichain',
-  corn: 'corn',
-  botanix: 'botanix',
-  bnbchain: 'bnbchain',
-  bnbchain_testnet: 'bnbchain_testnet',
-  sui: 'sui',
-  sui_testnet: 'sui_testnet',
-  core: 'core',
-} as const;
+// // export type ChainsByNetwork<T> = {
+// //   [K in Chain]: (typeof ChainsConfig)[K] extends {
+// //     network: T;
+// //   }
+// //     ? K
+// //     : never;
+// // }[Chain];
 
-export type Chain = keyof typeof Chains;
+// export type Assets = {
+//   [network in Network]: {
+//     [chain in ChainsByNetwork<network>]: {
+//       [symbol: string]: Asset;
+//     };
+//   };
+// };
 
-export type EvmChain = keyof Omit<
-  typeof Chains,
-  | 'bitcoin'
-  | 'bitcoin_testnet'
-  | 'bitcoin_regtest'
-  | 'solana'
-  | 'solana_testnet'
-  | 'solana_localnet'
-  | 'starknet'
-  | 'starknet_devnet'
-  | 'starknet_sepolia'
-  | 'sui'
-  | 'sui_testnet'
->;
+// export const isMainnet = (chain: Chain) =>
+//   ChainsConfig[chain].network === Network.MAINNET;
 
-export const isMainnet = (chain: Chain) => {
-  return !(
-    chain === Chains.ethereum_sepolia ||
-    chain === Chains.bitcoin_testnet ||
-    chain === Chains.bitcoin_regtest ||
-    chain === Chains.arbitrum_localnet ||
-    chain === Chains.ethereum_localnet ||
-    chain === Chains.arbitrum_sepolia ||
-    chain === Chains.base_sepolia ||
-    chain === Chains.solana_testnet ||
-    chain === Chains.solana_localnet ||
-    chain === Chains.bera_testnet ||
-    chain === Chains.citrea_testnet ||
-    chain === Chains.monad_testnet ||
-    chain === Chains.starknet_devnet ||
-    chain === Chains.starknet_sepolia ||
-    chain === Chains.hyperliquid_testnet ||
-    chain === Chains.bnbchain_testnet ||
-    chain === Chains.sui_testnet
-  );
-};
+// export const isBitcoin = (chain: Chain) =>
+//   ChainsConfig[chain].type === BlockchainType.bitcoin;
 
-export const isBitcoin = (chain: Chain) => {
-  return (
-    chain === Chains.bitcoin ||
-    chain === Chains.bitcoin_testnet ||
-    chain === Chains.bitcoin_regtest
-  );
-};
+// export const isEVM = (chain: Chain) =>
+//   ChainsConfig[chain].type === BlockchainType.evm;
 
-export const isEVM = (chain: Chain) => {
-  return (
-    chain === Chains.ethereum ||
-    chain === Chains.arbitrum ||
-    chain === Chains.ethereum_sepolia ||
-    chain === Chains.ethereum_localnet ||
-    chain === Chains.arbitrum_localnet ||
-    chain === Chains.arbitrum_sepolia ||
-    chain === Chains.base_sepolia ||
-    chain === Chains.base ||
-    chain === Chains.bera_testnet ||
-    chain === Chains.citrea_testnet ||
-    chain === Chains.bera ||
-    chain === Chains.monad_testnet ||
-    chain === Chains.hyperliquid_testnet ||
-    chain === Chains.hyperliquid ||
-    chain === Chains.unichain ||
-    chain === Chains.corn ||
-    chain === Chains.botanix ||
-    chain === Chains.bnbchain ||
-    chain === Chains.bnbchain_testnet ||
-    chain === Chains.core
-  );
-};
+// export const isSolana = (chain: Chain) =>
+//   ChainsConfig[chain].type === BlockchainType.solana;
 
-export const isSolana = (chain: Chain) => {
-  return (
-    chain === Chains.solana ||
-    chain === Chains.solana_testnet ||
-    chain === Chains.solana_localnet
-  );
-};
+// export const isStarknet = (chain: Chain) =>
+//   ChainsConfig[chain].type === BlockchainType.starknet;
 
-export const isStarknet = (chain: Chain) => {
-  return (
-    chain === Chains.starknet ||
-    chain === Chains.starknet_devnet ||
-    chain === Chains.starknet_sepolia
-  );
-};
+// export const isSui = (chain: Chain) =>
+//   ChainsConfig[chain].type === BlockchainType.sui;
 
-export const isSui = (chain: Chain) => {
-  return chain === Chains.sui || chain === Chains.sui_testnet;
-};
+// export const getBlockchainType = (chain: Chain) => ChainsConfig[chain].type;
 
-export const getBlockchainType = (chain: Chain) => {
-  if (isBitcoin(chain)) return BlockchainType.Bitcoin;
-  if (isEVM(chain)) return BlockchainType.EVM;
-  if (isSolana(chain)) return BlockchainType.Solana;
-  if (isStarknet(chain)) return BlockchainType.Starknet;
-  if (isSui(chain)) return BlockchainType.Sui;
-  throw new Error('Invalid or unsupported chain');
-};
+// export const NativeTokenAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
 
-export const NativeTokenAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+// export const NATIVE_TOKENS = {
+//   [BlockchainType.evm]: 'eth',
+//   [BlockchainType.solana]: 'sol',
+//   [BlockchainType.sui]: 'sui',
+// };
 
-export const isEvmNativeToken = (chain: Chain, tokenAddress: string) => {
-  return (
-    isEVM(chain) &&
-    tokenAddress.toLowerCase() === NativeTokenAddress.toLowerCase()
-  );
-};
+// //TODO: Change these
+// export const isEvmNativeToken = (chain: Chain, tokenAddress: string) => {
+//   return (
+//     isEVM(chain) &&
+//     tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.evm]
+//   );
+// };
 
-export const isSolanaNativeToken = (chain: Chain, tokenAddress: string) => {
-  return isSolana(chain) && tokenAddress.toLowerCase() === 'primary';
-};
+// export const isSolanaNativeToken = (chain: Chain, tokenAddress: string) => {
+//   return (
+//     isSolana(chain) &&
+//     tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.solana]
+//   );
+// };
 
-export const isSuiNativeToken = (chain: Chain, tokenAddress: string) => {
-  return isSui(chain) && tokenAddress.toLowerCase() === '0x2::sui::sui';
-};
+// export const isSuiNativeToken = (chain: Chain, tokenAddress: string) => {
+//   return (
+//     isSui(chain) &&
+//     tokenAddress.toLowerCase() === NATIVE_TOKENS[BlockchainType.sui]
+//   );
+// };
 
-export const isNativeToken = (asset: Asset) => {
-  return (
-    isEvmNativeToken(asset.chain, asset.tokenAddress) ||
-    isSolanaNativeToken(asset.chain, asset.tokenAddress) ||
-    isBitcoin(asset.chain) ||
-    isSuiNativeToken(asset.chain, asset.tokenAddress) ||
-    // Starknet doesn't have a native token
-    !isStarknet(asset.chain)
-  );
-};
+// export const isNativeToken = (asset: ChainAsset) => {
+//   const chain = asset.chain;
+//   const tokenAddress = asset.symbol;
+//   return (
+//     isEvmNativeToken(chain, tokenAddress) ||
+//     isSolanaNativeToken(chain, tokenAddress) ||
+//     isBitcoin(chain) ||
+//     isSuiNativeToken(chain, tokenAddress) ||
+//     // Starknet doesn't have a native token
+//     !isStarknet(chain)
+//   );
+// };
+
+// export const getChainsFromOrder = (
+//   order: CreateOrderRequest,
+// ): { sourceChain: Chain; destinationChain: Chain } => {
+//   const [sourceChain] = ChainAsset.from(order.source.asset).chain;
+//   const [destinationChain] = ChainAsset.from(order.destination.asset).chain;
+
+//   if (!(sourceChain in ChainsConfig)) {
+//     throw new Error(`Invalid source chain: ${sourceChain}`);
+//   }
+//   if (!(destinationChain in ChainsConfig)) {
+//     throw new Error(`Invalid destination chain: ${destinationChain}`);
+//   }
+
+//   return {
+//     sourceChain: sourceChain as Chain,
+//     destinationChain: destinationChain as Chain,
+//   };
+// };
+
+// /**
+//  * Determines the blockchain type from a formatted asset string.
+//  * @param assetChain - The formatted asset string (e.g., "bitcoin:btc", "ethereum:eth")
+//  * @returns The chain type as a string: "bitcoin", "evm", "solana", or "starknet"
+//  */
+// export const getChainTypeFromAssetChain = (
+//   assetChain: string,
+// ): BlockchainType => {
+//   const [chain] = assetChain.split(':');
+//   if (isBitcoin(chain as Chain)) return BlockchainType.bitcoin;
+//   if (isEVM(chain as Chain)) return BlockchainType.evm;
+//   if (isSolana(chain as Chain)) return BlockchainType.solana;
+//   if (isStarknet(chain as Chain)) return BlockchainType.starknet;
+//   if (isSui(chain as Chain)) return BlockchainType.sui;
+//   throw new Error('Invalid or unsupported chain');
+// };
+
+// /* ===== runtime builder ===== */
+
+// export const AssetsWithChain = buildAssetsWithChain(Config.mainnet);
+
+// console.log(AssetsWithChain.arbitrum.SEED.chain);

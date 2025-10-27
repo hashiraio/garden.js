@@ -19,7 +19,7 @@ import {
 import {
   ArbitrumLocalnet,
   EthereumLocalnet,
-  EvmChain,
+  EVMChains,
 } from '@gardenfi/orderbook';
 import { createWalletClient, custom, http, WalletClient } from 'viem';
 import { AsyncResult, Err, Ok } from '@gardenfi/utils';
@@ -104,7 +104,7 @@ export const hyperliquid: viemChain = {
   },
 };
 
-export const evmToViemChainMap: Record<EvmChain, viemChain> = {
+export const evmToViemChainMap: Record<EVMChains, viemChain> = {
   ethereum: mainnet,
   arbitrum: arbitrum,
   ethereum_sepolia: updatedSepolia,
@@ -127,6 +127,15 @@ export const evmToViemChainMap: Record<EvmChain, viemChain> = {
   bnbchain_testnet: bscTestnet,
 };
 
+export const getChainNameFromChainId = (chainId: number): EVMChains | null => {
+  for (const [chainName, viemChain] of Object.entries(evmToViemChainMap)) {
+    if (viemChain.id === chainId) {
+      return chainName as EVMChains;
+    }
+  }
+  return null;
+};
+
 /**
  * Switches or adds a network to the wallet
  * @param chain Garden supported chain
@@ -134,7 +143,7 @@ export const evmToViemChainMap: Record<EvmChain, viemChain> = {
  * @returns new walletClient with updated chain
  */
 export const switchOrAddNetwork = async (
-  chain: EvmChain,
+  chain: EVMChains,
   walletClient: WalletClient,
 ): AsyncResult<{ message: string; walletClient: WalletClient }, string> => {
   const chainID = evmToViemChainMap[chain];

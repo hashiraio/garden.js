@@ -39,6 +39,7 @@
     "bip39": "^3.1.0",
     "bitcoinjs-lib": "^6.1.5",
     "ecpair": "^2.1.0",
+    "node-cache": "^5.1.2",
     "starknet": "7.6.4",
     "tiny-secp256k1": "^2.2.3",
     "varuint-bitcoin": "^1.1.2",

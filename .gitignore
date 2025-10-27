@@ -1,4 +1,5 @@
 .env
+test.config.ts
 node_modules
 packages/*/dist/**/*
 .yarn
