@@ -68,8 +68,14 @@ export const GardenProvider: FC<GardenProviderProps> = ({
       try {
         const existing = store.getItem(PENDING_ORDERS_STORE);
         const ids: string[] = existing ? JSON.parse(existing) : [];
-        if (!ids.includes(order.val)) ids.push(order.val);
-        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(ids));
+        if (typeof order.val === 'string') {
+          if (!ids.includes(order.val)) ids.push(order.val);
+        } else if (order.val && typeof order.val.order_id === 'string') {
+          if (!ids.includes(order.val.order_id)) ids.push(order.val.order_id);
+        }
+
+        const uniqueIds = Array.from(new Set(ids));
+        store.setItem(PENDING_ORDERS_STORE, JSON.stringify(uniqueIds));
       } catch (e) {
         console.error('Failed to persist pending order id', e);
       }

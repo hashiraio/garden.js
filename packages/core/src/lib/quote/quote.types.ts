@@ -77,6 +77,10 @@ export type QuoteResponse = {
     value: string;
   };
   solver_id: string;
+  estimated_time: number;
+  slippage: number;
+  fee: number;
+  fixed_fee: string;
 };
 export type Strategies = Record<
   string,

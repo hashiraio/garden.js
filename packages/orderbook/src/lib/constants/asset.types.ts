@@ -1,5 +1,6 @@
 import { Network } from '@gardenfi/utils';
 import { Config } from './asset';
+import { ChainAsset } from '../chainAsset/chainAsset';
 
 export enum BlockchainType {
   bitcoin = 'bitcoin',
@@ -9,20 +10,24 @@ export enum BlockchainType {
   sui = 'sui',
 }
 
-export type AssetCommon = {
+export type AddressSchema = {
+  address: string;
+  schema: string | null;
+};
+
+export type Asset = {
+  id: ChainAsset | string;
   name: string;
-  decimals: number;
-  symbol: string;
   chain: Chain;
-  logo?: string;
-  atomicSwapAddress: string;
+  symbol: string;
+  icon?: string;
+  htlc: AddressSchema | null;
+  token: AddressSchema | null;
+  decimals: number;
+  min_amount?: string;
+  max_amount?: string;
+  price?: number;
 };
-
-export type AssetToken = AssetCommon & {
-  tokenAddress: string;
-};
-
-export type Asset = AssetToken;
 
 export type Chain = keyof typeof Config;
 

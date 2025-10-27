@@ -11,6 +11,7 @@ The Garden SDK is a set of typescript packages that allow you to bridge Bitcoin 
 - [`@gardenfi/orderbook`](./packages/orderbook/README.md) : Allows you to create orders and listen to them.
 - [`@gardenfi/core`](./packages/core/README.md) : Allows you to interact with orders once you setup your wallets.
 - [`@gardenfi/react-hooks`](./packages/react-hooks/README.md) :React context and hooks for integrating Garden SDK with your UI.
+- [`@gardenfi/swap`](./packages/swap/README.md) : React component for embedding a cross-chain swap UI in your dApp.
 
 ## Docs
 
@@ -24,6 +25,7 @@ Check out our [docs](https://docs.garden.finance/developers/sdk) to learn more a
 └── @gardenfi/orderbook
     └── @gardenfi/core
             └── @gardenfi/react-hooks
+                    └── @gardenfi/swap
 ```
 
 ## Getting Started
@@ -47,7 +49,9 @@ yarn workspace @gardenfi/<package_name> build
 #start development server
 yarn dev
 ```
+
 ## Usage
+
 To integrate the Garden SDK packages into your project based on your requirement, use the following command:
 
 ```bash
@@ -60,21 +64,21 @@ yarn add @gardenfi/<package_name>
 
 - Follow a consistent branch naming convention:
 
-    | Type | Purpose | Example |
-    |------|---------|---------|
-    | `feat/` | Introducing a new feature | feat/secret-manager |
-    | `fix/` | Bug fix or patch | fix/order-expiry-bug |
-    | `chore/` | Minor update, refactor, or cleanup | chore/update-readme |
+  | Type     | Purpose                            | Example              |
+  | -------- | ---------------------------------- | -------------------- |
+  | `feat/`  | Introducing a new feature          | feat/secret-manager  |
+  | `fix/`   | Bug fix or patch                   | fix/order-expiry-bug |
+  | `chore/` | Minor update, refactor, or cleanup | chore/update-readme  |
 
-    Test your updates locally to ensure everything works as expected.
+  Test your updates locally to ensure everything works as expected.
 
 - Commit and push changes
 
-    ```bash
-    git add .
-    git commit -m "<COMMIT_MSG>"
-    git push origin "<YOUR_BRANCH_NAME>"
-    ```
+  ```bash
+  git add .
+  git commit -m "<COMMIT_MSG>"
+  git push origin "<YOUR_BRANCH_NAME>"
+  ```
 
 - open a Pull Request to the `main` branch and fill in a clear description of your changes.
 

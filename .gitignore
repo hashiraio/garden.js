@@ -4,6 +4,7 @@ node_modules
 packages/*/dist/**/*
 .yarn
 .DS_Store
+test.config.ts
 
 **/*/tsconfig.tsbuildinfo
 

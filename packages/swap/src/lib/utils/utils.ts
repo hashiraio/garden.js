@@ -1,0 +1,120 @@
+import { Swap } from '@gardenfi/orderbook';
+import BigNumber from 'bignumber.js';
+import { ParsedAsset } from '../types/types';
+
+export const getDayDifference = (date: string) => {
+  const now = new Date();
+  const differenceInMs = now.getTime() - new Date(date).getTime();
+  const dayDifference = Math.floor(differenceInMs / (1000 * 3600 * 24));
+  const hourDifference = Math.floor(differenceInMs / (1000 * 3600));
+  const minuteDifference = Math.floor(differenceInMs / (1000 * 60));
+
+  if (dayDifference > 3) return `on ${new Date(date).toLocaleDateString()}`;
+  if (dayDifference > 0)
+    return `${dayDifference} day${dayDifference > 1 ? 's' : ''} ago`;
+  if (hourDifference > 0)
+    return `${hourDifference} hour${hourDifference > 1 ? 's' : ''} ago`;
+  if (minuteDifference > 0)
+    return `${minuteDifference} minute${minuteDifference > 1 ? 's' : ''} ago`;
+  return 'Just now';
+};
+
+export const getAssetFromSwap = (swap: Swap, assets: ParsedAsset[] | null) => {
+  return (
+    assets &&
+    assets.find(
+      (asset) => `${asset.chain}:${asset.symbol.toLowerCase()}` === swap.asset,
+    )
+  );
+};
+
+export const formatAmount = (
+  amount: string | number | bigint,
+  decimals: number,
+  toFixed?: number,
+) => {
+  const bigAmount = new BigNumber(amount);
+  if (bigAmount.isZero()) return 0;
+
+  const value = bigAmount.dividedBy(10 ** decimals);
+  const precision = toFixed ? toFixed : Number(value) > 10000 ? 2 : 4;
+  let temp = value.toFixed(precision, BigNumber.ROUND_DOWN);
+
+  while (
+    temp
+      .split('.')[1]
+      ?.split('')
+      .every((d) => d === '0') &&
+    temp.split('.')[1].length < 8
+  ) {
+    temp = value.toFixed(temp.split('.')[1].length + 2, BigNumber.ROUND_DOWN);
+  }
+
+  return Number(temp);
+};
+
+export const getTrimmedAddress = (address: string, start = 6, end = 4) => {
+  return `${address.slice(0, start)}...${address.slice(-end)}`;
+};
+
+export const formatTime = (totalSeconds: number | string): string => {
+  const sec = Number(totalSeconds);
+  if (isNaN(sec)) return '-';
+
+  const hours = Math.floor(sec / 3600);
+  const minutes = Math.floor((sec % 3600) / 60);
+  const seconds = (sec % 60).toFixed(0);
+
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`;
+};
+
+export const capitalizeChain = (chainKey: string) => {
+  if (chainKey === 'evm') return 'EVM';
+  return chainKey.charAt(0).toUpperCase() + chainKey.slice(1);
+};
+
+export function parseAssetId(assetId: string): {
+  chainKey: string;
+  symbol: string;
+} {
+  const parts = assetId.split(':');
+  if (parts.length < 2) {
+    return { chainKey: assetId, symbol: assetId.toUpperCase() };
+  }
+  const symbol = parts[parts.length - 1].toUpperCase();
+  const chainKey = parts.slice(0, parts.length - 1).join(':');
+  return { chainKey, symbol };
+}
+
+export function formatChainName(chainKey: string): string {
+  if (chainKey.includes(':')) {
+    const [name, tag] = chainKey.split(':');
+    const prettyName = capitalizeWords(name.replace(/[_-]/g, ' '));
+    if (!tag || /^[0-9]+$/.test(tag)) {
+      return prettyName;
+    }
+    return `${prettyName} ${capitalizeWords(tag.replace(/[_-]/g, ' '))}`;
+  }
+
+  const hasTestnet = /_testnet$/i.test(chainKey);
+  const base = chainKey.replace(/[_-]/g, ' ').replace(/_testnet$/i, '');
+  const prettyBase = capitalizeWords(base);
+  return hasTestnet ? `${prettyBase} Testnet` : prettyBase;
+}
+function capitalizeWords(input: string): string {
+  return input
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
+export const formatAmountUsd = (
+  amount: string | number | bigint,
+  decimals: number,
+) => {
+  const num = formatAmount(amount, decimals);
+  return Number(num).toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  });
+};

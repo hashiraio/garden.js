@@ -1,0 +1,70 @@
+{
+  "name": "@gardenfi/swap",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "dev": "vite build --watch",
+    "link": "yarn link"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "typings": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js",
+      "types": "./dist/src/index.d.ts"
+    },
+    "./style.css": "./dist/style.css",
+    "./dist/style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dependencies": {
+    "@gardenfi/core": "workspace:*",
+    "@gardenfi/garden-book": "0.2.2",
+    "@gardenfi/orderbook": "workspace:*",
+    "@gardenfi/react-hooks": "workspace:*",
+    "@gardenfi/utils": "workspace:*",
+    "@mysten/sui": "^1.37.2",
+    "@number-flow/react": "^0.5.9",
+    "@solana/web3.js": "^1.98.2",
+    "bignumber.js": "^9.1.2",
+    "bitcoinjs-lib": "^6.1.5",
+    "framer-motion": "^11.18.1",
+    "lodash.debounce": "^4.0.8",
+    "react-qr-code": "^2.0.15",
+    "starknet": "7.6.4",
+    "zustand": "^5.0.2"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/lodash.debounce": "^4",
+    "@types/react": "^18",
+    "@vitejs/plugin-react": "^5.0.3",
+    "autoprefixer": "^10.4.16",
+    "motion": "^12.23.15",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.6",
+    "vite-plugin-dts": "^3.7.3",
+    "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-wasm": "^3.5.0",
+    "vitest": "^1.6.0"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ]
+}

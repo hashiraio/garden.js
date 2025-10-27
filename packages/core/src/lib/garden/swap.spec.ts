@@ -123,23 +123,16 @@ Sui Wallet Address:      ${suiSigner.toSuiAddress()}
   describe.only('Should perform a swap', async () => {
     it.only('should create and execute a swap', async () => {
       setupEventListeners(garden);
-      const from = ChainAsset.from(Assets.ethereum_sepolia.WBTC);
-
-      const to = ChainAsset.from(Assets.base_sepolia.USDT);
+      const from = ChainAsset.from(Assets.bitcoin_testnet.BTC);
+      const to = ChainAsset.from(Assets.base_sepolia.WBTC);
       const sendAmount = 50000;
-      const quote = await garden.quote.getQuote(
-        from,
-        to,
-        sendAmount,
-        false,
-        {},
-      );
+      const quote = await garden.quote.getQuote(from, to, sendAmount, false);
 
       const recieveAmount = quote.val?.[0].destination.amount;
       if (!recieveAmount) console.log('error fetching quote');
       const order: SwapParams = {
-        fromAsset: from,
-        toAsset: to,
+        fromAsset: from.toString(),
+        toAsset: to.toString(),
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
         addresses: {

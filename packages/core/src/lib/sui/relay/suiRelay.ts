@@ -47,9 +47,10 @@ export class SuiRelay implements ISuiHTLC {
   }
 
   get htlcActorAddress(): string {
-    return 'accounts' in this.account
-      ? this.account.accounts[0].address
-      : this.account.toSuiAddress();
+    if ('accounts' in this.account) {
+      return this.account.accounts?.[0]?.address ?? '';
+    }
+    return this.account.toSuiAddress();
   }
 
   // ---------------------- INITIATE ----------------------

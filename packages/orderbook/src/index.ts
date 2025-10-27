@@ -4,8 +4,6 @@ export type * from './lib/orderbook/orderbook.types';
 export { BlockchainType } from './lib/constants/asset.types';
 export type {
   Asset,
-  AssetCommon,
-  AssetToken,
   BitcoinChains,
   Chain,
   ChainsByBlockchainType,
@@ -42,3 +40,16 @@ export {
   isDeadlinePassed,
   parseAction,
 } from './lib/orderStatus/orderStatus';
+
+export { AssetManager } from './lib/assetManager/AssetManager';
+export type {
+  ApiChainData,
+  ApiChainsResponse,
+  AssetManagerState,
+  BaseChainData,
+  ChainData,
+  FiatResponse,
+} from './lib/assetManager/types';
+
+export { RouteValidator } from './lib/assetManager/routeValidator/routeValidator';
+export type { RoutePolicy } from './lib/assetManager/routeValidator/routeValidator';

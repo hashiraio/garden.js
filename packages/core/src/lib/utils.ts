@@ -348,17 +348,12 @@ export const withDefaultAffiliateFees = (
  *
  * @param blockchainType
  * @param htlcs
- * @param addresses
  * @returns
  */
 export const getAddresses = async (
   blockchainType: BlockchainType,
   htlcs: GardenHTLCModules,
 ) => {
-  // if (addresses && addresses[blockchainType]) {
-  //   return Ok(addresses[blockchainType]!);
-  // }
-
   switch (blockchainType) {
     case BlockchainType.evm:
       if (!htlcs.evm)
@@ -419,6 +414,10 @@ export const validateHTLCForSwap = async (
     [BlockchainType.sui]: { htlc: htlcs.sui, name: 'Sui' },
     [BlockchainType.bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
   };
+
+  if (blockchainType === BlockchainType.bitcoin) {
+    return Ok(undefined);
+  }
 
   const entry = htlcMap[blockchainType];
   if (!entry) {

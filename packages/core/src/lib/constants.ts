@@ -4,7 +4,6 @@ import { Environment, Network } from '@gardenfi/utils';
 export type Api = {
   baseurl: string;
   auth: string;
-  info: string;
   relayer: string;
 };
 
@@ -12,19 +11,16 @@ export const API: Record<Environment, Api> = {
   mainnet: {
     baseurl: 'https://api.garden.finance',
     auth: 'https://api.garden.finance/auth',
-    info: 'https://api.garden.finance/info',
     relayer: 'https://relayer.garden.finance',
   },
   testnet: {
     baseurl: 'https://testnet.api.garden.finance',
     auth: 'https://testnet.api.garden.finance/auth',
-    info: 'https://testnet.api.garden.finance/info',
     relayer: 'https://testnet.api.garden.finance/relayer',
   },
   localnet: {
     baseurl: '',
     auth: '',
-    info: '',
     relayer: '',
   },
 } as const;

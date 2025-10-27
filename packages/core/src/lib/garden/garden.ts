@@ -45,8 +45,9 @@ import { resolveApiKey, resolveDigestKey } from './utils';
 import { Executor } from './executor/executor';
 
 import {
-  getAddresses,
+  isValidBitcoinPubKey,
   resolveApiConfig,
+  toXOnly,
   validateAmount,
   validateHTLCForSwap,
   withDefaultAffiliateFees,
@@ -86,6 +87,7 @@ export class Garden extends Orderbook implements IGardenJS {
 
   constructor(config: GardenConfigWithHTLCs) {
     const { api, network } = resolveApiConfig(config.environment);
+    if (!api) throw new Error('API Key not found');
     super(new Url(api.baseurl));
     this.network = network;
     this._api = api;
@@ -228,7 +230,9 @@ export class Garden extends Orderbook implements IGardenJS {
    * @param params SwapParams
    * @returns AsyncResult<Order, string>
    */
-  async createSwap(params: SwapParams): AsyncResult<string, string> {
+  async createSwap(
+    params: SwapParams,
+  ): AsyncResult<CreateOrderResponse | string, string> {
     const blockchainType = ChainAsset.from(params.fromAsset).blockchainType;
     const htlcValidation = await validateHTLCForSwap(
       blockchainType,
@@ -298,6 +302,8 @@ export class Garden extends Orderbook implements IGardenJS {
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
         }
         break;
+      case BlockchainType.bitcoin:
+        return Ok(createOrderResponse);
       default:
         return Err(`Unsupported blockchain type for swap initiation`);
     }
@@ -408,15 +414,15 @@ export class Garden extends Orderbook implements IGardenJS {
         );
     }
 
-    const sendAddress = await getAddresses(
+    const sendAddress = await this._getAddresses(
       fromAsset.blockchainType,
-      this._htlcs,
+      params.addresses,
     );
     if (!sendAddress.ok) return Err(sendAddress.error);
 
-    const receiveAddress = await getAddresses(
+    const receiveAddress = await this._getAddresses(
       toAsset.blockchainType,
-      this._htlcs,
+      params.addresses,
     );
     if (!receiveAddress.ok) return Err(receiveAddress.error);
 
@@ -426,6 +432,55 @@ export class Garden extends Orderbook implements IGardenJS {
       fromAsset: fromAsset,
       toAsset: toAsset,
     });
+  }
+
+  private async _getAddresses(
+    blockchainType: BlockchainType,
+    addresses?: Partial<Record<BlockchainType, string>>,
+  ) {
+    if (this._redeemServiceEnabled && addresses && addresses[blockchainType]) {
+      return Ok(addresses[blockchainType]);
+    }
+
+    switch (blockchainType) {
+      case BlockchainType.evm:
+        if (!this._htlcs.evm)
+          return Err(
+            'Please provide evmHTLC when initializing garden or pass EVM address in SwapParams',
+          );
+        return Ok(this._htlcs.evm.htlcActorAddress);
+      case BlockchainType.bitcoin: {
+        const pubKey = this._htlcs.bitcoin?.getPublicKey;
+        if (!pubKey || !isValidBitcoinPubKey(pubKey))
+          return Err(
+            'Invalid btc public key or pass Bitcoin address in SwapParams',
+          );
+        return Ok(toXOnly(pubKey));
+      }
+      case BlockchainType.solana: {
+        if (!this._htlcs.solana)
+          return Err(
+            'Please provide solanaHTLC when initializing garden or pass Solana address in SwapParams',
+          );
+        return Ok(this._htlcs.solana.htlcActorAddress);
+      }
+      case BlockchainType.starknet: {
+        if (!this._htlcs.starknet)
+          return Err(
+            'Please provide starknetHTLC when initializing garden or pass Starknet address in SwapParams',
+          );
+        return Ok(this._htlcs.starknet.htlcActorAddress);
+      }
+      case BlockchainType.sui: {
+        if (!this._htlcs.sui)
+          return Err(
+            'Please provide suiHTLC when initializing garden or pass Sui address in SwapParams',
+          );
+        return Ok(this._htlcs.sui.htlcActorAddress);
+      }
+      default:
+        return Err('Unsupported chain');
+    }
   }
 
   on<K extends keyof GardenEvents>(event: K, listener: GardenEvents[K]) {

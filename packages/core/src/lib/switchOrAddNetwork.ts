@@ -104,6 +104,27 @@ export const hyperliquid: viemChain = {
   },
 };
 
+export const alpenTestnet: viemChain = {
+  id: 2892,
+  name: 'Alpen Network',
+  nativeCurrency: {
+    name: 'Signet bitcoin',
+    symbol: 'sBTC',
+    decimals: 18,
+  },
+  blockExplorers: {
+    default: {
+      name: 'Alpen Explorer',
+      url: 'https://explorer.testnet.alpenlabs.io',
+    },
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc.testnet.alpenlabs.io/'],
+    },
+  },
+};
+
 export const evmToViemChainMap: Record<EVMChains, viemChain> = {
   ethereum: mainnet,
   arbitrum: arbitrum,
@@ -125,6 +146,9 @@ export const evmToViemChainMap: Record<EVMChains, viemChain> = {
   botanix: botanixMainnet,
   bnbchain: bsc,
   bnbchain_testnet: bscTestnet,
+  alpen_testnet: alpenTestnet,
+  hypercore: {} as viemChain,
+  hypercore_testnet: {} as viemChain,
 };
 
 export const getChainNameFromChainId = (chainId: number): EVMChains | null => {

@@ -11,6 +11,7 @@ import {
   SolanaOrderResponse,
   StarknetOrderResponse,
   SuiOrderResponse,
+  CreateOrderResponse,
 } from '@gardenfi/orderbook';
 import { ApiKey, AsyncResult, IAuth, Network } from '@gardenfi/utils';
 import { ISecretManager } from '../secretManager/secretManager.types';
@@ -91,7 +92,9 @@ export interface IGardenJS extends IOrderbook {
    * @param {SwapParams} params - The parameters for creating the order.
    * @returns {AsyncResult<string, string>} The result of the swap operation.
    */
-  createSwap(params: SwapParams): AsyncResult<string, string>;
+  createSwap(
+    params: SwapParams,
+  ): AsyncResult<CreateOrderResponse | string, string>;
 
   /**
    * The current quote.
