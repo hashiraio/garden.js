@@ -278,6 +278,20 @@ export class EvmRelay implements IEVMHTLC {
         console.log('Approval transaction completed:', approvalResult.val);
       }
 
+      if (this.wallet.key === 'emailWallet') {
+        const tx = order.initiate_transaction;
+        // Non gas-less initiate
+        const initiateResult = await this.wallet.sendTransaction({
+          account: this.wallet.account,
+          to: with0x(tx.to),
+          value: BigInt(tx.value),
+          data: with0x(tx.data),
+          gas: BigInt(tx.gas_limit),
+          chain: this.wallet.chain,
+        });
+        return Ok(initiateResult);
+      }
+
       // Erc20 Initiate with Approval
       const { typed_data } = order;
 

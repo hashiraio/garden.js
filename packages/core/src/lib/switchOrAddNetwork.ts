@@ -181,6 +181,8 @@ export const switchOrAddNetwork = async (
       const newWalletClient = createWalletClient({
         account: walletClient.account,
         chain: chainID,
+        key: walletClient.key,
+        name: walletClient.name,
         transport: custom(walletClient.transport),
       });
 
@@ -199,6 +201,8 @@ export const switchOrAddNetwork = async (
             const newWalletClient = createWalletClient({
               account: walletClient.account,
               chain: chainID,
+              key: walletClient.key,
+              name: walletClient.name,
               transport: custom(walletClient.transport),
             });
 
@@ -216,6 +220,8 @@ export const switchOrAddNetwork = async (
           const newWalletClient = createWalletClient({
             account: walletClient.account,
             chain: chainID,
+            key: walletClient.key,
+            name: walletClient.name,
             transport: http(),
           });
           return Ok({
