@@ -78,6 +78,7 @@ export type CreateOrderRequest = {
     delegate: string | null;
     amount: string;
   };
+  solver_id: string;
   slippage?: number;
   secret_hash?: string;
   nonce: number;
