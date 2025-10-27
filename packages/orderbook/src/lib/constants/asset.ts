@@ -501,6 +501,39 @@ export const Config = {
       },
     },
   },
+  alpen_testnet: {
+    type: BlockchainType.evm,
+    network: Network.TESTNET,
+    sBTC: {
+      id: 'alpen_testnet:sbtc',
+      name: 'Signet Bitcoin',
+      symbol: 'sBTC',
+      decimals: 18,
+      icon: 'https://avatars.githubusercontent.com/u/113091135',
+      chain: 'evm:2892',
+      htlc: {
+        address: '0x39269522737a4a155F78EC1B1BDb86288c1Fcf67',
+        schema: 'evm:htlc',
+      },
+      token: null,
+    },
+    USDC: {
+      id: 'alpen_testnet:usdc',
+      name: 'USD Coin',
+      symbol: 'USDC',
+      decimals: 6,
+      icon: 'https://garden.imgix.net/token-images/usdc.svg',
+      chain: 'evm:2892',
+      htlc: {
+        address: '0x45b0d0c85bEb4512610fC2627CCB1587A7a044d4',
+        schema: 'evm:htlc_erc20',
+      },
+      token: {
+        address: '0x9753D0481fC7e18797877B4e731B496439c849dE',
+        schema: 'evm:erc20',
+      },
+    },
+  },
   bitcoin: {
     type: BlockchainType.bitcoin,
     network: Network.MAINNET,
