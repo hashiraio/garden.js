@@ -17,7 +17,7 @@ export type AddressSchema = {
 };
 
 export type Asset = {
-  id: ChainAsset;
+  id: ChainAsset | string;
   name: string;
   chain: Chain;
   symbol: string;

@@ -35,6 +35,7 @@ type SwapState = {
   rate: number;
   networkFees: number;
   btcAddress: string;
+  solverId: string;
   isSwapping: boolean;
   isApproving: boolean;
   showBtcAddress: boolean;
@@ -81,6 +82,7 @@ type SwapState = {
   clear: () => void;
   clearSwapInputState: () => void;
   setActiveTab: (activeTab: Tab) => void;
+  setSolverId: (solverId: string) => void;
 };
 
 export const BTC = {
@@ -116,6 +118,7 @@ export const swapStore = create<SwapState>((set) => ({
   inputAsset: BTC,
   inputAmount: '',
   outputAmount: '',
+  solverId: '',
   rate: 0,
   networkFees: 0,
   btcAddress: '',
@@ -154,6 +157,9 @@ export const swapStore = create<SwapState>((set) => ({
   maxCostSaved: 0,
   currentNetwork: DEFAULT_NETWORK,
   activeTab: tabs.swap,
+  setSolverId: (solverId) => {
+    set({ solverId });
+  },
   setCurrentNetwork: (network) =>
     set({
       currentNetwork: network,

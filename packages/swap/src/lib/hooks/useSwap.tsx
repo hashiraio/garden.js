@@ -51,6 +51,8 @@ export const useSwap = () => {
     setBtcAddress,
     setIsComparisonVisible,
     currentNetwork,
+    setSolverId,
+    solverId,
   } = swapStore();
   const { balances } = assetInfoStore();
   const { setIsOpen, setOrder } = orderInProgressStore();
@@ -215,6 +217,7 @@ export const useSwap = () => {
           const quoteAmount = isExactOut
             ? quote.val[0].source.display
             : quote.val[0].destination.display;
+          setSolverId(quote.val[0].solver_id);
           // Add network fee to output amount before calculating rate
           let outputAmountWithFee = Number(quoteAmount);
           if (fromAsset.symbol === 'USDC' && toAsset.symbol === 'USDC') {
@@ -402,6 +405,7 @@ export const useSwap = () => {
         toAsset: outputAsset,
         sendAmount: inputAmountInDecimals,
         receiveAmount: outputAmountInDecimals,
+        solverId: solverId,
         ...(isBitcoinSwap && { addresses: { bitcoin: btcAddress } }),
       });
       if (!res.ok) {

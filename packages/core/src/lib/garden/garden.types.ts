@@ -51,6 +51,10 @@ export type SwapParams = {
    */
   receiveAmount: string;
   /**
+   * Solver ID for the order.
+   */
+  solverId: string;
+  /**
    * Slippage for the order.
    */
   slippage?: number;

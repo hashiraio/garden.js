@@ -149,6 +149,7 @@ Tron Wallet Address:     ${tronWallet.defaultAddress?.base58}
         toAsset: to.toString(),
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
+        solverId: quote.val?.[0].solver_id || '',
         addresses: {
           bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
@@ -195,6 +196,7 @@ Tron Wallet Address:     ${tronWallet.defaultAddress?.base58}
         toAsset: to,
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount ? recieveAmount : '',
+        solverId: quote.val?.[0].solver_id || '',
         addresses: {
           bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },
@@ -239,6 +241,7 @@ Tron Wallet Address:     ${tronWallet.defaultAddress?.base58}
         toAsset: from,
         sendAmount: sendAmount.toString(),
         receiveAmount: recieveAmount?.toString() ?? '',
+        solverId: quote.val?.[0].solver_id || '',
         addresses: {
           bitcoin: 'tb1qxtztdl8qn24axe7dnvp75xgcns6pl5ka9tzjru',
         },

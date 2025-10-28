@@ -2,17 +2,16 @@ import { describe, it } from 'vitest';
 import { AssetManager } from './AssetManager';
 
 describe('AssetManager initialization', () => {
-  const TEST_URL = 'https://testnet.api.garden.finance';
+  const TEST_URL = 'https://api.garden.finance';
   const TEST_API_KEY =
-    'f242ea49332293424c96c562a6ef575a819908c878134dcb4fce424dc84ec796';
+    '963ebcf89e26bd7d41c9adef039dd167584c371fb24f11f8adf1df0c7de3340f';
   const assetManager = new AssetManager(TEST_URL, TEST_API_KEY);
 
   it('should initialize the asset manager', async () => {
     await assetManager.initialize();
-    await assetManager.fetchAndSetAssetsAndChains();
-    const allAssets = assetManager.allAssets;
-    const allchains = assetManager.allChains;
-    console.log('allAssets', allAssets);
+    const allchains = assetManager.chains;
+    const allAssets = assetManager.assets;
     console.log('allchains', allchains);
+    console.log('allAssets', Object.keys(allAssets!).length);
   });
 });
