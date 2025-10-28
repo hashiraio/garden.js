@@ -509,14 +509,14 @@ export const Config = {
       name: 'Tether USD',
       symbol: 'USDT',
       decimals: 6,
-      icon: 'https://garden.imgix.net/token-images/usdt.svg',
-      chain: 'tron:1',
+      icon: 'https://garden.imgix.net/assets/TetherIcon.svg',
+      chain: 'tron:2494104990',
       htlc: {
-        address: '0x0000000000000000000000000000000000000000',
+        address: 'TQa4rN2Vayesv5vmMAXzP5QA1PnPwD46w6',
         schema: 'tron:htlc_erc20',
       },
       token: {
-        address: '0x0000000000000000000000000000000000000000',
+        address: 'TDg6r1BXkxWbmXXvHWweqdpUY9qPhgUJsC',
         schema: 'tron:erc20',
       },
     },
