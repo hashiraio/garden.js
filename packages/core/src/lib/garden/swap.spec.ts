@@ -139,7 +139,7 @@ Tron Wallet Address:     ${tronWallet.defaultAddress?.base58}
       setupEventListeners(garden);
       const from = ChainAsset.from('tron_shasta:usdt');
       const to = ChainAsset.from('arbitrum_sepolia:WBTC');
-      const sendAmount = 107973822;
+      const sendAmount = 10000000;
       const quote = await garden.quote.getQuote(from, to, sendAmount, false);
 
       const recieveAmount = quote.val?.[0].destination.amount;
