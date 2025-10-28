@@ -1044,6 +1044,7 @@ export const isBitcoin = is(BlockchainType.bitcoin);
 export const isSolana = is(BlockchainType.solana);
 export const isStarknet = is(BlockchainType.starknet);
 export const isSui = is(BlockchainType.sui);
+export const isTron = is(BlockchainType.tron);
 
 export const getBlockchainType = (chain: Chain) => Config[chain].type;
 
