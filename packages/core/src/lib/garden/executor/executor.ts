@@ -246,6 +246,7 @@ export class Executor {
       [BlockchainType.starknet]: () => this.starknetRedeem(order, secret),
       [BlockchainType.solana]: () => this.solRedeem(order, secret),
       [BlockchainType.sui]: () => this.suiRedeem(order, secret),
+      [BlockchainType.tron]: () => this.tronRedeem(order, secret),
     } as const;
 
     const handler =
@@ -384,6 +385,43 @@ export class Executor {
     }
 
     const res = await this.htlcs.sui.redeem(order, secret);
+
+    if (res.error) {
+      this.events.emit('error', order, res.error);
+
+      if (res.error.includes('Order already redeemed')) {
+        this.#cacheManager.setOrderExecution(
+          order,
+          OrderAction.Redeem,
+          order.destination_swap.redeem_tx_hash,
+        );
+      }
+      return;
+    }
+
+    if (res.val) {
+      this.#cacheManager.setOrderExecution(order, OrderAction.Redeem, res.val);
+      this.events.emit('success', order, OrderAction.Redeem, res.val);
+    }
+  }
+
+  private async tronRedeem(order: Order, secret: string) {
+    this.events.emit('log', order.order_id, 'executing tron redeem');
+    const cache = this.#cacheManager.getOrderExecution(
+      order,
+      OrderAction.Redeem,
+    );
+    if (cache) {
+      this.events.emit('log', order.order_id, 'already redeemed');
+      return;
+    }
+
+    if (!this.htlcs.tron) {
+      this.events.emit('error', order, 'Tron HTLC is required');
+      return;
+    }
+
+    const res = await this.htlcs.tron.redeem(order, secret);
 
     if (res.error) {
       this.events.emit('error', order, res.error);
