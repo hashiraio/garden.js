@@ -5,10 +5,11 @@ import {
 } from '@gardenfi/orderbook';
 import { AsyncResult, Err, IAuth, Network, Ok, Url } from '@gardenfi/utils';
 import { ITronHTLC } from '../tronHTLC.types';
-import { redeemOrderThroughRelayer } from '../../utils';
+import { getAssetInfoFromOrder, redeemOrderThroughRelayer } from '../../utils';
 import { TronWeb } from 'tronweb';
 import { Adapter } from '@tronweb3/tronwallet-abstract-adapter';
-import { tronHtlcAbi } from '../abi/tronHtlcABI';
+// import { tronHtlcAbi } from '../abi/tronHtlcABI';
+import { toBytes32Hex } from '../utils';
 
 export type TronRelayOptions = {
   fullHost: string;
@@ -16,7 +17,6 @@ export type TronRelayOptions = {
   adapter?: Adapter;
   solidityNode?: string;
   eventServer?: string;
-  htlcContractAddress?: string;
 };
 
 export class TronRelay implements ITronHTLC {
@@ -24,6 +24,7 @@ export class TronRelay implements ITronHTLC {
   private auth: IAuth;
   private tronweb: TronWeb;
   private options: TronRelayOptions;
+  private network: Network;
 
   constructor(
     relayerUrl: string | Url,
@@ -31,10 +32,10 @@ export class TronRelay implements ITronHTLC {
     auth: IAuth,
     options: TronRelayOptions,
   ) {
-    console.log(network);
     this.url =
       typeof relayerUrl === 'string' ? new Url(relayerUrl) : relayerUrl;
     this.auth = auth;
+    this.network = network;
     this.tronweb = new TronWeb({
       fullHost: options.fullHost,
       ...(options.solidityNode ? { solidityNode: options.solidityNode } : {}),
@@ -47,9 +48,8 @@ export class TronRelay implements ITronHTLC {
   get htlcActorAddress(): string {
     if (this.options.adapter) {
       const address = this.options.adapter.address;
-      if (!address) {
-        return '';
-      }
+      if (!address) return '';
+
       return address;
     }
 
@@ -57,9 +57,7 @@ export class TronRelay implements ITronHTLC {
       const address = this.tronweb.address.fromPrivateKey(
         this.options.privateKey,
       );
-      if (!address) {
-        return '';
-      }
+      if (!address) return '';
       return address;
     }
 
@@ -74,7 +72,82 @@ export class TronRelay implements ITronHTLC {
     if (isTronOrderResponse(order)) {
       return this.initiateDirectContractCall(order);
     }
-    return Ok(order.order_id);
+    try {
+      const { source_swap } = order;
+
+      const amount = BigInt(source_swap.amount);
+      const solverAddress = source_swap.redeemer;
+      const secretHash = source_swap.secret_hash;
+      const timelock = source_swap.timelock;
+      const destinationData = '0x';
+
+      const assetInfo = await getAssetInfoFromOrder(
+        source_swap.asset,
+        this.url,
+      );
+
+      if (!assetInfo.ok) {
+        return Err(assetInfo.error);
+      }
+
+      const { htlcAddress } = assetInfo.val;
+      // add allowance check and approve allowance if needed.
+
+      const transaction =
+        await this.tronweb.transactionBuilder.triggerSmartContract(
+          htlcAddress,
+          'initiate(address,uint256,uint256,bytes32,bytes)',
+          {},
+          [
+            { type: 'address', value: solverAddress },
+            { type: 'uint256', value: timelock },
+            { type: 'uint256', value: amount },
+            {
+              type: 'bytes32',
+              value: toBytes32Hex(String(secretHash)),
+            },
+            { type: 'bytes', value: destinationData },
+          ],
+          this.htlcActorAddress,
+        );
+
+      if (!transaction || !transaction.transaction) {
+        return Err('Failed to build initiate transaction');
+      }
+
+      let signedTx;
+      if (this.options.adapter) {
+        signedTx = await this.options.adapter.signTransaction(
+          transaction.transaction,
+        );
+      } else if (this.options.privateKey) {
+        signedTx = await this.tronweb.trx.sign(
+          transaction.transaction,
+          this.options.privateKey,
+        );
+      } else {
+        return Err('No signing method available (no adapter or private key)');
+      }
+
+      // Broadcast the transaction
+      const broadcastResult = await this.tronweb.trx.sendRawTransaction(
+        signedTx,
+      );
+
+      if (!broadcastResult.result) {
+        return Err(
+          String(broadcastResult.message) ||
+            String(broadcastResult.code) ||
+            'Transaction broadcast failed',
+        );
+      }
+
+      const txid = broadcastResult.txid;
+      console.log('Transaction successful, txid:', txid);
+      return Ok(txid);
+    } catch (error) {
+      return Err(`Failed to initiate: ${String(error)}`);
+    }
   }
 
   /**
@@ -123,7 +196,7 @@ export class TronRelay implements ITronHTLC {
         { type: 'address', value: redeemer },
         { type: 'uint256', value: timelock },
         { type: 'uint256', value: amount },
-        { type: 'bytes32', value: secretHash },
+        { type: 'bytes32', value: toBytes32Hex(String(secretHash)) },
         { type: 'bytes', value: destinationData || '0x' },
       ];
 
