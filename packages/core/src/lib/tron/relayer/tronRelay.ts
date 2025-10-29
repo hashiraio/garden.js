@@ -8,6 +8,7 @@ import { ITronHTLC } from '../tronHTLC.types';
 import { redeemOrderThroughRelayer } from '../../utils';
 import { TronWeb } from 'tronweb';
 import { Adapter } from '@tronweb3/tronwallet-abstract-adapter';
+import { tronHtlcAbi } from '../abi/tronHtlcABI';
 
 export type TronRelayOptions = {
   fullHost: string;
@@ -100,92 +101,70 @@ export class TronRelay implements ITronHTLC {
       );
     }
 
+    if (!order.typed_data?.message) {
+      return Err('No typed data message found in order response');
+    }
+
     const {
       to: contractAddress,
-      data: callData,
       value,
       gas_limit,
     } = order.initiate_transaction;
 
+    const { redeemer, timelock, amount, secretHash, destinationData } =
+      order.typed_data.message;
+
     try {
-      // Parse the calldata to extract function parameters
-      // Function signature: initiate(address,uint256,uint256,bytes32,bytes)
-      // 0x4ede0ab7 is the function selector for initiate
+      const callValue = value ? parseInt(value) : 0;
+      const feeLimit = parseInt(gas_limit);
 
-      // const functionSelector = callData.slice(0, 10); // 0x4ede0ab7
-      const params = callData.slice(10); // Remove function selector
+      // Build the transaction using transactionBuilder
+      const parameter = [
+        { type: 'address', value: redeemer },
+        { type: 'uint256', value: timelock },
+        { type: 'uint256', value: amount },
+        { type: 'bytes32', value: secretHash },
+        { type: 'bytes', value: destinationData || '0x' },
+      ];
 
-      // Decode parameters (each is 32 bytes = 64 hex chars)
-      // Parameter 1: token address (offset 0-64)
-      const tokenHex = params.slice(24, 64); // Skip padding, get address
-      const tokenAddress = this.tronweb.address.fromHex('41' + tokenHex);
+      const options = {
+        feeLimit,
+        callValue,
+      };
 
-      // Parameter 2: amount (offset 64-128)
-      const amountHex = '0x' + params.slice(64, 128);
+      const transaction =
+        await this.tronweb.transactionBuilder.triggerSmartContract(
+          contractAddress,
+          'initiate(address,uint256,uint256,bytes32,bytes)',
+          options,
+          parameter,
+          this.htlcActorAddress,
+        );
 
-      // Parameter 3: timelock (offset 128-192)
-      const timelockHex = '0x' + params.slice(128, 192);
-
-      // Parameter 4: secretHash (offset 192-256)
-      const secretHashHex = '0x' + params.slice(192, 256);
-
-      // Parameter 5: destinationData offset (offset 256-320)
-      // const destinationDataOffsetHex = '0x' + params.slice(256, 320);
-
-      // Parameter 6: destinationData length (offset 320-384)
-      // const destinationDataLengthHex = '0x' + params.slice(320, 384);
-
-      // Since destinationData is empty (length = 0), we don't need to read further
-      const destinationData = '0x';
-
-      console.log('[initiateDirectContractCall] Decoded parameters:', {
-        tokenAddress,
-        amount: amountHex,
-        timelock: timelockHex,
-        secretHash: secretHashHex,
-        destinationData,
-      });
-
-      // Build transaction using triggerSmartContract with proper parameters
-      const tx = await this.tronweb.transactionBuilder.triggerSmartContract(
-        this.tronweb.address.toHex(contractAddress),
-        'initiate(address,uint256,uint256,bytes32,bytes)',
-        {
-          feeLimit: parseInt(gas_limit),
-          callValue: value ? parseInt(value) : 0,
-        },
-        [
-          { type: 'address', value: tokenAddress },
-          { type: 'uint256', value: amountHex },
-          { type: 'uint256', value: timelockHex },
-          { type: 'bytes32', value: secretHashHex },
-          { type: 'bytes', value: destinationData },
-        ],
-        this.tronweb.address.toHex(this.htlcActorAddress),
-      );
-
-      if (!tx || !tx.transaction) {
+      if (!transaction || !transaction.transaction) {
         return Err('Failed to build initiate transaction');
       }
 
       // Sign the transaction
       let signedTx;
       if (this.options.adapter) {
-        console.log('[initiateDirectContractCall] Signing with adapter');
-        signedTx = await this.options.adapter.signTransaction(tx.transaction);
+        signedTx = await this.options.adapter.signTransaction(
+          transaction.transaction,
+        );
       } else if (this.options.privateKey) {
-        console.log('[initiateDirectContractCall] Signing with private key');
         signedTx = await this.tronweb.trx.sign(
-          tx.transaction,
+          transaction.transaction,
           this.options.privateKey,
         );
       } else {
         return Err('No signing method available (no adapter or private key)');
       }
 
+      // Broadcast the transaction
       const broadcastResult = await this.tronweb.trx.sendRawTransaction(
         signedTx,
       );
+
       if (!broadcastResult.result) {
         return Err(
           String(broadcastResult.message) ||
@@ -196,7 +175,6 @@ export class TronRelay implements ITronHTLC {
 
       const txid = broadcastResult.txid;
       console.log('Transaction successful, txid:', txid);
-
       return Ok(txid);
     } catch (e) {
       return Err(`Direct contract call failed: ${String(e)}`);
@@ -246,6 +224,7 @@ export class TronRelay implements ITronHTLC {
     order: EvmOrderResponse,
   ): AsyncResult<string, string> {
     console.log('No Allowance found, Executing Approval');
+
     if (!this.htlcActorAddress || this.htlcActorAddress === '') {
       return Err('No HTLC actor address found');
     }
@@ -256,57 +235,75 @@ export class TronRelay implements ITronHTLC {
     }
 
     try {
-      // Decode the function selector and parameters from the data
-      // 0x095ea7b3 is the approve(address,uint256) function selector
-      const functionSelector = approvalTx.data.slice(0, 10);
-      const parameter = '0x' + approvalTx.data.slice(10);
+      // Decode the parameters from the data
+      const dataWithoutSelector = '0x' + approvalTx.data.slice(10); // Remove function selector but keep 0x prefix
 
-      // Parse the spender address and amount from the parameter
-      // First 32 bytes (64 chars) is the spender address
-      // Next 32 bytes (64 chars) is the amount
-      const spenderHex = parameter.slice(2, 66); // Remove 0x and get first 64 chars
-      const amountHex = parameter.slice(66, 130); // Get next 64 chars
-
-      // Convert hex address to Tron address
-      const spenderAddress = this.tronweb.address.fromHex(
-        '41' + spenderHex.slice(24),
+      const params = this.tronweb.utils.abi.decodeParams(
+        ['spender', 'amount'],
+        ['address', 'uint256'],
+        dataWithoutSelector,
+        false,
       );
 
-      // Call approve function
-      const tx = await this.tronweb.transactionBuilder.triggerSmartContract(
-        this.tronweb.address.toHex(approvalTx.to),
-        functionSelector,
-        {
-          feeLimit: Number(approvalTx.gas_limit),
-          callValue: 0,
-        },
-        [
-          { type: 'address', value: spenderAddress },
-          { type: 'uint256', value: '0x' + amountHex },
-        ],
-        this.tronweb.address.toHex(this.htlcActorAddress),
-      );
+      const spenderAddress = params.spender;
+      const amount = params.amount.toString();
 
-      if (!tx || !tx.transaction) {
+      console.log('[executeApprovalTransaction] Decoded approval:', {
+        spender: spenderAddress,
+        amount: amount.toString(),
+        tokenContract: approvalTx.to,
+      });
+
+      // Build the transaction using transactionBuilder
+      const parameter = [
+        { type: 'address', value: spenderAddress },
+        { type: 'uint256', value: amount },
+      ];
+
+      const options = {
+        feeLimit: Number(approvalTx.gas_limit),
+        callValue: 0,
+      };
+
+      const transaction =
+        await this.tronweb.transactionBuilder.triggerSmartContract(
+          approvalTx.to,
+          'approve(address,uint256)',
+          options,
+          parameter,
+          this.htlcActorAddress,
+        );
+
+      if (!transaction || !transaction.transaction) {
         return Err('Failed to build approval transaction');
       }
 
-      // Sign & Broadcast
+      // Sign the transaction
       let signedTx;
       if (this.options.adapter) {
-        signedTx = await this.options.adapter.signTransaction(tx.transaction);
-      } else {
+        signedTx = await this.options.adapter.signTransaction(
+          transaction.transaction,
+        );
+      } else if (this.options.privateKey) {
         signedTx = await this.tronweb.trx.sign(
-          tx.transaction,
+          transaction.transaction,
           this.options.privateKey,
         );
+      } else {
+        return Err('No signing method available (no adapter or private key)');
       }
 
+      // Broadcast the transaction
       const broadcast = await this.tronweb.trx.sendRawTransaction(signedTx);
 
       if (!broadcast.result) {
-        return Err(broadcast.message || 'Broadcast failed');
+        return Err(
+          String(broadcast.message) ||
+            String(broadcast.code) ||
+            'Approval broadcast failed',
+        );
       }
+
       console.log('Approval transaction successful, txid:', broadcast.txid);
       return Ok(broadcast.txid);
     } catch (e) {
