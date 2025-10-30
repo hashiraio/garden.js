@@ -23,6 +23,7 @@ export const useOrderbook = (garden: IGardenJS | undefined, store: IStore) => {
         garden.htlcs?.solana?.htlcActorAddress,
         garden.htlcs?.starknet?.htlcActorAddress,
         garden.htlcs?.bitcoin?.htlcActorAddress,
+        garden.htlcs?.tron?.htlcActorAddress,
       ].filter((addr): addr is string => !!addr && addr.length > 0);
 
       syncAddresses.forEach((addr) => addressSet.add(addr.toLowerCase()));
