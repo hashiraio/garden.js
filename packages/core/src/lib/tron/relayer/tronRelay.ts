@@ -11,54 +11,46 @@ import { Adapter } from '@tronweb3/tronwallet-abstract-adapter';
 import { toBytes32Hex } from '../utils';
 import { TRON_CONFIG } from '../../constants';
 
-export type TronRelayOptions = {
-  fullHost?: string;
-  privateKey?: string;
-  adapter?: Adapter;
-  solidityNode?: string;
-  eventServer?: string;
-};
-
 export class TronRelay implements ITronHTLC {
   private url: Url;
   private auth: IAuth;
   private tronweb: TronWeb;
-  private options: TronRelayOptions;
+  private wallet: { privateKey?: string; adapter?: Adapter };
 
   constructor(
     relayerUrl: string | Url,
     network: Network,
     auth: IAuth,
-    options: TronRelayOptions,
+    wallet: string | Adapter,
   ) {
     this.url =
       typeof relayerUrl === 'string' ? new Url(relayerUrl) : relayerUrl;
     this.auth = auth;
+
+    const normalized =
+      typeof wallet === 'string'
+        ? { privateKey: wallet }
+        : { adapter: wallet as Adapter };
+
     this.tronweb = new TronWeb({
-      fullHost: options.fullHost ?? TRON_CONFIG[network],
-      ...(options.solidityNode ? { solidityNode: options.solidityNode } : {}),
-      ...(options.eventServer ? { eventServer: options.eventServer } : {}),
-      ...(options.privateKey ? { privateKey: options.privateKey } : {}),
+      fullHost: TRON_CONFIG[network],
+      ...(normalized.privateKey ? { privateKey: normalized.privateKey } : {}),
     });
-    this.options = options;
+    this.wallet = normalized;
   }
 
   get htlcActorAddress(): string {
-    if (this.options.adapter?.address) {
-      return this.options.adapter.address;
-    }
+    if (this.wallet.adapter?.address) return this.wallet.adapter.address;
 
-    if (this.options.privateKey) {
-      return this.tronweb.address.fromPrivateKey(this.options.privateKey) || '';
-    }
+    if (this.wallet.privateKey)
+      return this.tronweb.address.fromPrivateKey(this.wallet.privateKey) || '';
 
     return this.tronweb.defaultAddress?.base58 || '';
   }
 
   async initiate(order: Order | EvmOrderResponse): AsyncResult<string, string> {
-    if (isTronOrderResponse(order)) {
+    if (isTronOrderResponse(order))
       return this.initiateDirectContractCall(order);
-    }
 
     try {
       const { source_swap } = order;
@@ -67,9 +59,7 @@ export class TronRelay implements ITronHTLC {
         this.url,
       );
 
-      if (!assetInfo.ok) {
-        return Err(assetInfo.error);
-      }
+      if (!assetInfo.ok) return Err(assetInfo.error);
 
       const { htlcAddress } = assetInfo.val;
 
@@ -96,16 +86,12 @@ export class TronRelay implements ITronHTLC {
   private async initiateDirectContractCall(
     order: EvmOrderResponse,
   ): AsyncResult<string, string> {
-    if (!this.htlcActorAddress) {
-      return Err('No HTLC actor address found');
-    }
+    if (!this.htlcActorAddress) return Err('No HTLC actor address found');
 
     // Execute approval transaction if present
     if (order.approval_transaction) {
       const approvalResult = await this.executeApprovalTransaction(order);
-      if (approvalResult.error) {
-        return Err(approvalResult.error);
-      }
+      if (approvalResult.error) return Err(approvalResult.error);
     }
 
     if (!order.initiate_transaction) {
@@ -114,9 +100,8 @@ export class TronRelay implements ITronHTLC {
       );
     }
 
-    if (!order.typed_data?.message) {
+    if (!order.typed_data?.message)
       return Err('No typed data message found in order response');
-    }
 
     const {
       to: contractAddress,
@@ -148,14 +133,10 @@ export class TronRelay implements ITronHTLC {
   ): AsyncResult<string, string> {
     console.log('No Allowance found, Executing Approval');
 
-    if (!this.htlcActorAddress) {
-      return Err('No HTLC actor address found');
-    }
+    if (!this.htlcActorAddress) return Err('No HTLC actor address found');
 
     const approvalTx = order.approval_transaction;
-    if (!approvalTx) {
-      return Ok('No approval transaction required');
-    }
+    if (!approvalTx) return Ok('No approval transaction required');
 
     try {
       const dataWithoutSelector = '0x' + approvalTx.data.slice(10);
@@ -208,15 +189,11 @@ export class TronRelay implements ITronHTLC {
           this.htlcActorAddress,
         );
 
-      if (!transaction?.transaction) {
-        return Err('Failed to build transaction');
-      }
+      if (!transaction?.transaction) return Err('Failed to build transaction');
 
       // Sign transaction
       const signedTx = await this.signTransaction(transaction.transaction);
-      if (signedTx.error) {
-        return Err(signedTx.error);
-      }
+      if (signedTx.error) return Err(signedTx.error);
 
       // Broadcast transaction
       const broadcastResult = await this.tronweb.trx.sendRawTransaction(
@@ -242,21 +219,19 @@ export class TronRelay implements ITronHTLC {
    * Unified signing method
    */
   private async signTransaction(transaction: any): AsyncResult<any, string> {
-    if (this.options.adapter) {
+    const { adapter, privateKey } = this.wallet;
+    if (adapter) {
       try {
-        const signed = await this.options.adapter.signTransaction(transaction);
+        const signed = await adapter.signTransaction(transaction);
         return Ok(signed);
       } catch (e) {
         return Err(`Adapter signing failed: ${String(e)}`);
       }
     }
 
-    if (this.options.privateKey) {
+    if (privateKey) {
       try {
-        const signed = await this.tronweb.trx.sign(
-          transaction,
-          this.options.privateKey,
-        );
+        const signed = await this.tronweb.trx.sign(transaction, privateKey);
         return Ok(signed);
       } catch (e) {
         return Err(`Private key signing failed: ${String(e)}`);
@@ -302,7 +277,7 @@ export class TronRelay implements ITronHTLC {
       }
     }
 
-    throw new Error('Transaction confirmation timeout');
+    return Err('Transaction confirmation timeout');
   }
 
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
@@ -312,9 +287,9 @@ export class TronRelay implements ITronHTLC {
       this.auth,
       this.url,
     );
-    if (redeemResult.error) {
-      return Err(redeemResult.error);
-    }
+
+    if (redeemResult.error) return Err(redeemResult.error);
+
     return Ok(redeemResult.val!);
   }
 

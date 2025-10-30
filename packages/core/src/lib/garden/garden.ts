@@ -180,11 +180,7 @@ export class Garden extends Orderbook implements IGardenJS {
             ? new BitcoinHTLC(config.wallets.bitcoin, network)
             : undefined,
           tron: config.wallets.tron
-            ? new TronRelay(api.baseurl, network, apiKey, {
-                ...(typeof config.wallets.tron === 'string'
-                  ? { privateKey: config.wallets.tron }
-                  : { adapter: config.wallets.tron }),
-              })
+            ? new TronRelay(api.baseurl, network, apiKey, config.wallets.tron)
             : undefined,
         }
       : {};
