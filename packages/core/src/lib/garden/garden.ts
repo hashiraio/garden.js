@@ -181,7 +181,6 @@ export class Garden extends Orderbook implements IGardenJS {
             : undefined,
           tron: config.wallets.tron
             ? new TronRelay(api.baseurl, network, apiKey, {
-                fullHost: 'https://api.shasta.trongrid.io',
                 ...(typeof config.wallets.tron === 'string'
                   ? { privateKey: config.wallets.tron }
                   : { adapter: config.wallets.tron }),

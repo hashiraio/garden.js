@@ -69,6 +69,7 @@ export class Executor {
       this.htlcs.solana?.htlcActorAddress,
       this.htlcs.starknet?.htlcActorAddress,
       this.htlcs.bitcoin?.htlcActorAddress,
+      this.htlcs.tron?.htlcActorAddress,
     ].filter((addr): addr is string => !!addr && addr.length > 0);
 
     syncAddresses.forEach((addr) => addressSet.add(addr.toLowerCase()));

@@ -8,11 +8,11 @@ import { ITronHTLC } from '../tronHTLC.types';
 import { getAssetInfoFromOrder, redeemOrderThroughRelayer } from '../../utils';
 import { TronWeb } from 'tronweb';
 import { Adapter } from '@tronweb3/tronwallet-abstract-adapter';
-// import { tronHtlcAbi } from '../abi/tronHtlcABI';
 import { toBytes32Hex } from '../utils';
+import { TRON_CONFIG } from '../../constants';
 
 export type TronRelayOptions = {
-  fullHost: string;
+  fullHost?: string;
   privateKey?: string;
   adapter?: Adapter;
   solidityNode?: string;
@@ -24,7 +24,6 @@ export class TronRelay implements ITronHTLC {
   private auth: IAuth;
   private tronweb: TronWeb;
   private options: TronRelayOptions;
-  private network: Network;
 
   constructor(
     relayerUrl: string | Url,
@@ -35,9 +34,8 @@ export class TronRelay implements ITronHTLC {
     this.url =
       typeof relayerUrl === 'string' ? new Url(relayerUrl) : relayerUrl;
     this.auth = auth;
-    this.network = network;
     this.tronweb = new TronWeb({
-      fullHost: options.fullHost,
+      fullHost: options.fullHost ?? TRON_CONFIG[network],
       ...(options.solidityNode ? { solidityNode: options.solidityNode } : {}),
       ...(options.eventServer ? { eventServer: options.eventServer } : {}),
       ...(options.privateKey ? { privateKey: options.privateKey } : {}),
@@ -46,41 +44,24 @@ export class TronRelay implements ITronHTLC {
   }
 
   get htlcActorAddress(): string {
-    if (this.options.adapter) {
-      const address = this.options.adapter.address;
-      if (!address) return '';
-
-      return address;
+    if (this.options.adapter?.address) {
+      return this.options.adapter.address;
     }
 
     if (this.options.privateKey) {
-      const address = this.tronweb.address.fromPrivateKey(
-        this.options.privateKey,
-      );
-      if (!address) return '';
-      return address;
+      return this.tronweb.address.fromPrivateKey(this.options.privateKey) || '';
     }
 
-    const defaultAddr = this.tronweb.defaultAddress?.base58;
-    if (defaultAddr) {
-      return defaultAddr;
-    }
-    return '';
+    return this.tronweb.defaultAddress?.base58 || '';
   }
 
   async initiate(order: Order | EvmOrderResponse): AsyncResult<string, string> {
     if (isTronOrderResponse(order)) {
       return this.initiateDirectContractCall(order);
     }
+
     try {
       const { source_swap } = order;
-
-      const amount = BigInt(source_swap.amount);
-      const solverAddress = source_swap.redeemer;
-      const secretHash = source_swap.secret_hash;
-      const timelock = source_swap.timelock;
-      const destinationData = '0x';
-
       const assetInfo = await getAssetInfoFromOrder(
         source_swap.asset,
         this.url,
@@ -91,72 +72,31 @@ export class TronRelay implements ITronHTLC {
       }
 
       const { htlcAddress } = assetInfo.val;
-      // add allowance check and approve allowance if needed.
 
-      const transaction =
-        await this.tronweb.transactionBuilder.triggerSmartContract(
-          htlcAddress,
-          'initiate(address,uint256,uint256,bytes32,bytes)',
-          {},
-          [
-            { type: 'address', value: solverAddress },
-            { type: 'uint256', value: timelock },
-            { type: 'uint256', value: amount },
-            {
-              type: 'bytes32',
-              value: toBytes32Hex(String(secretHash)),
-            },
-            { type: 'bytes', value: destinationData },
-          ],
-          this.htlcActorAddress,
-        );
-
-      if (!transaction || !transaction.transaction) {
-        return Err('Failed to build initiate transaction');
-      }
-
-      let signedTx;
-      if (this.options.adapter) {
-        signedTx = await this.options.adapter.signTransaction(
-          transaction.transaction,
-        );
-      } else if (this.options.privateKey) {
-        signedTx = await this.tronweb.trx.sign(
-          transaction.transaction,
-          this.options.privateKey,
-        );
-      } else {
-        return Err('No signing method available (no adapter or private key)');
-      }
-
-      // Broadcast the transaction
-      const broadcastResult = await this.tronweb.trx.sendRawTransaction(
-        signedTx,
-      );
-
-      if (!broadcastResult.result) {
-        return Err(
-          String(broadcastResult.message) ||
-            String(broadcastResult.code) ||
-            'Transaction broadcast failed',
-        );
-      }
-
-      const txid = broadcastResult.txid;
-      console.log('Transaction successful, txid:', txid);
-      return Ok(txid);
+      return await this.executeContractCall({
+        contractAddress: htlcAddress,
+        method: 'initiate(address,uint256,uint256,bytes32,bytes)',
+        parameters: [
+          { type: 'address', value: source_swap.redeemer },
+          { type: 'uint256', value: source_swap.timelock },
+          { type: 'uint256', value: BigInt(source_swap.amount) },
+          {
+            type: 'bytes32',
+            value: toBytes32Hex(String(source_swap.secret_hash)),
+          },
+          { type: 'bytes', value: '0x' },
+        ],
+        options: {},
+      });
     } catch (error) {
       return Err(`Failed to initiate: ${String(error)}`);
     }
   }
 
-  /**
-   * NEW METHOD: Direct contract call for initiate without relayer signature
-   */
   private async initiateDirectContractCall(
     order: EvmOrderResponse,
   ): AsyncResult<string, string> {
-    if (!this.htlcActorAddress || this.htlcActorAddress === '') {
+    if (!this.htlcActorAddress) {
       return Err('No HTLC actor address found');
     }
 
@@ -183,59 +123,104 @@ export class TronRelay implements ITronHTLC {
       value,
       gas_limit,
     } = order.initiate_transaction;
-
     const { redeemer, timelock, amount, secretHash, destinationData } =
       order.typed_data.message;
 
-    try {
-      const callValue = value ? parseInt(value) : 0;
-      const feeLimit = parseInt(gas_limit);
-
-      // Build the transaction using transactionBuilder
-      const parameter = [
+    return await this.executeContractCall({
+      contractAddress,
+      method: 'initiate(address,uint256,uint256,bytes32,bytes)',
+      parameters: [
         { type: 'address', value: redeemer },
         { type: 'uint256', value: timelock },
         { type: 'uint256', value: amount },
         { type: 'bytes32', value: toBytes32Hex(String(secretHash)) },
-        { type: 'bytes', value: destinationData || '0x' },
-      ];
+        { type: 'bytes', value: destinationData },
+      ],
+      options: {
+        feeLimit: parseInt(gas_limit),
+        callValue: value ? parseInt(value) : 0,
+      },
+    });
+  }
 
-      const options = {
-        feeLimit,
-        callValue,
-      };
+  private async executeApprovalTransaction(
+    order: EvmOrderResponse,
+  ): AsyncResult<string, string> {
+    console.log('No Allowance found, Executing Approval');
 
+    if (!this.htlcActorAddress) {
+      return Err('No HTLC actor address found');
+    }
+
+    const approvalTx = order.approval_transaction;
+    if (!approvalTx) {
+      return Ok('No approval transaction required');
+    }
+
+    try {
+      const dataWithoutSelector = '0x' + approvalTx.data.slice(10);
+      const params = this.tronweb.utils.abi.decodeParams(
+        ['spender', 'amount'],
+        ['address', 'uint256'],
+        dataWithoutSelector,
+        false,
+      );
+
+      return await this.executeContractCall({
+        contractAddress: approvalTx.to,
+        method: 'approve(address,uint256)',
+        parameters: [
+          { type: 'address', value: params.spender },
+          { type: 'uint256', value: params.amount.toString() },
+        ],
+        options: {
+          feeLimit: Number(approvalTx.gas_limit),
+          callValue: 0,
+        },
+      });
+    } catch (e) {
+      return Err(`Approval transaction failed: ${String(e)}`);
+    }
+  }
+
+  /**
+   * Unified method to execute contract calls with signing and broadcasting
+   */
+  private async executeContractCall({
+    contractAddress,
+    method,
+    parameters,
+    options,
+  }: {
+    contractAddress: string;
+    method: string;
+    parameters: Array<{ type: string; value: any }>;
+    options: { feeLimit?: number; callValue?: number };
+  }): AsyncResult<string, string> {
+    try {
+      // Build transaction
       const transaction =
         await this.tronweb.transactionBuilder.triggerSmartContract(
           contractAddress,
-          'initiate(address,uint256,uint256,bytes32,bytes)',
+          method,
           options,
-          parameter,
+          parameters,
           this.htlcActorAddress,
         );
 
-      if (!transaction || !transaction.transaction) {
-        return Err('Failed to build initiate transaction');
+      if (!transaction?.transaction) {
+        return Err('Failed to build transaction');
       }
 
-      // Sign the transaction
-      let signedTx;
-      if (this.options.adapter) {
-        signedTx = await this.options.adapter.signTransaction(
-          transaction.transaction,
-        );
-      } else if (this.options.privateKey) {
-        signedTx = await this.tronweb.trx.sign(
-          transaction.transaction,
-          this.options.privateKey,
-        );
-      } else {
-        return Err('No signing method available (no adapter or private key)');
+      // Sign transaction
+      const signedTx = await this.signTransaction(transaction.transaction);
+      if (signedTx.error) {
+        return Err(signedTx.error);
       }
 
-      // Broadcast the transaction
+      // Broadcast transaction
       const broadcastResult = await this.tronweb.trx.sendRawTransaction(
-        signedTx,
+        signedTx.val!,
       );
 
       if (!broadcastResult.result) {
@@ -246,12 +231,39 @@ export class TronRelay implements ITronHTLC {
         );
       }
 
-      const txid = broadcastResult.txid;
-      console.log('Transaction successful, txid:', txid);
-      return Ok(txid);
+      console.log('Transaction successful, txid:', broadcastResult.txid);
+      return Ok(broadcastResult.txid);
     } catch (e) {
-      return Err(`Direct contract call failed: ${String(e)}`);
+      return Err(`Contract call failed: ${String(e)}`);
     }
+  }
+
+  /**
+   * Unified signing method
+   */
+  private async signTransaction(transaction: any): AsyncResult<any, string> {
+    if (this.options.adapter) {
+      try {
+        const signed = await this.options.adapter.signTransaction(transaction);
+        return Ok(signed);
+      } catch (e) {
+        return Err(`Adapter signing failed: ${String(e)}`);
+      }
+    }
+
+    if (this.options.privateKey) {
+      try {
+        const signed = await this.tronweb.trx.sign(
+          transaction,
+          this.options.privateKey,
+        );
+        return Ok(signed);
+      } catch (e) {
+        return Err(`Private key signing failed: ${String(e)}`);
+      }
+    }
+
+    return Err('No signing method available (no adapter or private key)');
   }
 
   /**
@@ -291,97 +303,6 @@ export class TronRelay implements ITronHTLC {
     }
 
     throw new Error('Transaction confirmation timeout');
-  }
-
-  private async executeApprovalTransaction(
-    order: EvmOrderResponse,
-  ): AsyncResult<string, string> {
-    console.log('No Allowance found, Executing Approval');
-
-    if (!this.htlcActorAddress || this.htlcActorAddress === '') {
-      return Err('No HTLC actor address found');
-    }
-
-    const approvalTx = order.approval_transaction;
-    if (!approvalTx) {
-      return Ok('No approval transaction required');
-    }
-
-    try {
-      // Decode the parameters from the data
-      const dataWithoutSelector = '0x' + approvalTx.data.slice(10); // Remove function selector but keep 0x prefix
-
-      const params = this.tronweb.utils.abi.decodeParams(
-        ['spender', 'amount'],
-        ['address', 'uint256'],
-        dataWithoutSelector,
-        false,
-      );
-
-      const spenderAddress = params.spender;
-      const amount = params.amount.toString();
-
-      console.log('[executeApprovalTransaction] Decoded approval:', {
-        spender: spenderAddress,
-        amount: amount.toString(),
-        tokenContract: approvalTx.to,
-      });
-
-      // Build the transaction using transactionBuilder
-      const parameter = [
-        { type: 'address', value: spenderAddress },
-        { type: 'uint256', value: amount },
-      ];
-
-      const options = {
-        feeLimit: Number(approvalTx.gas_limit),
-        callValue: 0,
-      };
-
-      const transaction =
-        await this.tronweb.transactionBuilder.triggerSmartContract(
-          approvalTx.to,
-          'approve(address,uint256)',
-          options,
-          parameter,
-          this.htlcActorAddress,
-        );
-
-      if (!transaction || !transaction.transaction) {
-        return Err('Failed to build approval transaction');
-      }
-
-      // Sign the transaction
-      let signedTx;
-      if (this.options.adapter) {
-        signedTx = await this.options.adapter.signTransaction(
-          transaction.transaction,
-        );
-      } else if (this.options.privateKey) {
-        signedTx = await this.tronweb.trx.sign(
-          transaction.transaction,
-          this.options.privateKey,
-        );
-      } else {
-        return Err('No signing method available (no adapter or private key)');
-      }
-
-      // Broadcast the transaction
-      const broadcast = await this.tronweb.trx.sendRawTransaction(signedTx);
-
-      if (!broadcast.result) {
-        return Err(
-          String(broadcast.message) ||
-            String(broadcast.code) ||
-            'Approval broadcast failed',
-        );
-      }
-
-      console.log('Approval transaction successful, txid:', broadcast.txid);
-      return Ok(broadcast.txid);
-    } catch (e) {
-      return Err(`Approval transaction failed: ${String(e)}`);
-    }
   }
 
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
