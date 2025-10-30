@@ -8,6 +8,7 @@ import {
   BitcoinOrderResponse,
   SolanaOrderResponse,
   SuiOrderResponse,
+  TronOrderResponse,
 } from './orderbook/orderbook.types';
 import { BlockchainType } from './constants/asset.types';
 
@@ -110,6 +111,14 @@ export const isSuiOrderResponse: OrderResponseTypeGuard<SuiOrderResponse> = (
   );
 };
 
+/**
+ * Type guard for Tron order responses
+ */
+export const isTronOrderResponse: OrderResponseTypeGuard<TronOrderResponse> = (
+  response,
+): response is TronOrderResponse => {
+  return isEvmOrderResponse(response);
+};
 /**
  * Type guard for Order objects (matched orders)
  */

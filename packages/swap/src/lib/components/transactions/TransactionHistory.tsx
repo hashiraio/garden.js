@@ -31,6 +31,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     starknet: '',
     solana: '',
     sui: '',
+    tron: '',
   });
 
   const { garden } = useGarden();
@@ -63,6 +64,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       starknet: starknetAddress || '',
       solana: solanaAddress || '',
       sui: suiAddress || '',
+      tron: '',
     };
 
     setConnectedWallets(wallets);

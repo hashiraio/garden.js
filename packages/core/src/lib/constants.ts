@@ -81,6 +81,12 @@ export const SUI_CONFIG: Record<
   [Network.LOCALNET]: { packageId: '', moduleName: '' },
 } as const;
 
+export const TRON_CONFIG: Record<Network, string> = {
+  [Network.MAINNET]: 'https://api.trongrid.io',
+  [Network.TESTNET]: 'https://api.shasta.trongrid.io',
+  [Network.LOCALNET]: '',
+} as const;
+
 export const DEFAULT_AFFILIATE_ASSET = {
   asset: ChainAsset.from(Assets.base.cBBTC),
 };

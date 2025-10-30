@@ -3,15 +3,7 @@ import {
   Order,
   SuiOrderResponse,
 } from '@gardenfi/orderbook';
-import {
-  APIResponse,
-  AsyncResult,
-  Err,
-  Fetcher,
-  Network,
-  Ok,
-  Url,
-} from '@gardenfi/utils';
+import { AsyncResult, Err, IAuth, Network, Ok, Url } from '@gardenfi/utils';
 import { ISuiHTLC } from '../suiHTLC.types';
 import {
   getFullnodeUrl,
@@ -27,23 +19,25 @@ import {
   WalletWithRequiredFeatures,
 } from '@mysten/wallet-standard';
 import { SUI_CONFIG } from '../../constants';
-import { getAssetInfoFromOrder } from '../../utils';
+import { getAssetInfoFromOrder, redeemOrderThroughRelayer } from '../../utils';
 
 export class SuiRelay implements ISuiHTLC {
   private client: SuiClient;
   private url: Url;
   private account: WalletWithRequiredFeatures | Ed25519Keypair;
   private network: Network;
-
+  private auth: IAuth;
   constructor(
     relayerUrl: string | Url,
     account: WalletWithRequiredFeatures | Ed25519Keypair,
     network: Network,
+    auth: IAuth,
   ) {
     this.client = new SuiClient({ url: getFullnodeUrl(network) });
     this.url = relayerUrl instanceof Url ? relayerUrl : new Url(relayerUrl);
     this.account = account;
     this.network = network;
+    this.auth = auth;
   }
 
   get htlcActorAddress(): string {
@@ -211,28 +205,15 @@ export class SuiRelay implements ISuiHTLC {
 
   // ---------------------- REDEEM ----------------------
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
-    try {
-      const res = await Fetcher.post<APIResponse<string>>(
-        this.url.endpoint('redeem'),
-        {
-          body: JSON.stringify({
-            order_id: order.order_id,
-            secret: secret,
-            perform_on: 'Destination',
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          retryCount: 10,
-          retryDelay: 2000,
-        },
-      );
-
-      if (res.error) return Err(res.error);
-      return res.result ? Ok(res.result) : Err('Redeem: No result found');
-    } catch (error) {
-      return Err(String(error));
-    }
+    const redeemResult = await redeemOrderThroughRelayer(
+      order,
+      secret,
+      this.auth,
+      this.url,
+    );
+    if (redeemResult.error) return Err(redeemResult.error);
+    if (!redeemResult.val) return Err('Redeem: No result found');
+    return Ok(redeemResult.val);
   }
 
   // ---------------------- REFUND ----------------------

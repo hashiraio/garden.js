@@ -534,6 +534,26 @@ export const Config = {
       },
     },
   },
+  tron_shasta: {
+    type: BlockchainType.tron,
+    network: Network.TESTNET,
+    USDT: {
+      id: 'tron_shasta:usdt',
+      name: 'Tether USD',
+      symbol: 'USDT',
+      decimals: 6,
+      icon: 'https://garden.imgix.net/assets/TetherIcon.svg',
+      chain: 'tron:2494104990',
+      htlc: {
+        address: 'TQa4rN2Vayesv5vmMAXzP5QA1PnPwD46w6',
+        schema: 'tron:htlc_erc20',
+      },
+      token: {
+        address: 'TDg6r1BXkxWbmXXvHWweqdpUY9qPhgUJsC',
+        schema: 'tron:erc20',
+      },
+    },
+  },
   bitcoin: {
     type: BlockchainType.bitcoin,
     network: Network.MAINNET,
@@ -1024,6 +1044,7 @@ export const isBitcoin = is(BlockchainType.bitcoin);
 export const isSolana = is(BlockchainType.solana);
 export const isStarknet = is(BlockchainType.starknet);
 export const isSui = is(BlockchainType.sui);
+export const isTron = is(BlockchainType.tron);
 
 export const getBlockchainType = (chain: Chain) => Config[chain].type;
 

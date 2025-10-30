@@ -25,6 +25,7 @@ import {
 } from '@gardenfi/orderbook';
 import {
   getAssetInfoFromOrder,
+  redeemOrderThroughRelayer,
   waitForSolanaTxConfirmation,
 } from '../../utils';
 import { SolanaRelayerAddress, solanaProgramAddress } from '../../constants';
@@ -459,30 +460,18 @@ export class SolanaRelay implements ISolanaHTLC {
    */
   async redeem(order: Order, secret: string): AsyncResult<string, string> {
     try {
-      const headers = await this.auth.getAuthHeaders();
-      if (!headers.ok) return Err(headers.error);
-
       const _secret = validateSecret(secret);
-      const res: APIResponse<string> = await Fetcher.patch<APIResponse<string>>(
-        this.url
-          .endpoint('/v2/orders')
-          .endpoint(order.order_id)
-          .addSearchParams({ action: 'redeem' }),
-        {
-          body: JSON.stringify({
-            secret: Buffer.from(_secret).toString('hex'),
-          }),
-          headers: {
-            ...headers.val,
-            'Content-Type': 'application/json',
-          },
-        },
+      const redeemResult = await redeemOrderThroughRelayer(
+        order,
+        Buffer.from(_secret).toString('hex'),
+        this.auth,
+        this.url,
       );
-      if (res.error || !res.result) {
-        return Err(`Redeem: Error from relayer: ${res.error}`);
+      if (redeemResult.error || !redeemResult.val) {
+        return Err(`Redeem: Error from relayer: ${redeemResult.error}`);
       }
 
-      const txHash = res.result;
+      const txHash = redeemResult.val;
 
       const isConfirmed = await waitForSolanaTxConfirmation(
         this.provider.connection,

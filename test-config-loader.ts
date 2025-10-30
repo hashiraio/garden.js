@@ -8,9 +8,11 @@ export interface TestConfig {
   STARKNET_ADDRESS: string;
   SOLANA_PRIV: number[];
   SUI_PRIVATE_KEY: string;
+  TRON_PRIVATE_KEY: string;
   BITCOIN_PRIVATE_KEY: string;
   BITCOIN_MNEMONIC: string;
   API_KEY: string;
+  STAGING_API_KEY: string;
   TEST_RPC_URL: string;
   TEST_ORDERBOOK_STAGE: string;
   TEST_STAGE_AUTH: string;

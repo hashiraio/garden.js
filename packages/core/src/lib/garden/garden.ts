@@ -41,9 +41,9 @@ import { EvmRelay } from '../evm/relay/evmRelay';
 import { StarknetRelay } from '../starknet/relay/starknetRelay';
 import { SolanaRelay } from '../solana/relayer/solanaRelay';
 import { SuiRelay } from '../sui/relay/suiRelay';
+import { TronRelay } from '../tron/relayer/tronRelay';
 import { resolveApiKey, resolveDigestKey } from './utils';
 import { Executor } from './executor/executor';
-
 import {
   isValidBitcoinPubKey,
   resolveApiConfig,
@@ -174,10 +174,13 @@ export class Garden extends Orderbook implements IGardenJS {
               )
             : undefined,
           sui: config.wallets.sui
-            ? new SuiRelay(api.baseurl, config.wallets.sui, network)
+            ? new SuiRelay(api.baseurl, config.wallets.sui, network, apiKey)
             : undefined,
           bitcoin: config.wallets.bitcoin
             ? new BitcoinHTLC(config.wallets.bitcoin, network)
+            : undefined,
+          tron: config.wallets.tron
+            ? new TronRelay(api.baseurl, network, apiKey, config.wallets.tron)
             : undefined,
         }
       : {};
@@ -195,6 +198,7 @@ export class Garden extends Orderbook implements IGardenJS {
       solana: this._htlcs.solana,
       sui: this._htlcs.sui,
       bitcoin: this._htlcs.bitcoin,
+      tron: this._htlcs.tron,
     } as const;
   }
 
@@ -302,6 +306,18 @@ export class Garden extends Orderbook implements IGardenJS {
             return Err(`Sui HTLC initiation failed: ${suiInitRes.error}`);
         }
         break;
+      case BlockchainType.tron:
+        if (!this._htlcs.tron || !isEvmOrderResponse(createOrderResponse)) {
+          return Err('Order type does not match Tron blockchain type');
+        }
+        {
+          const tronInitRes = await this._htlcs.tron.initiate(
+            createOrderResponse,
+          );
+          if (!tronInitRes.ok)
+            return Err(`Tron HTLC initiation failed: ${tronInitRes.error}`);
+        }
+        break;
       case BlockchainType.bitcoin:
         return Ok(createOrderResponse);
       default:
@@ -375,11 +391,6 @@ export class Garden extends Orderbook implements IGardenJS {
     // console.log('orderRequest', orderRequest);
     const createOrderRes = await super.createOrder<T>(orderRequest, this._auth);
     if (!createOrderRes.ok) return Err(createOrderRes.error);
-
-    const sourceType = ChainAsset.from(params.fromAsset).blockchainType;
-    if (createOrderRes.val.type !== sourceType) {
-      return Err('Order response type does not match source blockchain type');
-    }
 
     return Ok(createOrderRes.val);
   }
@@ -478,6 +489,13 @@ export class Garden extends Orderbook implements IGardenJS {
             'Please provide suiHTLC when initializing garden or pass Sui address in SwapParams',
           );
         return Ok(this._htlcs.sui.htlcActorAddress);
+      }
+      case BlockchainType.tron: {
+        if (!this._htlcs.tron)
+          return Err(
+            'Please provide tronHTLC when initializing garden or pass Tron address in SwapParams',
+          );
+        return Ok(this._htlcs.tron.htlcActorAddress);
       }
       default:
         return Err('Unsupported chain');

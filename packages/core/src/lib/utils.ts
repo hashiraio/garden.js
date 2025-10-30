@@ -9,12 +9,14 @@ import {
   Url,
   with0x,
   Network,
+  IAuth,
 } from '@gardenfi/utils';
 import {
   AffiliateFee,
   AssetHTLCInfo,
   BlockchainType,
   Chain,
+  Order,
 } from '@gardenfi/orderbook';
 import { sha256 } from 'viem';
 import * as varuint from 'varuint-bitcoin';
@@ -390,6 +392,13 @@ export const getAddresses = async (
         );
       return Ok(htlcs.sui.htlcActorAddress);
     }
+    case BlockchainType.tron: {
+      if (!htlcs.tron)
+        return Err(
+          'Please provide tronHTLC when initializing garden or pass Tron address in SwapParams',
+        );
+      return Ok(htlcs.tron.htlcActorAddress);
+    }
     default:
       return Err('Unsupported chain');
   }
@@ -413,6 +422,7 @@ export const validateHTLCForSwap = async (
     },
     [BlockchainType.sui]: { htlc: htlcs.sui, name: 'Sui' },
     [BlockchainType.bitcoin]: { htlc: htlcs.bitcoin, name: 'Bitcoin' },
+    [BlockchainType.tron]: { htlc: htlcs.tron, name: 'Tron' },
   };
 
   if (blockchainType === BlockchainType.bitcoin) {
@@ -434,3 +444,38 @@ export const validateHTLCForSwap = async (
   }
   return Ok(undefined);
 };
+
+export async function redeemOrderThroughRelayer(
+  order: Order,
+  secret: string,
+  auth: IAuth,
+  url: Url,
+): Promise<AsyncResult<string, string>> {
+  try {
+    const headers = await auth.getAuthHeaders();
+    if (!headers.ok) return Err(headers.error);
+
+    const res = await Fetcher.patch<APIResponse<string>>(
+      url
+        .endpoint('/v2/orders')
+        .endpoint(order.order_id)
+        .addSearchParams({ action: 'redeem' }),
+      {
+        body: JSON.stringify({
+          secret: trim0x(secret),
+        }),
+        headers: {
+          ...headers.val,
+          'Content-Type': 'application/json',
+        },
+        retryCount: 10,
+        retryDelay: 2000,
+      },
+    );
+
+    if (res.error) return Err(res.error);
+    return res.result ? Ok(res.result) : Err('Redeem: No result found');
+  } catch (error) {
+    return Err(String(error));
+  }
+}
