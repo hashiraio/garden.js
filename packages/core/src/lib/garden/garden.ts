@@ -370,7 +370,7 @@ export class Garden extends Orderbook implements IGardenJS {
         : {}),
       solver_id: params.solverId,
       affiliate_fees: withDefaultAffiliateFees(params.affiliateFee),
-      slippage: 50,
+      slippage: 0,
     };
     // console.log('orderRequest', orderRequest);
     const createOrderRes = await super.createOrder<T>(orderRequest, this._auth);
