@@ -25,6 +25,7 @@ import {
   BTCWalletProviderProps,
 } from './btcWalletsProvider.types';
 import { Err, Network, Ok, Void } from '@gardenfi/utils';
+import { StandardProvider } from './providers/standard/provider';
 
 declare global {
   interface Window {
@@ -44,7 +45,7 @@ declare global {
     };
     keplr?: {
       bitcoin: KeplrBitcoinProvider;
-    }
+    };
   }
 }
 
@@ -56,6 +57,7 @@ export const BTCWalletProvider = ({
   children,
   network,
   store,
+  standardWalletConfig,
 }: BTCWalletProviderProps) => {
   const [provider, setProvider] = useState<IInjectedBitcoinProvider>();
   const [account, setAccount] = useState<string>();
@@ -64,10 +66,10 @@ export const BTCWalletProvider = ({
     {},
   );
 
-  const isConnected = useMemo(() => !!provider && !!account, [
-    provider,
-    account,
-  ]);
+  const isConnected = useMemo(
+    () => !!provider && !!account,
+    [provider, account],
+  );
 
   //connect to the specified wallet and set the provider and account
   const connect = async (bitcoinWallet: IInjectedBitcoinProvider) => {
@@ -132,9 +134,15 @@ export const BTCWalletProvider = ({
   const updateWalletList = async () => {
     if (
       window.okxwallet &&
-      window.okxwallet.bitcoin && window.okxwallet.bitcoinTestnet
+      window.okxwallet.bitcoin &&
+      window.okxwallet.bitcoinTestnet
     ) {
-      const okxProvider = new OKXProvider(network === Network.MAINNET ? window.okxwallet.bitcoin : window.okxwallet.bitcoinTestnet, network);
+      const okxProvider = new OKXProvider(
+        network === Network.MAINNET
+          ? window.okxwallet.bitcoin
+          : window.okxwallet.bitcoinTestnet,
+        network,
+      );
       addToWalletList(okxProvider);
     }
     if (
@@ -153,15 +161,15 @@ export const BTCWalletProvider = ({
       const xverseProvider = new XverseProvider(
         window.XverseProviders.BitcoinProvider,
       );
-      addToWalletList(xverseProvider)
+      addToWalletList(xverseProvider);
     }
-    if (
-      network === Network.MAINNET &&
-      window.keplr &&
-      window.keplr.bitcoin
-    ) {
+    if (network === Network.MAINNET && window.keplr && window.keplr.bitcoin) {
       const keplrProvider = new KeplrProvider(window.keplr.bitcoin);
       addToWalletList(keplrProvider);
+    }
+    if (standardWalletConfig) {
+      const standardProvider = new StandardProvider(standardWalletConfig);
+      addToWalletList(standardProvider);
     }
     // if (window.xfi && window.xfi.bitcoin) {
     //   const xdefiProvider = new XdefiProvider(window.xfi.bitcoin);

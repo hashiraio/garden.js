@@ -1,5 +1,6 @@
 import { IInjectedBitcoinProvider } from './bitcoin.types';
 import { AsyncResult, IStore, Network, Result } from '@gardenfi/utils';
+import { StandardWalletConfig } from './providers/standard/standard.types';
 
 export type AvailableWallets = {
   [key: string]: IInjectedBitcoinProvider;
@@ -24,4 +25,5 @@ export type BTCWalletProviderProps = {
   network: Network;
   children: React.ReactNode;
   store: IStore;
+  standardWalletConfig?: StandardWalletConfig;
 };
