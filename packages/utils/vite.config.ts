@@ -2,7 +2,10 @@
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 import pkg from './package.json';
+import { config as loadEnv } from 'dotenv';
+import path from 'path';
 
+loadEnv({ path: path.resolve(__dirname, '.env') });
 export default defineConfig({
   plugins: [
     // nodePolyfills(),

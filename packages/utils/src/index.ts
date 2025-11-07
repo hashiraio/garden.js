@@ -10,3 +10,4 @@ export * from './lib/digestKey/digestKey';
 export * from './lib/fetcher';
 export * from './lib/types';
 export * from './lib/tryCatch/tryCatch';
+export * from './lib/config';

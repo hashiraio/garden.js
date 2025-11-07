@@ -5,6 +5,13 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run",
+    "test:staging": "cross-env TEST_ENV=staging vitest run",
+    "test:testnet": "cross-env TEST_ENV=testnet vitest run",
+    "test:mainnet": "cross-env TEST_ENV=mainnet vitest run",
+    "test:ui": "vitest --ui",
+    "test:ui:staging": "cross-env TEST_ENV=staging vitest --ui",
+    "test:ui:testnet": "cross-env TEST_ENV=testnet vitest --ui",
+    "test:ui:mainnet": "cross-env TEST_ENV=mainnet vitest --ui",
     "dev": "vite build --watch",
     "link": "yarn link"
   },
@@ -16,9 +23,9 @@
   "typings": "./dist/src/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/src/index.d.ts",
       "require": "./dist/index.cjs",
-      "import": "./dist/index.js",
-      "types": "./dist/src/index.d.ts"
+      "import": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },

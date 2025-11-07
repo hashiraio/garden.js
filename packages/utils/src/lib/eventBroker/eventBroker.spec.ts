@@ -8,19 +8,26 @@ type TestEvents = {
   count: (num: number) => void;
 };
 
+// Create a test subclass that exposes the protected emit method
+class TestEventBroker<E extends Record<string, (...args: any[]) => void>> extends EventBroker<E> {
+  public testEmit<K extends keyof E>(event: K, ...args: Parameters<E[K]>): void {
+    this.emit(event, ...args);
+  }
+}
+
 describe('EventBroker', () => {
-  let broker: EventBroker<TestEvents>;
+  let broker: TestEventBroker<TestEvents>;
 
   beforeEach(() => {
-    broker = new EventBroker<TestEvents>();
+    broker = new TestEventBroker<TestEvents>();
   });
 
   it('should emit events to listeners', () => {
     const helloListener = vi.fn();
     broker.on('hello', helloListener);
 
-    broker.emit('hello', 'Alice');
-    broker.emit('hello', 'Bob');
+    broker.testEmit('hello', 'Alice');
+    broker.testEmit('hello', 'Bob');
 
     expect(helloListener).toHaveBeenCalledTimes(2);
     expect(helloListener).toHaveBeenCalledWith('Alice');
@@ -29,7 +36,7 @@ describe('EventBroker', () => {
 
   it('should not emit event if no listeners are registered', () => {
     const goodbyeListener = vi.fn();
-    broker.emit('goodbye', 'Goodbye, world!');
+    broker.testEmit('goodbye', 'Goodbye, world!');
     expect(goodbyeListener).not.toHaveBeenCalled();
   });
 
@@ -37,7 +44,7 @@ describe('EventBroker', () => {
     const countListener = vi.fn();
     broker.on('count', countListener);
 
-    broker.emit('count', 42);
+    broker.testEmit('count', 42);
     expect(countListener).toHaveBeenCalledWith(42);
   });
 
@@ -45,12 +52,12 @@ describe('EventBroker', () => {
     const countListener = vi.fn();
     broker.on('count', countListener);
 
-    broker.emit('count', 42);
+    broker.testEmit('count', 42);
     expect(countListener).toHaveBeenCalledWith(42);
 
     broker.off('count', countListener);
 
-    broker.emit('count', 100);
+    broker.testEmit('count', 100);
     expect(countListener).not.toHaveBeenCalledWith(100);
   });
 
@@ -61,7 +68,7 @@ describe('EventBroker', () => {
     broker.on('hello', listener1);
     broker.on('hello', listener2);
 
-    broker.emit('hello', 'Alice');
+    broker.testEmit('hello', 'Alice');
     expect(listener1).toHaveBeenCalledWith('Alice');
     expect(listener2).toHaveBeenCalledWith('Alice');
   });
@@ -70,11 +77,11 @@ describe('EventBroker', () => {
     const helloListener = vi.fn();
     broker.on('hello', helloListener);
 
-    broker.emit('hello', 'Alice');
+    broker.testEmit('hello', 'Alice');
     expect(helloListener).toHaveBeenCalledWith('Alice');
 
     broker.off('hello', helloListener);
-    broker.emit('hello', 'Bob');
+    broker.testEmit('hello', 'Bob');
     expect(helloListener).not.toHaveBeenCalledWith('Bob');
   });
 
@@ -85,8 +92,8 @@ describe('EventBroker', () => {
     broker.on('hello', helloListener);
     broker.on('goodbye', goodbyeListener);
 
-    broker.emit('hello', 'Alice');
-    broker.emit('goodbye', 'Goodbye, world!');
+    broker.testEmit('hello', 'Alice');
+    broker.testEmit('goodbye', 'Goodbye, world!');
 
     expect(helloListener).toHaveBeenCalledWith('Alice');
     expect(goodbyeListener).toHaveBeenCalledWith('Goodbye, world!');
