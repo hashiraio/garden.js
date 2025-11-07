@@ -6,7 +6,7 @@ export enum BlockchainType {
   bitcoin = 'bitcoin',
   evm = 'evm',
   solana = 'solana',
-  starknet = 'starknet',
+  starknet = 'stark',
   sui = 'sui',
 }
 

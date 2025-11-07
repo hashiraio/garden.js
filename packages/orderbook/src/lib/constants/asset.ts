@@ -1061,8 +1061,8 @@ export const isNativeToken = (asset: ChainAsset) => {
     isEvmNativeToken(chain, tokenAddress) ||
     isSolanaNativeToken(chain, tokenAddress) ||
     isBitcoin(chain) ||
-    isSuiNativeToken(chain, tokenAddress) ||
+    isSuiNativeToken(chain, tokenAddress)
     // Starknet doesn't have a native token
-    !isStarknet(chain)
+    // !isStarknet(chain)
   );
 };
