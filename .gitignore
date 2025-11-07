@@ -5,6 +5,7 @@ packages/*/dist/**/*
 .yarn
 .DS_Store
 test.config.ts
+test-results/
 
 **/*/tsconfig.tsbuildinfo
 

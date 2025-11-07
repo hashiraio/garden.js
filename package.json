@@ -8,6 +8,13 @@
     "echo": "yarn workspaces foreach --include \"packages/*\" run echo",
     "build": "yarn workspaces foreach -Atp --include \"packages/*\" --exclude \"packages/test\" run build",
     "test": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:staging": "cross-env TEST_ENV=staging vitest run",
+    "test:testnet": "cross-env TEST_ENV=testnet vitest run",
+    "test:mainnet": "cross-env TEST_ENV=mainnet vitest run",
+    "test:ui:staging": "cross-env TEST_ENV=staging vitest --ui",
+    "test:ui:testnet": "cross-env TEST_ENV=testnet vitest --ui",
+    "test:ui:mainnet": "cross-env TEST_ENV=mainnet vitest --ui",
     "dev": "yarn workspaces foreach -Api -j unlimited --include \"packages/*\" run dev ",
     "patch:affected": "yarn workspaces foreach -p --topological --include \"packages/*\" --since=$0 run patch",
     "publish:affected": "yarn workspaces foreach -p --include \"packages/*\" --since=main --no-private npm publish",
@@ -23,6 +30,10 @@
     "@eslint/js": "^9.6.0",
     "@types/chrome": "^0.0.268",
     "@types/node": "^22.7.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
     "eslint": "9.x",
     "globals": "^15.8.0",
     "ts-node": "^10.9.2",
@@ -31,7 +42,7 @@
     "vite": "^5.1.6",
     "vite-plugin-dts": "^3.7.3",
     "vite-plugin-eslint": "^1.8.1",
-    "vitest": "^1.6.0"
+    "vitest": "^4.0.7"
   },
   "dependencies": {
     "viem": "^2.28.0"
