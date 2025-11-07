@@ -7,9 +7,9 @@
   "typings": "./dist/src/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/src/index.d.ts",
       "require": "./dist/index.cjs",
-      "import": "./dist/index.js",
-      "types": "./dist/src/index.d.ts"
+      "import": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
